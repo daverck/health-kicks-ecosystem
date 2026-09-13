@@ -1,0 +1,36 @@
+# Python caches & virtual environments
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build & packaging artifacts
+dist/
+build/
+*.egg-info/
+target/
+*.deb
+
+# Node & Frontend artifacts
+node_modules/
+.angular/
+
+# IDE & Editor caches
+.idea/
+
+# Logs & Temporary files
+*.log
+.gemini/tmp/
+tmp/
+Thumbs.db
+.DS_Store
+
+# Explicit submodules safeguarding
+!health-kicks/
+!health-kicks-frontend/
+!health-kicks-edge-script/

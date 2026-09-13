@@ -1,0 +1,127 @@
+# Référentiel des Contrats d'Échange - HealthKicks Ecosystem
+
+Ce répertoire constitue la **source unique de vérité** pour tous les formats de données, schémas d'interface et protocoles échangés entre les sous-systèmes de l'écosystème **HealthKicks**.
+
+Tout agent ou développeur doit suivre le protocole **Spec-First** décrit ci-dessous avant de modifier ou d'ajouter une interface.
+
+---
+
+## 1. Protocole de Gouvernance des Contrats (Spec-First)
+
+1. **Interdiction de modification unilatérale** : Aucun sous-projet ne peut altérer un payload JSON, un topic MQTT ou un endpoint REST sans modification préalable d'un contrat dans ce répertoire.
+2. **Cycle d'évolution** :
+   - L'orchestrateur ou le développeur propose une mise à jour d'un contrat dans `contracts/rest/` ou `contracts/mqtt/`.
+   - Les impacts sont revus auprès des agents concernés (`backend-dev`, `frontend-dev`, `edge-dev`).
+   - Une fois le contrat validé, les implémentations dans les sous-projets sont réalisées en parallèle ou de manière ordonnée.
+   - Les tests de compatibilité de schéma sont validés.
+
+---
+
+## 2. Contrats REST API (Backend <-> Frontend)
+
+Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 3.1** et les modèles **Pydantic v2** exposés par FastAPI.
+
+### A. Endpoints Principaux & Schémas Associés
+
+| Domaine | Méthode & Route | Payload Requête | Payload Réponse |
+| :--- | :--- | :--- | :--- |
+| **Authentification** | `POST /api/v1/auth/refresh` | `{"refresh_token": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}` |
+| **Haptique** | `POST /api/v1/devices/{id}/haptic/trigger` | `{"intensity": 200, "duration_ms": 500}` | `{"status": "queued", "device_id": "HK-1", "command_id": "uuid"}` |
+| **Studio Sessions** | `GET /api/v1/studio/sessions` | Query params: `page`, `size`, `is_validated`, `label`, `device_id` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary`) |
+| **Studio Telemetry** | `GET /api/v1/studio/sessions/{id}/readings` | - | `StudioSessionReadingsResponse` (`readings`: liste d'échantillons IMU) |
+| **Requalification** | `PATCH /api/v1/studio/sessions/{id}` | `{"label": "walk", "is_validated": true}` | `StudioSessionSummary` |
+| **Validation Directe**| `PATCH /api/v1/studio/sessions/{id}/confirm` | - | `StudioSessionSummary` (`is_validated = true`) |
+| **Ingestion Webhook** | `POST /api/v1/ingest/event` | Header: `X-HealthKicks-Ingest-Token`<br>Body: Payload d'événement détection | `{"status": "accepted", "event_id": "uuid"}` |
+
+### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
+
+```json
+{
+  "timestamp": 1726224000.125,
+  "ax": 0.052,
+  "ay": 0.981,
+  "az": 0.124,
+  "gx": 0.012,
+  "gy": -0.045,
+  "gz": 0.008
+}
+```
+
+---
+
+## 3. Contrats MQTT IoT (Edge <-> AWS IoT Core <-> Backend)
+
+Les communications IoT utilisent le protocole MQTT sur AWS IoT Core avec une convention de nommage hiérarchique stricte sous le préfixe `healthkicks/v1/{device_id}/`.
+
+### A. Topic d'Alerte de Détection : `healthkicks/v1/{device_id}/events/detection`
+Publié par l'agent Edge en QoS 1 lorsqu'un événement critique (ex: chute) est détecté par le modèle ML local :
+
+```json
+{
+  "device_id": "HK-1",
+  "event_type": "fall_forward",
+  "confidence": 0.87,
+  "timestamp": "2026-09-13T10:14:00.123456Z",
+  "features": {
+    "accel_mag_max": 24.5,
+    "jerk_max": 185.2,
+    "dynamic_energy": 42.1
+  }
+}
+```
+
+### B. Topic de Commande Haptique : `healthkicks/v1/{device_id}/commands/haptic`
+Publié par le backend Cloud via AWS IoT Core `iot-data` pour commander une vibration sur la chaussure :
+
+```json
+{
+  "command_id": "4f9d8a32-1234-4567-89ab-cdef01234567",
+  "intensity": 200,
+  "duration_ms": 500,
+  "pattern": "single_pulse",
+  "created_at": "2026-09-13T10:14:02.000Z"
+}
+```
+*Contraintes de validation* :
+- `intensity` : entier compris entre `0` (arrêt) et `255` (puissance maximale).
+- `duration_ms` : entier compris entre `50` et `10000` millisecondes.
+
+### C. Topic de Statut & Heartbeat : `healthkicks/v1/{device_id}/status`
+Publié périodiquement par l'agent Edge avec rétention / Last Will and Testament (LWT) configuré sur la déconnexion :
+
+```json
+{
+  "device_id": "HK-1",
+  "state": "online",
+  "firmware_version": "0.1.0",
+  "model_version": "1.4.2",
+  "uptime_seconds": 3600,
+  "timestamp": "2026-09-13T10:14:05.000Z"
+}
+```
+*LWT Payload (en cas de perte de connexion inopinée)* :
+```json
+{
+  "device_id": "HK-1",
+  "state": "offline",
+  "timestamp": "2026-09-13T10:15:00.000Z"
+}
+```
+
+### D. Topic de Télémétrie Studio : `healthkicks/v1/{device_id}/telemetry/raw`
+Publié à l'issue d'une session de capture Studio pour enregistrement dans Amazon DynamoDB :
+
+```json
+{
+  "device_id": "HK-1",
+  "session_id": "7b8e9f01-2345-6789-abcd-ef0123456789",
+  "label": "walk",
+  "trigger": "studio",
+  "sample_rate_hz": 100,
+  "readings": [
+    {"timestamp": 1726224000.00, "ax": 0.02, "ay": 0.98, "az": 0.11, "gx": 0.01, "gy": -0.01, "gz": 0.02},
+    {"timestamp": 1726224000.01, "ax": 0.03, "ay": 0.97, "az": 0.12, "gx": 0.02, "gy": -0.02, "gz": 0.01}
+  ]
+}
+```
+

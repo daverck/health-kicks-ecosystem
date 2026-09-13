@@ -1,0 +1,9 @@
+[submodule "health-kicks"]
+	path = health-kicks
+	url = ./health-kicks
+[submodule "health-kicks-edge-script"]
+	path = health-kicks-edge-script
+	url = ./health-kicks-edge-script
+[submodule "health-kicks-frontend"]
+	path = health-kicks-frontend
+	url = ./health-kicks-frontend
