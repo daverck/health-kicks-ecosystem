@@ -1,12 +1,12 @@
 [submodule "health-kicks"]
 	path = health-kicks
-	url = ./health-kicks
+	url = https://github.com/daverck/health-kicks.git
 [submodule "health-kicks-edge-script"]
 	path = health-kicks-edge-script
-	url = ./health-kicks-edge-script
+	url = https://github.com/daverck/health-kicks-edge-script.git
 [submodule "health-kicks-frontend"]
 	path = health-kicks-frontend
-	url = ./health-kicks-frontend
+	url = https://github.com/daverck/health-kicks-frontend.git
 [submodule "health-kicks-mobile"]
 	path = health-kicks-mobile
-	url = ./health-kicks-mobile
+	url = https://github.com/daverck/health-kicks-mobile.git
