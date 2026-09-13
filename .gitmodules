@@ -7,3 +7,6 @@
 [submodule "health-kicks-frontend"]
 	path = health-kicks-frontend
 	url = ./health-kicks-frontend
+[submodule "health-kicks-mobile"]
+	path = health-kicks-mobile
+	url = ./health-kicks-mobile

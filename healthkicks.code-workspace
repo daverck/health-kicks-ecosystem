@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "name": "HealthKicks Ecosystem (Racine)",
+      "path": "."
+    },
+    {
+      "name": "Backend (health-kicks)",
+      "path": "health-kicks"
+    },
+    {
+      "name": "Frontend (health-kicks-frontend)",
+      "path": "health-kicks-frontend"
+    },
+    {
+      "name": "Edge AI (health-kicks-edge-script)",
+      "path": "health-kicks-edge-script"
+    },
+    {
+      "name": "Mobile (health-kicks-mobile)",
+      "path": "health-kicks-mobile"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:Backend (health-kicks)}/.venv/Scripts/python.exe",
+    "python.analysis.extraPaths": [
+      "${workspaceFolder:Backend (health-kicks)}",
+      "${workspaceFolder:Edge AI (health-kicks-edge-script)}/src"
+    ]
+  }
+}
