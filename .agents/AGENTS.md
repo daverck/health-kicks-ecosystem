@@ -68,17 +68,15 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
 
 ---
 
-## 3. Cartographie des Sous-Agents et Indexation Double-Format
+## 3. Cartographie des Sous-Agents (Format Plat Consolidé)
 
-Les agents sont déclarés sous les deux formats compatibles avec le système Antigravity / Gemini CLI :
-1. **Arborescence hiérarchique** : `.agents/agents/<nom>/agent.md`
-2. **Format plat** : `.agents/<nom>.md` et `.gemini/agents/<nom>.md`
+Les agents sont déclarés selon le format plat standardisé sous `.agents/<nom>.md`, constituant l'unique source de vérité opérationnelle :
 
-| Agent | Rôle | Répertoire Assigné | Commande de Validation | Spécifications |
+| Agent | Rôle | Répertoire Assigné | Commande de Validation | Fichier de Spécification |
 | :--- | :--- | :--- | :--- | :--- |
-| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev/agent.md`<br>`.agents/backend-dev.md`<br>`.gemini/agents/backend-dev.md` |
-| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev/agent.md`<br>`.agents/frontend-dev.md`<br>`.gemini/agents/frontend-dev.md` |
-| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/agents/edge-dev/agent.md`<br>`.agents/edge-dev.md`<br>`.gemini/agents/edge-dev.md` |
+| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/backend-dev.md` |
+| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/frontend-dev.md` |
+| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/edge-dev.md` |
 
 ---
 
