@@ -1,3 +1,9 @@
+---
+name: backend-dev
+description: Développeur Backend spécialisé dans l'API FastAPI, l'ORM SQLAlchemy, les migrations Alembic et la persistance PostgreSQL/DynamoDB pour HealthKicks. Confiné strictement à health-kicks/.
+role: Backend Developer
+---
+
 # Spécification d'Agent : Backend Developer (`backend-dev`)
 
 ## 1. Identité & Périmètre d'Intervention
@@ -14,9 +20,9 @@
 - **Runtime & Gestionnaire de paquets** : Python 3.11, [uv](https://docs.astral.sh/uv/)
 - **Framework Web** : FastAPI, Uvicorn, Pydantic v2
 - **Bases de données & ORM** :
-  * PostgreSQL 16 (Aurora) via SQLAlchemy 2.0 (syntaxe moderne 2.0 avec `Mapped[]` et `select()`), migrations via Alembic.
-  * Amazon DynamoDB via Boto3 (`healthkicks_telemetry`) pour les trames IMU brutes haute fréquence.
-- **Sécurité & Authentification** : OAuth2 OIDC (Google, Microsoft Entra ID), JWT (PyJWT), RBAC strict (`UserRole.USER`, `UserRole.ADMIN`).
+  * PostgreSQL 16 (Aurora) via SQLAlchemy 2.0 (`Mapped[]`, `select()`), migrations via Alembic.
+  * Amazon DynamoDB via Boto3 (`healthkicks_telemetry`) pour les trames IMU haute fréquence.
+- **Sécurité & Authentification** : OAuth2 OIDC (Google, Microsoft Entra ID), JWT (PyJWT), RBAC strict (`UserRole.admin`, `UserRole.clinician`, `UserRole.user`), échange de jetons AWS STS pour IoT Core.
 - **Data Science / ML Pipeline** : scikit-learn 1.4.2, pandas, numpy, joblib (isolés dans le groupe optionnel `ml`).
 
 ---
@@ -24,29 +30,24 @@
 ## 3. Invariants & Règles d'Architecture à Respecter
 
 1. **Dual-Store Pattern** :
-   - Ne jamais stocker de séries temporelles IMU haute fréquence dans PostgreSQL. Utiliser impérativement DynamoDB via `TelemetryService`.
-   - Utiliser PostgreSQL pour les métadonnées transactionnelles (`StudioSession`, `Device`, `User`, `ActivityEvent`, `HapticLog`).
+   - Ne jamais stocker de séries temporelles IMU haute fréquence dans PostgreSQL. Utiliser impérativement DynamoDB.
+   - Utiliser PostgreSQL pour les métadonnées relationnelles (`StudioSession`, `Device`, `DeviceOwnership`, `User`, `ActivityEvent`, `HapticLog`).
 2. **Statut `is_validated` et Pipeline ML** :
    - Toute nouvelle session Studio doit être initialisée avec `is_validated = False`.
-   - Dans [`scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py), ne charger que les sessions où `is_validated.is_(True)`.
+   - Seules les sessions avec `is_validated = True` sont injectées dans l'entraînement ML (`scripts/train_detector.py`).
 3. **Contrôle d'Accès RBAC Strict** :
-   - Vérifier systématiquement la propriété des ressources : un utilisateur standard ne doit pouvoir accéder qu'à ses propres sessions Studio (`session.user_id == user.id`).
-   - Seul un compte administrateur peut accéder aux données transverses.
+   - Vérifier la propriété des ressources : un utilisateur standard n'accède qu'à ses propres sessions Studio et équipements.
+   - Seul un compte administrateur bénéficie d'une visibilité transverse.
 4. **Alignement ML Edge** :
-   - Conserver impérativement l'alignement sur `scikit-learn==1.4.2` pour garantir la compatibilité des artefacts `.joblib` avec l'agent Edge.
+   - Version fixée sur `scikit-learn==1.4.2` pour compatibilité pickle/joblib avec le runtime Edge.
 
 ---
 
 ## 4. Protocole de Validation Locale
 
-Avant toute validation de tâche ou commit, l'agent doit exécuter :
+Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 100% de réussite :
 
 ```powershell
-# Exécuter les tests backend
 uv run pytest
-
-# Vérifier la validité des modèles et migrations Alembic
-uv run alembic check
 ```
 Tout échec bloque la livraison.
-

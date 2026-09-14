@@ -6,33 +6,28 @@ Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce
 
 ## 0. Contexte Métier & Architecture Globale
 
-**HealthKicks** est un écosystème de surveillance et d'analyse de santé et d'activité connectée combinant traitement à la source (*Edge AI*), centralisation analytique (*Backend*) et visualisation en temps réel (*Frontend*).
+**HealthKicks** est un écosystème connecté de surveillance et d'analyse biomécanique en temps réel combinant intelligence embarquée à la source (*Edge AI*), centralisation analytique (*Backend*) et restitution clinique (*Frontend*).
 
 ### Pipeline de données
 ```text
 [ Capteurs / IMU Chaussure ]
-         │ (UART / Série ou Direct)
+         │ (UART / Série)
          ▼
-[ health-kicks-edge-script ] ──(BLE GATT Notifications / Burst)──┐
-                                                                 ▼
-                                                    [ health-kicks-mobile ] (Passerelle BLE-to-MQTT)
-                                                                 │
-                                                                 ▼ (MQTT over TLS / mTLS)
-                                                       [ health-kicks ] (API / Cloud IoT / DB)
-                                                                 │
-                                                      (REST / SSE / WebSocket)
-                                                                 ▼
-                                                    [ health-kicks-frontend ] (UI)
+[ health-kicks-edge-script ] ──(BLE GATT / MQTT)──┐
+                                                  ▼
+                                        [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
+                                                  │
+                                       (REST OpenAPI / WebSockets)
+                                                  ▼
+                                     [ health-kicks-frontend ] (Angular 19 UI)
 ```
 
-### Périmètre des composants
-* **`health-kicks-edge-script/`** : Ingestion des signaux capteurs, inférence locale des modèles ML (détection d'anomalies, biométrie), serveur GATT BLE, bufferisation et émission de burst transfer.
-* **`health-kicks-mobile/`** : Application mobile compagnon, client BLE GATT central, passerelle relais BLE-to-MQTT vers AWS IoT Core, réassemblage des bursts Studio.
-* **`health-kicks/`** : API REST, persistance des séries temporelles (PostgreSQL / DynamoDB), gestion des comptes/profils, agrégation et règles métier.
-* **`health-kicks-frontend/`** : Tableaux de bord de suivi, visualisation des courbes en direct, gestion des alertes et configuration utilisateur.
+### Périmètre des trois sous-projets indépendants
+* **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement.
+* **`health-kicks-frontend/` (Frontend)** : Application web Angular 19 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
+* **`health-kicks-edge-script/` (Edge AI)** : Ingestion des signaux capteurs IMU (Arduino), inférence locale scikit-learn (détection de chute et d'activité), serveur GATT BLE, packaging Debian et déclenchement vibrotactile autonome.
 
-### Références documentaires
-Pour les détails exhaustifs d'implémentation et de schéma, consultez systématiquement :
+### Références documentaires partagées
 * `docs/architecture/system_overview.md`
 * `docs/architecture/invariants.md`
 * `contracts/ble_gatt_specs.md`
@@ -43,9 +38,9 @@ Pour les détails exhaustifs d'implémentation et de schéma, consultez systéma
 ## 1. Rôle de l'Orchestrateur Racine
 
 L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pour mandat :
-1. De maintenir l'intégrité de l'arborescence, des sous-modules Git et de la configuration du workspace.
+1. De maintenir l'intégrité de l'arborescence, des sous-modules Git et de la configuration du workspace multi-racines.
 2. De déléguer les tâches d'implémentation aux sous-agents spécialisés selon leur domaine d'expertise.
-3. D'arbitrer les évolutions de contrats dans le répertoire `contracts/`.
+3. D'arbitrer les évolutions de contrats dans le répertoire `contracts/` selon le protocole Spec-First.
 4. De garantir la cohérence inter-projets et le respect des invariants d'architecture (`docs/architecture/invariants.md`).
 
 ---
@@ -61,28 +56,29 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `backend-dev` : modifications autorisées **uniquement** dans `health-kicks/`.
   * `frontend-dev` : modifications autorisées **uniquement** dans `health-kicks-frontend/`.
   * `edge-dev` : modifications autorisées **uniquement** dans `health-kicks-edge-script/`.
-  * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
 * **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
 * L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
 
 ### Règle d'Or 3 : Validation Systématique des Tests Locaux Avant Tout Commit
 * Aucun sous-agent ne peut déclarer une tâche terminée ou commiter des modifications si les suites de tests unitaires et d'intégration de son périmètre ne sont pas 100% au vert :
-  * `health-kicks` : `uv run pytest`
-  * `health-kicks-frontend` : `pnpm test` (ou `ng test --watch=false`)
-  * `health-kicks-edge-script` : `uv run pytest`
-  * `health-kicks-mobile` : `flutter test` (ou `flutter analyze`)
+  * `health-kicks` : `uv run pytest` (ou `python -m pytest`)
+  * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
+  * `health-kicks-edge-script` : `uv run pytest` (ou `python -m pytest`)
 * Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
 ---
 
-## 3. Cartographie des Sous-Agents
+## 3. Cartographie des Sous-Agents et Indexation Double-Format
 
-| Agent | Répertoire Assigné | Fichier de Spécification |
-| :--- | :--- | :--- |
-| **Backend Developer** | `health-kicks/` | `.agents/agents/backend-dev/agent.md` |
-| **Frontend Developer** | `health-kicks-frontend/` | `.agents/agents/frontend-dev/agent.md` |
-| **Edge Developer** | `health-kicks-edge-script/` | `.agents/agents/edge-dev/agent.md` |
-| **Mobile Developer** | `health-kicks-mobile/` | `.agents/agents/mobile-dev/agent.md` |
+Les agents sont déclarés sous les deux formats compatibles avec le système Antigravity / Gemini CLI :
+1. **Arborescence hiérarchique** : `.agents/agents/<nom>/agent.md`
+2. **Format plat** : `.agents/<nom>.md` et `.gemini/agents/<nom>.md`
+
+| Agent | Rôle | Répertoire Assigné | Commande de Validation | Spécifications |
+| :--- | :--- | :--- | :--- | :--- |
+| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev/agent.md`<br>`.agents/backend-dev.md`<br>`.gemini/agents/backend-dev.md` |
+| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev/agent.md`<br>`.agents/frontend-dev.md`<br>`.gemini/agents/frontend-dev.md` |
+| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/agents/edge-dev/agent.md`<br>`.agents/edge-dev.md`<br>`.gemini/agents/edge-dev.md` |
 
 ---
 
@@ -102,10 +98,10 @@ sequenceDiagram
     Orch->>Contract: Rédige / Valide le contrat d'échange (REST / MQTT)
     par Délégation Confinée
         Orch->>Backend: Implémente endpoints & modèles (health-kicks/)
-        Orch->>Edge: Adapte détection & publication MQTT (health-kicks-edge-script/)
+        Orch->>Edge: Adapte détection & publication (health-kicks-edge-script/)
     end
-    Backend-->>Orch: Tests backend validés (pytest)
-    Edge-->>Orch: Tests edge validés (pytest)
+    Backend-->>Orch: Tests backend validés (uv run pytest)
+    Edge-->>Orch: Tests edge validés (uv run pytest)
     Orch->>Frontend: Implémente affichage & alertes (health-kicks-frontend/)
     Frontend-->>Orch: Tests frontend validés (pnpm test)
     Orch->>User: Rapport de synchronisation & intégration réussie
