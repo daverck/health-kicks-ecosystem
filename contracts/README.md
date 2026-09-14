@@ -26,6 +26,7 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | Domaine | Méthode & Route | Payload Requête | Payload Réponse |
 | :--- | :--- | :--- | :--- |
 | **Authentification** | `POST /api/v1/auth/refresh` | `{"refresh_token": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}` |
+| **Identifiants IoT STS** | `POST /api/v1/auth/iot-credentials` | `{"device_id": "string"}` *(optionnel)* | `{"access_key_id": "string", "secret_access_key": "string", "session_token": "string", "expiration": "datetime", "iot_endpoint": "string", "region": "string"}` |
 | **Haptique** | `POST /api/v1/devices/{id}/haptic/trigger` | `{"intensity": 200, "duration_ms": 500}` | `{"status": "queued", "device_id": "HK-1", "command_id": "uuid"}` |
 | **Studio Sessions** | `GET /api/v1/studio/sessions` | Query params: `page`, `size`, `is_validated`, `label`, `device_id` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary`) |
 | **Studio Telemetry** | `GET /api/v1/studio/sessions/{id}/readings` | - | `StudioSessionReadingsResponse` (`readings`: liste d'échantillons IMU) |
