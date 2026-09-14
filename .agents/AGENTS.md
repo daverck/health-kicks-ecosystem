@@ -8,24 +8,24 @@ Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce
 
 **HealthKicks** est un écosystème connecté de surveillance et d'analyse biomécanique en temps réel combinant intelligence embarquée à la source (*Edge AI*), centralisation analytique (*Backend*) et restitution clinique (*Frontend*).
 
-### Pipeline de données
+#### Pipeline de données
 ```text
 [ Capteurs / IMU Chaussure ]
          │ (UART / Série)
          ▼
-[ health-kicks-edge-script ] ──(BLE GATT / MQTT)──┐
-                                                  ▼
-                                        [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
-                                                  │
-                                       (REST OpenAPI / WebSockets)
-                                                  ▼
-                                     [ health-kicks-frontend ] (Angular 19 UI)
+[ health-kicks-edge-script ] ──(BLE GATT / MQTT)──┬──► [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
+         ▲                                        │           │
+         │ (BLE GATT)                             │           │ (REST OpenAPI / WebSockets)
+         ▼                                        ▼           ▼
+[ health-kicks-mobile ] ──────────────────────────┴──► [ health-kicks-frontend ] (Angular 19 UI)
+  (Flutter / Dart UI)      (REST / WebSockets SigV4)
 ```
 
-### Périmètre des trois sous-projets indépendants
+### Périmètre des sous-projets indépendants
 * **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement.
 * **`health-kicks-frontend/` (Frontend)** : Application web Angular 19 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
 * **`health-kicks-edge-script/` (Edge AI)** : Ingestion des signaux capteurs IMU (Arduino), inférence locale scikit-learn (détection de chute et d'activité), serveur GATT BLE, packaging Debian et déclenchement vibrotactile autonome.
+* **`health-kicks-mobile/` (Mobile)** : Application mobile Flutter / Dart, acquisition directe des données capteurs via client BLE GATT, déclenchement de commandes haptiques, synchronisation REST et passerelle MQTT AWS IoT Core (WebSockets SigV4).
 
 ### Références documentaires partagées
 * `docs/architecture/system_overview.md`
@@ -56,6 +56,7 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `backend-dev` : modifications autorisées **uniquement** dans `health-kicks/`.
   * `frontend-dev` : modifications autorisées **uniquement** dans `health-kicks-frontend/`.
   * `edge-dev` : modifications autorisées **uniquement** dans `health-kicks-edge-script/`.
+  * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
 * **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
 * L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
 
@@ -64,6 +65,7 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `health-kicks` : `uv run pytest` (ou `python -m pytest`)
   * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
   * `health-kicks-edge-script` : `uv run pytest` (ou `python -m pytest`)
+  * `health-kicks-mobile` : `flutter analyze && flutter test`
 * Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
 ---
@@ -77,6 +79,7 @@ Les agents sont déclarés selon le format plat standardisé sous `.agents/<nom>
 | **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/backend-dev.md` |
 | **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/frontend-dev.md` |
 | **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/edge-dev.md` |
+| **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/mobile-dev.md` |
 
 ---
 
@@ -91,15 +94,18 @@ sequenceDiagram
     participant Backend as Agent Backend
     participant Frontend as Agent Frontend
     participant Edge as Agent Edge
+    participant Mobile as Agent Mobile
 
-    User->>Orch: Demande de feature transverse (ex: Nouveau type d'alerte)
-    Orch->>Contract: Rédige / Valide le contrat d'échange (REST / MQTT)
+    User->>Orch: Demande de feature transverse (ex: Nouveau type d'alerte / Télémétrie)
+    Orch->>Contract: Rédige / Valide le contrat d'échange (REST / BLE / MQTT)
     par Délégation Confinée
         Orch->>Backend: Implémente endpoints & modèles (health-kicks/)
-        Orch->>Edge: Adapte détection & publication (health-kicks-edge-script/)
+        Orch->>Edge: Adapte détection & publication BLE/MQTT (health-kicks-edge-script/)
+        Orch->>Mobile: Adapte client BLE & synchronisation API/Cloud (health-kicks-mobile/)
     end
     Backend-->>Orch: Tests backend validés (uv run pytest)
     Edge-->>Orch: Tests edge validés (uv run pytest)
+    Mobile-->>Orch: Tests mobile validés (flutter analyze && flutter test)
     Orch->>Frontend: Implémente affichage & alertes (health-kicks-frontend/)
     Frontend-->>Orch: Tests frontend validés (pnpm test)
     Orch->>User: Rapport de synchronisation & intégration réussie
