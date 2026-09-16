@@ -33,6 +33,7 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | **Requalification** | `PATCH /api/v1/studio/sessions/{id}` | `{"label": "walk", "is_validated": true}` | `StudioSessionSummary` |
 | **Validation Directe**| `PATCH /api/v1/studio/sessions/{id}/confirm` | - | `StudioSessionSummary` (`is_validated = true`) |
 | **Ingestion Webhook** | `POST /api/v1/ingest/event` | Header: `X-HealthKicks-Ingest-Token`<br>Body: Payload d'événement détection | `{"status": "accepted", "event_id": "uuid"}` |
+| **Présence Équipements (Interne)** | `POST /api/v1/internal/device-presence` | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`) | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}` |
 
 ### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
 
@@ -125,4 +126,16 @@ Publié à l'issue d'une session de capture Studio pour enregistrement dans Amaz
   ]
 }
 ```
+
+### E. Topic LWT Passerelle Utilisateur : `healthkicks/v1/users/{user_id}/gateway-status`
+Publié automatiquement par le broker AWS IoT Core en cas de rupture inopinée de la passerelle mobile (crash, coupure réseau, perte de batterie) :
+
+```json
+{
+  "user_id": "1",
+  "state": "offline",
+  "gateway": "mobile"
+}
+```
+*Effet côté backend* : Passage de l'ensemble des équipements associés à `user_id` en statut `offline`.
 
