@@ -87,14 +87,24 @@ La présence des équipements connectés HealthKicks repose sur un mécanisme à
 
 ## 3. Configuration AWS Cloud
 
-### A. Règle AWS IoT Core (`healthkicks_presence_rule`)
-La règle IoT capture les statuts unitaires des équipements ainsi que les messages testamentaires de passerelle utilisateur :
+Le moteur de règles AWS IoT Core ne supporte qu'un seul filtre de topic par clause `FROM` et interdit les alias débutant par un underscore (`_`).
+La bonne pratique AWS consiste donc à créer **deux règles IoT ciblées** déclenchant la **même fonction Lambda** :
 
+### A. Règle 1 : Statuts BLE Unitaires (`healthkicks_device_presence_rule`)
+Capture les connexions et déconnexions unitaires émises par le mobile lors des transitions BLE :
 ```sql
-SELECT *, topic() as _topic FROM 'healthkicks/v1/+/status', 'healthkicks/v1/users/+/gateway-status'
+SELECT *, topic() as topic FROM 'healthkicks/v1/+/status'
 ```
+*Action :* Invoquer la Lambda `healthkicks_presence_handler`.
 
-### B. Fonction Lambda AWS (`healthkicks_presence_handler`)
+### B. Règle 2 : Testament Passerelle LWT (`healthkicks_user_gateway_presence_rule`)
+Capture la rupture brutale de l'application mobile (perte réseau, crash, batterie) :
+```sql
+SELECT *, topic() as topic FROM 'healthkicks/v1/users/+/gateway-status'
+```
+*Action :* Invoquer la même Lambda `healthkicks_presence_handler`.
+
+### C. Fonction Lambda AWS (`healthkicks_presence_handler`)
 La fonction Lambda reçoit l'événement MQTT, extrait `device_id` ou `user_id` et transmet la notification à l'API interne du backend :
 
 ```python
@@ -170,3 +180,4 @@ def lambda_handler(event, context):
      - Récupération de tous les `device_id` rattachés via `device_ownership`.
      - Mise à jour en lot (`UPDATE devices SET status = 'offline' WHERE device_id IN (...)`).
   3. Relais de l'événement de statut sur le canal d'actualisation temps réel pour le frontend Web.
+
