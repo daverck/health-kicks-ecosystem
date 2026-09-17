@@ -19,6 +19,10 @@
     {
       "name": "Mobile (health-kicks-mobile)",
       "path": "health-kicks-mobile"
+    },
+    {
+      "name": "Firmware ESP32-S3 (health-kicks-esp32-s3)",
+      "path": "health-kicks-esp32-s3"
     }
   ],
   "settings": {
