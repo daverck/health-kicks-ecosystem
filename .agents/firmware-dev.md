@@ -53,3 +53,4 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv tool run --from platformio pio run
 ```
 Tout échec de compilation bloque la livraison.
+
