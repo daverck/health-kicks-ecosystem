@@ -57,6 +57,7 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `frontend-dev` : modifications autorisées **uniquement** dans `health-kicks-frontend/`.
   * `edge-dev` : modifications autorisées **uniquement** dans `health-kicks-edge-script/`.
   * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
+  * `firmware-dev` : modifications autorisées **uniquement** dans `health-kicks-esp32-s3/`.
 * **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
 * L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
 
@@ -66,6 +67,7 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
   * `health-kicks-edge-script` : `uv run pytest` (ou `python -m pytest`)
   * `health-kicks-mobile` : `flutter analyze && flutter test`
+  * `health-kicks-esp32-s3` : `uv tool run --from platformio pio run`
 * Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
 ---
@@ -80,6 +82,7 @@ Les agents sont déclarés selon le format plat standardisé sous `.agents/<nom>
 | **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/frontend-dev.md` |
 | **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/edge-dev.md` |
 | **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/mobile-dev.md` |
+| **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/firmware-dev.md` |
 
 ---
 
