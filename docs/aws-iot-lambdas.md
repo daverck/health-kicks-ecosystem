@@ -185,7 +185,7 @@ SELECT *, topic(4) as device_id FROM 'healthkicks/v1/+/telemetry/raw'
 | :--- | :---: | :--- | :--- |
 | `TABLE_NAME` | Yes | `healthkicks_telemetry` | Target Amazon DynamoDB table for raw IMU data points. |
 | `BACKEND_INGEST_URL` | Yes | `https://api.healthkicks.local/api/v1/ingest/telemetry/raw` | FastAPI webhook endpoint used to update session metadata and sample counts in Aurora PostgreSQL. |
-| `INGEST_API_KEY` | No | `""` | Optional API key passed via the `X-API-Key` header. |
+| `INGEST_TOKEN` | No | `""` | Optional API key passed via the `X-HealthKicks-Ingest-Token` header. |
 
 ### Source Code (`lambda_function.py`)
 ```python
@@ -203,7 +203,7 @@ table = dynamodb.Table(TABLE_NAME)
 
 # Backend FastAPI ingestion webhook configuration
 BACKEND_INGEST_URL = os.environ.get('BACKEND_INGEST_URL', 'https://api.healthkicks.local/api/v1/ingest/telemetry/raw')
-INGEST_API_KEY = os.environ.get('INGEST_API_KEY', '')
+INGEST_TOKEN = os.environ.get('INGEST_TOKEN', '')
 
 
 def notify_backend_aurora(device_id: str, session_id: str, label: str, sample_count: int) -> None:
@@ -227,8 +227,8 @@ def notify_backend_aurora(device_id: str, session_id: str, label: str, sample_co
     headers = {
         "Content-Type": "application/json"
     }
-    if INGEST_API_KEY:
-        headers["X-API-Key"] = INGEST_API_KEY
+    if INGEST_TOKEN:
+        headers["X-HealthKicks-Ingest-Token"] = INGEST_TOKEN
 
     try:
         req = urllib.request.Request(
