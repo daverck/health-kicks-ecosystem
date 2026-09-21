@@ -1,7 +1,8 @@
 ---
 name: edge-dev
-description: Développeur Edge AI & Systèmes Embarqués spécialisé dans l'ingestion capteurs IMU, l'inférence locale scikit-learn, la communication série et le serveur GATT BLE de HealthKicks. Confiné strictement à health-kicks-edge-script/.
-role: Edge Developer
+description: "Développeur Edge AI & Systèmes Embarqués spécialisé dans l'ingestion capteurs IMU, l'inférence locale scikit-learn, la communication série et le serveur GATT BLE de HealthKicks. Confiné strictement à health-kicks-edge-script/."
+subagent: true
+mainAgent: false
 ---
 
 # Spécification d'Agent : Edge AI & Embedded Developer (`edge-dev`)
@@ -53,4 +54,3 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv run pytest
 ```
 Tout échec bloque la livraison.
-

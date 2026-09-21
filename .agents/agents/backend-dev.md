@@ -1,7 +1,8 @@
 ---
 name: backend-dev
-description: Développeur Backend spécialisé dans l'API FastAPI, l'ORM SQLAlchemy, les migrations Alembic et la persistance PostgreSQL/DynamoDB pour HealthKicks. Confiné strictement à health-kicks/.
-role: Backend Developer
+description: "Développeur Backend spécialisé dans l'API FastAPI, l'ORM SQLAlchemy, les migrations Alembic et la persistance PostgreSQL/DynamoDB pour HealthKicks. Confiné strictement à health-kicks/."
+subagent: true
+mainAgent: false
 ---
 
 # Spécification d'Agent : Backend Developer (`backend-dev`)
@@ -51,4 +52,3 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv run pytest
 ```
 Tout échec bloque la livraison.
-

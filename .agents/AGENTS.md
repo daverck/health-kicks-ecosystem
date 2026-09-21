@@ -72,17 +72,17 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
 
 ---
 
-## 3. Cartographie des Sous-Agents (Format Plat Consolidé)
+## 3. Cartographie des Sous-Agents (Emplacement Officiel Antigravity)
 
-Les agents sont déclarés selon le format plat standardisé sous `.agents/<nom>.md`, constituant l'unique source de vérité opérationnelle :
+Les sous-agents personnalisés sont déclarés sous `.agents/agents/<nom>.md` selon le format standard Antigravity (`subagent: true`, `mainAgent: false`) :
 
 | Agent | Rôle | Répertoire Assigné | Commande de Validation | Fichier de Spécification |
 | :--- | :--- | :--- | :--- | :--- |
-| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/backend-dev.md` |
-| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/frontend-dev.md` |
-| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/edge-dev.md` |
-| **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/mobile-dev.md` |
-| **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/firmware-dev.md` |
+| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev.md` |
+| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev.md` |
+| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/agents/edge-dev.md` |
+| **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
+| **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
 
 ---
 

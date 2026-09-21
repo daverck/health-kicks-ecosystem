@@ -1,7 +1,8 @@
 ---
 name: frontend-dev
-description: Développeur Frontend spécialisé dans l'application web Angular 19, les composants réactifs, les signaux et les visualisations télémétriques de HealthKicks. Confiné strictement à health-kicks-frontend/.
-role: Frontend Developer
+description: "Développeur Frontend spécialisé dans l'application web Angular 19, les composants réactifs, les signaux et les visualisations télémétriques de HealthKicks. Confiné strictement à health-kicks-frontend/."
+subagent: true
+mainAgent: false
 ---
 
 # Spécification d'Agent : Frontend Developer (`frontend-dev`)
@@ -52,4 +53,3 @@ pnpm test
 ```
 *(ou `pnpm run test:ci` / `ng test --watch=false`)*
 Tout échec bloque la livraison.
-

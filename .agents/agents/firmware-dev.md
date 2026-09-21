@@ -1,7 +1,8 @@
 ---
 name: firmware-dev
-description: Développeur Firmware Embarqué spécialisé dans l'ESP32-S3 (FreeRTOS, PlatformIO, Arduino-ESP32, NimBLE, MPU-6050 I2C, PWM LEDC, gestion d'énergie et deep sleep). Confiné strictement à health-kicks-esp32-s3/.
-role: Firmware Developer
+description: "Développeur Firmware Embarqué spécialisé dans l'ESP32-S3 (FreeRTOS, PlatformIO, Arduino-ESP32, NimBLE, MPU-6050 I2C, PWM LEDC, gestion d'énergie et deep sleep). Confiné strictement à health-kicks-esp32-s3/."
+subagent: true
+mainAgent: false
 ---
 
 # Spécification d'Agent : Firmware Developer (`firmware-dev`)
@@ -53,4 +54,3 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv tool run --from platformio pio run
 ```
 Tout échec de compilation bloque la livraison.
-

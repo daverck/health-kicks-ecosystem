@@ -1,10 +1,8 @@
 ---
 name: mobile-dev
-description: Développeur Mobile spécialisé en Flutter/Dart, gestion d'état, communication BLE/GATT et consommation des API HealthKicks. Confiné strictement à health-kicks-mobile/ (ou au répertoire mobile assigné).
-role: Mobile Developer
-tools:
-  - bash
-  - git
+description: "Développeur Mobile spécialisé en Flutter/Dart, gestion d'état, communication BLE/GATT et consommation des API HealthKicks. Confiné strictement à health-kicks-mobile/."
+subagent: true
+mainAgent: false
 ---
 
 # Spécification d'Agent : Mobile Developer (`mobile-dev`)
@@ -23,8 +21,8 @@ tools:
 - **Framework & Runtime** : Flutter 3.x / Dart SDK (Android / iOS)
 - **Gestion d'État & Architecture** : Provider / ChangeNotifier / Riverpod, services découplés
 - **Communication Périphérique (BLE / GATT)** :
-  * Client BLE (`flutter_blue_plus`) pour la communication directe avec `health-kicks-edge-script`.
-  * Gestion des caractéristiques GATT (Activity, Haptic Command, Studio Control, Studio Burst).
+  * Client BLE (`flutter_blue_plus`) pour la communication directe avec `health-kicks-edge-script` et `health-kicks-esp32-s3`.
+  * Gestion des caractéristiques GATT (Activity, Haptic Command, Studio Control, Studio Burst, Step Counter).
   * Gestion des permissions d'exécution Android 14 (API 34) et iOS (`BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`).
 - **Synchronisation Réseau & Cloud** :
   * API REST / OpenAPI avec le backend `health-kicks` (Authentification, sessions Studio, profils).
@@ -35,8 +33,8 @@ tools:
 ## 3. Invariants & Règles d'Architecture à Respecter
 
 1. **Conformité aux Contrats BLE GATT (`contracts/ble_gatt_specs.md`)** :
-   - Respecter scrupuleusement les UUIDs de services et caractéristiques du protocole BLE HealthKicks (`7a5a0001-...` à `7a5a0005-...`).
-   - Décoder fidèlement les payloads binaires (activité, burst haute fréquence) et respecter les formats de commandes haptiques.
+   - Respecter scrupuleusement les UUIDs de services et caractéristiques du protocole BLE HealthKicks (`7a5a0001-...` à `7a5a0006-...`).
+   - Décoder fidèlement les payloads binaires (activité, burst haute fréquence, step counter) et respecter les formats de commandes haptiques.
 2. **Conformité aux Contrats REST & Authentification (`contracts/README.md`)** :
    - Échange de jetons et authentification conforme aux endpoints FastAPI.
    - Gestion des identifiants temporaires STS (`/api/v1/auth/iot-credentials`) pour la connexion sécurisée AWS IoT Core.
