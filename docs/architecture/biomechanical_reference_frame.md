@@ -97,3 +97,4 @@ Les vitesses de rotation suivent la **règle de la main droite** autour des axes
      * **Émeraude / Vert** : Axe $Y$ (Médio-latéral)
      * **Bleu** : Axe $Z$ (Longitudinal / Vertical)
      * **Violet** : Magnitude $\|a\|$
+
