@@ -86,3 +86,4 @@ Le composant est accessible depuis l'écran des **Paramètres** (`SettingsScreen
 - **Intitulé :** *"Mode Surveillance Active"*
 - **Sous-titre :** *"Maintient la connexion active écran éteint pour l'enregistrement et la télémétrie"*
 - Lors de la première activation sous Android 13+, l'application sollicite les permissions de notification (`POST_NOTIFICATIONS`) et invite l'utilisateur à autoriser l'exemption d'optimisation de batterie.
+
