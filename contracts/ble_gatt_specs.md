@@ -95,17 +95,18 @@ Endianness : **Big-Endian**.
 
 | Offset | Champ | Type | Plage / Valeurs | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| 0 | `pattern_id` | uint8 | `0` = impulsion continue<br>`1` = double pulse<br>`2` = pulsation d'alerte | Profil ou motif vibratoire |
+| 0 | `pattern_id` | uint8 | `0` = impulsion continue<br>`1` = double pulse<br>`2` = pulsation d'alerte<br>`0x05` = déclenchement calibration assiette IMU | Profil vibratoire ou commande de contrôle |
 | 1 | `intensity` | uint8 | `0` – `255` | Puissance PWM (`0` = stop, `255` = puissance max) |
 | 2..3 | `duration_ms` | uint16 | `50` – `10000` | Durée totale de la stimulation en millisecondes |
 
-*Exemple* : `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Impulsion continue, intensité 200/255, durée 500 ms.
+*Exemple* : `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Impulsion continue, intensité 200/255, durée 500 ms.  
+*Exemple calibration* : `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Déclenchement immédiat de la calibration d'assiette IMU (4s d'immobilité).
 
 ---
 
 ### C. Caractéristique 3 : Studio Control (`7a5a0004-...`)
 - **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio.
+- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio et la calibration de l'IMU.
 
 #### 1. Commandes Écrites par le Smartphone (`WRITE`)
 Format textuel ASCII encodé en UTF-8 :
@@ -122,6 +123,11 @@ Format textuel ASCII encodé en UTF-8 :
    CANCEL
    ```
 
+3. **Déclenchement de Calibration d'Assiette IMU** :
+   ```text
+   CALIBRATE
+   ```
+
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 Format textuel ASCII encodé en UTF-8 :
 
@@ -130,6 +136,9 @@ Format textuel ASCII encodé en UTF-8 :
 | `COUNTDOWN <pulse>/<total>` | Début de session | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`) |
 | `RECORDING <duration_sec>` | Fin du compte à rebours | La capture démarre en RAM à 50 Hz |
 | `FINISHED <sample_count> <session_id>` | Fenêtre expirée | Capture terminée, prête pour le déversement burst |
+| `CALIBRATING <duration_sec>` | Commande `CALIBRATE` ou `0x05` | Début de l'échantillonnage d'immobilité pour réaligner l'assiette |
+| `CALIBRATION_OK` | 4.0s immobiles atteintes | Calibration réussie, matrice de rotation persistée en NVS |
+| `CALIBRATION_ERROR <reason>` | Mouvement / instabilité | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`) |
 | `CANCELLED` | Commande reçue | Session interrompue |
 | `ERROR <reason>` | Anomalie matérielle/RAM | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`) |
 
