@@ -70,3 +70,13 @@ flowchart LR
   * Publication d'alertes détection debouncées (cooldown de 5 secondes).
   * Mode Studio embarqué : compte à rebours haptique rythmé, bufferisation isolée et émission de paquets compressés vers le Cloud.
 
+---
+
+## 3. Référentiel Biomécanique ISB
+
+L'écosystème aligne l'intégralité de ses flux IMU ($a_x, a_y, a_z$ et $g_x, g_y, g_z$) sur les recommandations de l'**International Society of Biomechanics** (*Wu & Cavanagh, 1995*) :
+- **Axe X** : Antéro-postérieur (Avant / Propulsion).
+- **Axe Y** : Médio-latéral (Gauche / Appuis).
+- **Axe Z** : Longitudinal / Vertical (Haut / $+1.0\,g$ statique).
+- Pour plus de détails, consulter [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+

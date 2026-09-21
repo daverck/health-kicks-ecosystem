@@ -153,15 +153,15 @@ Dès que `FINISHED` est notifié sur Studio Control, le serveur GATT commence l'
 #### Structure d'une Trame IMU Découpée (14 octets)
 Chaque échantillon sensoriel à 50 Hz est encodé sous forme de 14 octets entiers signés pour optimiser la compacité :
 
-| Offset Relatif | Grandeur | Type | Facteur d'Échelle | Unité Physique |
-| :--- | :--- | :--- | :--- | :--- |
-| 0..1 | `delta_ms` | uint16 | 1 | Millisecondes écoulées depuis début session |
-| 2..3 | $a_x$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) |
-| 4..5 | $a_y$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) |
-| 6..7 | $a_z$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) |
-| 8..9 | $g_x$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) |
-| 10..11| $g_y$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) |
-| 12..13| $g_z$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) |
+| Offset Relatif | Grandeur | Type | Facteur d'Échelle | Unité Physique | Standard ISB (Wu & Cavanagh, 1995) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 0..1 | `delta_ms` | uint16 | 1 | Millisecondes écoulées depuis début session | Temps relatif |
+| 2..3 | $a_x$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Antéro-postérieur** (Avant / Propulsion) |
+| 4..5 | $a_y$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Médio-latéral** (Gauche / Appuis) |
+| 6..7 | $a_z$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Longitudinal / Vertical** (Haut / $+1.0\,g$ au repos) |
+| 8..9 | $g_x$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) | **Roulis** (Inversion / Éversion) |
+| 10..11| $g_y$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) | **Tangage** (Flexion dorsale / plantaire) |
+| 12..13| $g_z$ | int16 | $\times 10$ | dixièmes de deg/s ($1^\circ/s = 10$) | **Lacet** (Rotation interne / externe) |
 
 #### Paquet Spécial `END_OF_BURST` (`packet_type = 0x03`)
 Taille fixe : 12 octets :

@@ -86,3 +86,18 @@ L'inférence s'exécute directement sur l'embarqué (Raspberry Pi / microcontrô
   * Toute divergence de version brise la désérialisation pickle de `joblib` sur l'agent Edge (`InconsistentVersionWarning` ou crash lors du `predict_proba`).
   * Les 16 features calculées à l'entraînement ([`compute_window_features`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) et à l'inférence ([`extract_features_from_readings`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script/src/healthkicks_edge/inference/features.py)) doivent rester strictement identiques en ordre, formule et normalisation.
 
+---
+
+## 5. Standardisation du Repère Biomécanique ISB (Wu & Cavanagh, 1995)
+
+L'ensemble des sous-systèmes de capture, de transport et de visualisation IMU respecte le standard international de la **Société Internationale de Biomécanique (ISB)** :
+- **Repère cartésien direct (dextrorsum) lié au pied/corps** :
+  * **Axe $X$** : **Antéro-postérieur** (orienté vers l'avant / sens de marche).
+  * **Axe $Y$** : **Médio-latéral** (orienté vers la gauche pour le corps complet / face interne du pied droit).
+  * **Axe $Z$** : **Longitudinal / Vertical** (orienté vers le haut, mesure **$+1.0\,g$** au repos statique sous gravité terrestre).
+- **Règles gyroscopiques (Règle de la main droite)** :
+  * **$g_x$ (GX)** : Roulis (Inversion / Éversion).
+  * **$g_y$ (GY)** : Tangage (Flexion dorsale / plantaire).
+  * **$g_z$ (GZ)** : Lacet (Rotation interne / externe).
+- **Référence documentaire dédiée** : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+
