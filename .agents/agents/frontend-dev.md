@@ -53,3 +53,4 @@ pnpm test
 ```
 *(ou `pnpm run test:ci` / `ng test --watch=false`)*
 Tout échec bloque la livraison.
+

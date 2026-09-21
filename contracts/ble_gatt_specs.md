@@ -55,6 +55,7 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 | **Haptic Command** | `7a5a0003-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile |
 | **Studio Control** | `7a5a0004-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | Contrôle d'état et protocole de session Studio |
 | **Studio Data Burst** | `7a5a0005-c529-4d64-8848-18e5904de22a` | `NOTIFY` | Déversement binaire haute vitesse des trames IMU |
+| **Step Counter** | `7a5a0006-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Compteur de pas déterministe, ventilation par activité et cadence |
 
 ---
 
@@ -184,3 +185,26 @@ Taille fixe : 12 octets :
 - **Performance** : Pour une session Studio de 5,0 secondes à 50 Hz (250 échantillons $\approx 3,5$ Ko de données brutes) :
   * Nombre de paquets BLE : $\approx 15$ paquets.
   * Durée de transmission : **inférieure à 250 millisecondes** à un intervalle de connexion BLE standard (15 ms).
+
+---
+
+### E. Caractéristique 5 : Step Counter / Pedometer (`7a5a0006-...`)
+- **Propriétés** : `READ`, `NOTIFY`
+- **Rôle** : Transmettre en temps réel le cumul des pas détectés par l'algorithme déterministe embarqué, leur ventilation par type d'activité (gating ML) et la cadence instantanée.
+
+#### Format Binaire Compact (13 octets)
+Endianness : **Big-Endian** (réseau standard).
+
+| Offset | Champ | Type | Plage / Valeurs | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `0..3` | `total_steps` | uint32 | `0` – `4 294 967 295` | Nombre total de pas valides cumulés depuis le démarrage ou le dernier reset |
+| `4..5` | `walk_steps` | uint16 | `0` – `65 535` | Pas validés sous l'état d'activité Marche (`0x01`) |
+| `6..7` | `run_steps` | uint16 | `0` – `65 535` | Pas validés sous l'état d'activité Course (`0x02`) |
+| `8..9` | `stairs_steps` | uint16 | `0` – `65 535` | Pas validés sous l'état d'activité Escaliers (`0x03`) |
+| `10..11`| `unclassified_steps` | uint16 | `0` – `65 535` | Pas validés sous d'autres activités non-exclues |
+| `12` | `cadence_spm` | uint8 | `0` – `255` | Cadence instantanée en pas/minute (calculée sur fenêtre glissante de 5 s) |
+
+#### Règle d'Émission des Notifications
+- Notification immédiate lors de chaque détection d'un nouveau pas validé (si un client BLE y a souscrit avec le descripteur CCCD `BLE2902`).
+- Notification périodique (battement de cœur à 1 Hz) pour rafraîchir la cadence et garantir la synchronisation même en phase d'arrêt.
+
