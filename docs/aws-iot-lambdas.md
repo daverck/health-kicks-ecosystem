@@ -402,45 +402,21 @@ def get_db_connection():
 def lambda_handler(event, context):
     logger.info("Received IoT detection event: %s", json.dumps(event))
 
-    # Support both flat and nested {header, payload} payload structures
-    if "header" in event and "payload" in event:
-        device_id = event["header"].get("device_id")
-        timestamp_raw = event["header"].get("timestamp") or event["header"].get("timestamp_utc")
-        event_type = event["payload"].get("event_type")
-        confidence = event["payload"].get("confidence") or event["payload"].get("confidence_score")
-    else:
-        device_id = event.get("device_id")
-        event_type = event.get("event_type")
-        confidence = event.get("confidence") or event.get("confidence_score")
-        timestamp_raw = event.get("timestamp") or event.get("timestamp_epoch") or event.get("timestamp_utc")
+    device_id = event.get("device_id")
+    event_type = event.get("event_type")
+    confidence = event.get("confidence")
+    timestamp_ms = event.get("timestamp")
 
-    if not device_id or not event_type:
-        logger.error("Invalid payload: missing device_id or event_type in %s", json.dumps(event))
+    if not device_id or not event_type or confidence is None or timestamp_ms is None:
+        logger.error("Invalid payload: missing required fields in %s", json.dumps(event))
         return {"status": "error", "message": "Missing required fields"}
 
-    # Handle numeric vs ISO string timestamp formats
-    if isinstance(timestamp_raw, (int, float)):
-        if timestamp_raw > 1e11:
-            timestamp_sec = timestamp_raw / 1000.0
-        elif timestamp_raw > 1e8:
-            timestamp_sec = float(timestamp_raw)
-        else:
-            # Uptime in seconds fallback to current UTC time
-            timestamp_sec = datetime.now(timezone.utc).timestamp()
-        timestamp_utc = datetime.fromtimestamp(timestamp_sec, tz=timezone.utc)
-    elif isinstance(timestamp_raw, str):
-        try:
-            timestamp_utc = datetime.fromisoformat(timestamp_raw.replace("Z", "+00:00"))
-        except Exception:
-            try:
-                timestamp_sec = float(timestamp_raw)
-                timestamp_utc = datetime.fromtimestamp(timestamp_sec, tz=timezone.utc)
-            except Exception:
-                timestamp_utc = datetime.now(timezone.utc)
-    else:
-        timestamp_utc = datetime.now(timezone.utc)
-
-    confidence_score = float(confidence) if confidence is not None else None
+    try:
+        timestamp_utc = datetime.fromtimestamp(int(timestamp_ms) / 1000.0, tz=timezone.utc)
+        confidence_score = float(confidence)
+    except (ValueError, TypeError) as e:
+        logger.error("Invalid payload types in %s: %s", json.dumps(event), str(e))
+        return {"status": "error", "message": f"Invalid field format: {e}"}
 
     query = """
         INSERT INTO activity_events (device_id, event_type, confidence_score, timestamp_utc)

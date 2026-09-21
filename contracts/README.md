@@ -56,21 +56,25 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 Les communications IoT utilisent le protocole MQTT sur AWS IoT Core avec une convention de nommage hiérarchique stricte sous le préfixe `healthkicks/v1/{device_id}/`.
 
 ### A. Topic d'Alerte de Détection : `healthkicks/v1/{device_id}/events/detection`
-Publié par l'agent Edge en QoS 1 lorsqu'un événement critique (ex: chute) est détecté par le modèle ML local :
+Publié par l'agent Edge ou la passerelle mobile en QoS 1 lorsqu'un événement (activité ou chute critique) est détecté par le modèle ML local :
 
 ```json
 {
   "device_id": "HK-1",
   "event_type": "fall_forward",
   "confidence": 0.87,
-  "timestamp": "2026-09-13T10:14:00.123456Z",
-  "features": {
-    "accel_mag_max": 24.5,
-    "jerk_max": 185.2,
-    "dynamic_energy": 42.1
-  }
+  "timestamp": 1726224000123,
+  "is_fall": true,
+  "haptic_triggered": true
 }
 ```
+*Contraintes de validation* :
+- `device_id` : Identifiant du capteur (chaîne non vide).
+- `event_type` : Type d'activité détectée (`idle`, `walk`, `run`, `stairs`, `fall_forward`, `fall_backward`, `fall_lateral`, `fall_generic`, `stumble_recover`).
+- `confidence` : Flottant compris entre `0.0` et `1.0`.
+- `timestamp` : Entier représentant l'horodatage Epoch UTC en millisecondes (`ms`).
+- `is_fall` : Booléen (`true` si chute critique).
+- `haptic_triggered` : Booléen (`true` si vibration locale autonome déclenchée).
 
 ### B. Topic de Commande Haptique : `healthkicks/v1/{device_id}/commands/haptic`
 Publié par le backend Cloud via AWS IoT Core `iot-data` pour commander une vibration sur la chaussure :
