@@ -83,15 +83,17 @@ Endianness : **Big-Endian** (réseau standard).
 - `0x10` : `fall_forward` (chute avant)
 - `0x11` : `fall_backward` (chute arrière)
 - `0x12` : `fall_lateral` (chute latérale)
+- `0x1E` : `stumble_recover` (trébuchement rattrapé)
 - `0x1F` : `fall_generic` (chute non spécifiée)
+- `0x20` : `inactivity_alert` (rappel d'inactivité prolongée / sédentarité)
 
 ---
 
 ### B. Caractéristique 2 : Haptic Command (`7a5a0003-...`)
 - **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
-- **Rôle** : Piloter immédiatement le vibreur présent dans la semelle de la chaussure (relais d'une commande reçue depuis le Cloud ou déclenchée localement par l'application mobile).
+- **Rôle** : Piloter immédiatement le vibreur présent dans la semelle de la chaussure ou configurer les paramètres haptiques/inactivité.
 
-#### Format Binaire (4 octets)
+#### 1. Commandes Haptiques Directes (4 octets)
 Endianness : **Big-Endian**.
 
 | Offset | Champ | Type | Plage / Valeurs | Description |
@@ -103,11 +105,21 @@ Endianness : **Big-Endian**.
 *Exemple* : `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Impulsion continue, intensité 200/255, durée 500 ms.  
 *Exemple calibration* : `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Déclenchement immédiat de la calibration d'assiette IMU (4s d'immobilité).
 
+#### 2. Configuration du Rappel d'Inactivité Prolongée (Opcode `0x06` - 6 octets)
+Endianness : **Big-Endian**.
+
+| Offset | Champ | Type | Plage / Valeurs | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| 0 | `opcode` | uint8 | `0x06` | Commande de configuration du rappel d'inactivité |
+| 1 | `is_enabled` | uint8 | `0` = désactivé, `1` = activé | Activation / désactivation de la surveillance |
+| 2..3 | `inactivity_threshold_sec` | uint16 | `600` – `7200` (10 à 120 min, déf: `3000` / 50 min) | Durée continue sans pas avant l'alerte |
+| 4..5 | `cooldown_duration_sec` | uint16 | `300` – `1800` (5 à 30 min, déf: `600` / 10 min) | Délai de répétition / cooldown après une alerte |
+
 ---
 
 ### C. Caractéristique 3 : Studio Control (`7a5a0004-...`)
 - **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio et la calibration de l'IMU.
+- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio, la calibration de l'IMU et les réglages textuels.
 
 #### 1. Commandes Écrites par le Smartphone (`WRITE`)
 Format textuel ASCII encodé en UTF-8 :
@@ -128,6 +140,12 @@ Format textuel ASCII encodé en UTF-8 :
    ```text
    CALIBRATE
    ```
+
+4. **Configuration du Rappel d'Inactivité** :
+   ```text
+   SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
+   ```
+   * *Exemple* : `SET_INACTIVITY 1 3000 600`
 
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 Format textuel ASCII encodé en UTF-8 :
