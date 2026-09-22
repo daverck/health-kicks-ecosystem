@@ -31,9 +31,10 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | **Studio Sessions** | `GET /api/v1/studio/sessions` | Query params: `page`, `size`, `is_validated`, `label`, `device_id` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary`) |
 | **Studio Telemetry** | `GET /api/v1/studio/sessions/{id}/readings` | - | `StudioSessionReadingsResponse` (`readings`: liste d'échantillons IMU) |
 | **Requalification** | `PATCH /api/v1/studio/sessions/{id}` | `{"label": "walk", "is_validated": true}` | `StudioSessionSummary` |
-| **Validation Directe**| `PATCH /api/v1/studio/sessions/{id}/confirm` | - | `StudioSessionSummary` (`is_validated = true`) |
 | **Ingestion Webhook** | `POST /api/v1/ingest/event` | Header: `X-HealthKicks-Ingest-Token`<br>Body: Payload d'événement détection | `{"status": "accepted", "event_id": "uuid"}` |
 | **Présence Équipements (Interne)** | `POST /api/v1/internal/device-presence` | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`) | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}` |
+| **Synchronisation des Pas** | `POST /api/v1/steps/sync` | `DailyStepsSyncPayload` (`device_id`, `date`, `activities`: liste de `{"activity_type", "step_count"}`) | `{"status": "synchronized", "synced_records": int}` |
+| **Historique des Pas** | `GET /api/v1/steps/history` | Query params: `device_id` (requis), `from_date`, `to_date`, `days` (défaut: 30) | `DailyStepsHistoryResponse` (`history`: liste de `{"date", "total_steps", "by_activity"}`) |
 
 ### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
 
