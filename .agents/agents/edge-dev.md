@@ -51,7 +51,8 @@ mainAgent: false
 Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 100% de réussite :
 
 ```powershell
+uv run ruff check
 uv run pytest
 ```
-Tout échec bloque la livraison.
+Tout échec de linting ou de test bloque la livraison.
 
