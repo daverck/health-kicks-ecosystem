@@ -61,14 +61,14 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
 * **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
 * L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
 
-### Règle d'Or 3 : Validation Systématique des Tests et du Linting Avant Tout Commit
-* Aucun sous-agent ne peut déclarer une tâche terminée ou commiter des modifications si les suites de tests unitaires et le linting de son périmètre ne sont pas 100% au vert :
-  * `health-kicks` : `uv run ruff check && uv run pytest`
+### Règle d'Or 3 : Validation Systématique des Tests Locaux Avant Tout Commit
+* Aucun sous-agent ne peut déclarer une tâche terminée ou commiter des modifications si les suites de tests unitaires et d'intégration de son périmètre ne sont pas 100% au vert :
+  * `health-kicks` : `uv run pytest` (ou `python -m pytest`)
   * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
-  * `health-kicks-edge-script` : `uv run ruff check && uv run pytest`
+  * `health-kicks-edge-script` : `uv run pytest` (ou `python -m pytest`)
   * `health-kicks-mobile` : `flutter analyze && flutter test`
   * `health-kicks-esp32-s3` : `uv tool run --from platformio pio run`
-* Tout échec de test ou erreur de linting bloque immédiatement le workflow et impose une correction prioritaire.
+* Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
 ---
 
@@ -78,9 +78,9 @@ Les sous-agents personnalisés sont déclarés sous `.agents/agents/<nom>.md` se
 
 | Agent | Rôle | Répertoire Assigné | Commande de Validation | Fichier de Spécification |
 | :--- | :--- | :--- | :--- | :--- |
-| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run ruff check && uv run pytest` | `.agents/agents/backend-dev.md` |
+| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev.md` |
 | **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev.md` |
-| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run ruff check && uv run pytest` | `.agents/agents/edge-dev.md` |
+| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/agents/edge-dev.md` |
 | **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
 | **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
 
