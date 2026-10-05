@@ -210,7 +210,7 @@ Taille fixe : 12 octets :
 - **Propriétés** : `READ`, `NOTIFY`
 - **Rôle** : Transmettre en temps réel le cumul des pas détectés par l'algorithme déterministe embarqué, leur ventilation par type d'activité (gating ML) et la cadence instantanée.
 
-#### Format Binaire Compact (13 octets)
+#### Format Binaire Compact (15 octets)
 Endianness : **Big-Endian** (réseau standard).
 
 | Offset | Champ | Type | Plage / Valeurs | Description |
@@ -221,6 +221,7 @@ Endianness : **Big-Endian** (réseau standard).
 | `8..9` | `stairs_steps` | uint16 | `0` – `65 535` | Pas validés sous l'état d'activité Escaliers (`0x03`) |
 | `10..11`| `unclassified_steps` | uint16 | `0` – `65 535` | Pas validés sous d'autres activités non-exclues |
 | `12` | `cadence_spm` | uint8 | `0` – `255` | Cadence instantanée en pas/minute (calculée sur fenêtre glissante de 5 s) |
+| `13..14`| `current_gct_ms` | uint16 | `0` – `65 535` | Temps de contact au sol moyen récent (GCT) en ms (moyenne lissée EMA sur 5 pas) |
 
 #### Règle d'Émission des Notifications
 - Notification immédiate lors de chaque détection d'un nouveau pas validé (si un client BLE y a souscrit avec le descripteur CCCD `BLE2902`).
