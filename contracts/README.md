@@ -35,6 +35,7 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | **Présence Équipements (Interne)** | `POST /api/v1/internal/device-presence` | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`) | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}` |
 | **Synchronisation des Pas** | `POST /api/v1/steps/sync` | `DailyStepsSyncPayload` (`device_id`, `date`, `activities`: liste de `{"activity_type", "step_count"}`) | `{"status": "synchronized", "synced_records": int}` |
 | **Historique des Pas** | `GET /api/v1/steps/history` | Query params: `device_id` (requis), `from_date`, `to_date`, `days` (défaut: 30) | `DailyStepsHistoryResponse` (`history`: liste de `{"date", "total_steps", "by_activity"}`) |
+| **Distribution Firmware S3** | `GET /api/v1/firmware/latest` | Header: `Authorization: Bearer <jwt>` | `FirmwareLatestResponse` (`version`, `download_url`, `sha256`, `size_bytes`, `expires_in_seconds`, `release_date`) |
 
 ### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
 
@@ -47,6 +48,24 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
   "gx": 0.012,
   "gy": -0.045,
   "gz": 0.008
+}
+```
+
+### C. Distribution du Firmware Sécurisé S3 (`GET /api/v1/firmware/latest`)
+
+Permet aux clients (ex: application mobile Flutter) de récupérer une URL de téléchargement pré-signée AWS S3 temporaire pour le binaire firmware le plus récent, avec contrôle d'accès JWT centralisé.
+
+**Règle de rétention S3 :** Un seul et unique binaire firmware est conservé sur S3 (clé `firmware/esp32s3/latest/firmware.bin`), écrasé à chaque exécution du pipeline de publication.
+
+*Exemple de réponse JSON (`FirmwareLatestResponse`)* :
+```json
+{
+  "version": "v1.2.1-esp32s3",
+  "download_url": "https://healthkicks-firmware-releases.s3.eu-north-1.amazonaws.com/firmware/esp32s3/latest/firmware.bin?AWSAccessKeyId=...&Signature=...&Expires=...",
+  "sha256": "8a32f6b3e7d581f148e658091ecb6a93ad5d24d26f047ff690b200b3e55c2aa7",
+  "size_bytes": 1048576,
+  "expires_in_seconds": 900,
+  "release_date": "2026-10-06T21:30:00Z"
 }
 ```
 
