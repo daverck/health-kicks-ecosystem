@@ -56,6 +56,9 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 | **Studio Control** | `7a5a0004-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | Contrôle d'état et protocole de session Studio |
 | **Studio Data Burst** | `7a5a0005-c529-4d64-8848-18e5904de22a` | `NOTIFY` | Déversement binaire haute vitesse des trames IMU |
 | **Step Counter** | `7a5a0006-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Compteur de pas déterministe, ventilation par activité et cadence |
+| **OTA Update Service** | `7a5a0010-c529-4d64-8848-18e5904de22a` | Secondary Service | Service dédié à la mise à jour firmware Over-The-Air |
+| **OTA Control** | `7a5a0011-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | Contrôle du cycle de flash OTA (start, end, abort, status) |
+| **OTA Data** | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | Transfert haute vitesse par chunks du binaire firmware (.bin) |
 
 ---
 
@@ -226,4 +229,46 @@ Endianness : **Big-Endian** (réseau standard).
 #### Règle d'Émission des Notifications
 - Notification immédiate lors de chaque détection d'un nouveau pas validé (si un client BLE y a souscrit avec le descripteur CCCD `BLE2902`).
 - Notification périodique (battement de cœur à 1 Hz) pour rafraîchir la cadence et garantir la synchronisation même en phase d'arrêt.
+
+---
+
+### F. Service OTA Firmware Update (`7a5a0010-...`)
+
+Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via une architecture dual-slot (`ota_0`, `ota_1`) gérée par le sous-système natif ESP-IDF OTA.
+
+#### 1. Caractéristique OTA Control (`7a5a0011-...`)
+- **Propriétés** : `WRITE`, `NOTIFY`
+- **Rôle** : Piloter le protocole de mise à jour, valider l'état du flashage et basculer la partition active.
+
+##### Commandes émises par l'application cliente (`WRITE`) :
+- `0x01` (`OTA_BEGIN`) : Début du transfert OTA. Suivi immédiatement de 4 octets Big-Endian représentant la taille totale du binaire `.bin` en octets :
+  `[0x01, size_b3, size_b2, size_b1, size_b0]` (5 octets au total).
+- `0x02` (`OTA_END`) : Clôture du transfert. Demande la validation du CRC de l'image binaire dans la partition inactive et la mise à jour de la table `otadata` pour pointer vers le nouveau slot au prochain boot :
+  `[0x02]` (1 octet).
+- `0x03` (`OTA_ABORT`) : Annulation d'urgence. Abandonne la transaction OTA courante, efface les handles de flash et réactive les services nominaux (IMU/Edge AI) :
+  `[0x03]` (1 octet).
+
+##### Réponses & Notifications émises par l'ESP32 (`NOTIFY`) :
+- `0x10` (`OTA_READY`) : L'ESP32 est prêt à recevoir les blocs de données sur `OTA Data` :
+  `[0x10]`.
+- `0x11` (`OTA_CHUNK_ACK`) : Accusé de réception périodique ou optionnel :
+  `[0x11, bytes_written_b3, bytes_written_b2, bytes_written_b1, bytes_written_b0]`.
+- `0x12` (`OTA_SUCCESS`) : Image validée avec succès, partition active basculée. Redémarrage automatique programmé sous 500 ms :
+  `[0x12]`.
+- `0xFF` (`OTA_ERROR`) : Notification d'échec suivie du code d'erreur (2 octets) :
+  `[0xFF, error_code]`
+  Codes d'erreur :
+  - `0x01` : `OTA_ERR_PARTITION_NOT_FOUND` (aucune partition OTA inactive disponible).
+  - `0x02` : `OTA_ERR_BEGIN_FAILED` (échec d'initialisation du descripteur `esp_ota_begin`).
+  - `0x03` : `OTA_ERR_WRITE_FAILED` (échec d'écriture dans la mémoire flash `esp_ota_write`).
+  - `0x04` : `OTA_ERR_SIZE_MISMATCH` (le volume d'octets écrits ne correspond pas à la taille déclarée).
+  - `0x05` : `OTA_ERR_VALIDATION_FAILED` (image binaire invalide ou signature/CRC incorrect au `esp_ota_end`).
+  - `0x06` : `OTA_ERR_SET_BOOT_FAILED` (impossible de désigner la partition cible comme bootable).
+
+#### 2. Caractéristique OTA Data (`7a5a0012-...`)
+- **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
+- **Rôle** : Acheminement en flux continu des paquets bruts constituant le binaire firmware `.bin`.
+- **Dimensionnement du payload** : La taille maximale d'un chunk est fixée à `ATT_MTU - 3` octets (ex: 244 octets pour une MTU de 247).
+- **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
+- **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
 
