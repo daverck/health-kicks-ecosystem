@@ -22,6 +22,7 @@ node_modules/
 
 # IDE & Editor caches
 .idea/
+.vscode/
 
 # Logs & Temporary files
 *.log
@@ -35,3 +36,4 @@ Thumbs.db
 !health-kicks-frontend/
 !health-kicks-edge-script/
 !health-kicks-mobile/
+!health-kicks-esp32-s3/
