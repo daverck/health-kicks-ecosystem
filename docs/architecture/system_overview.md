@@ -1,6 +1,6 @@
 # Vue d'Ensemble du Système HealthKicks
 
-L'écosystème **HealthKicks** est une solution complète de prévention des chutes et de stimulation plantaire connectée. Il combine une chaussure instrumentée (capteurs IMU + actionneurs haptiques), un agent d'inférence embarqué Edge AI, un backend cloud FastAPI élastique et un tableau de bord web médical sous Angular 19.
+L'écosystème **HealthKicks** est une solution complète de prévention des chutes et de stimulation plantaire connectée. Il combine une chaussure instrumentée (capteurs IMU + actionneurs haptiques), un agent d'inférence embarqué Edge AI, un backend cloud FastAPI élastique et un tableau de bord web médical sous Angular 21.
 
 ---
 
@@ -25,7 +25,7 @@ flowchart LR
         Aurora[("Aurora PostgreSQL\nVérité Relationnelle")]
     end
 
-    subgraph Client["health-kicks-frontend (Angular 19)"]
+    subgraph Client["health-kicks-frontend (Angular 21)"]
         Dashboard["Dashboard & Mode Studio\n(Signals, Tailwind, Chart.js)"]
     end
 
@@ -54,7 +54,7 @@ flowchart LR
   * Entraînement local et benchmarking des classifieurs d'activité (`scripts/train_detector.py`).
 
 ### B. Frontend (`health-kicks-frontend/`)
-- **Technologies** : Angular 19, TypeScript, Tailwind CSS, Angular Material, Chart.js, pnpm.
+- **Technologies** : Angular 21, TypeScript, Tailwind CSS, Angular Material, Chart.js, pnpm.
 - **Responsabilités** :
   * Interface clinicien/utilisateur pour le suivi de la marche et des alertes de chute.
   * Gestionnaire de dispositifs (appairage, statut de connexion en ligne/hors-ligne via LWT).

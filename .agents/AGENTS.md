@@ -17,13 +17,13 @@ Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce
          ▲                                        │           │
          │ (BLE GATT)                             │           │ (REST OpenAPI / WebSockets)
          ▼                                        ▼           ▼
-[ health-kicks-mobile ] ──────────────────────────┴──► [ health-kicks-frontend ] (Angular 19 UI)
+[ health-kicks-mobile ] ──────────────────────────┴──► [ health-kicks-frontend ] (Angular 21 UI)
   (Flutter / Dart UI)      (REST / WebSockets SigV4)
 ```
 
 ### Périmètre des sous-projets indépendants
 * **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement.
-* **`health-kicks-frontend/` (Frontend)** : Application web Angular 19 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
+* **`health-kicks-frontend/` (Frontend)** : Application web Angular 21 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
 * **`health-kicks-edge-script/` (Edge AI)** : Ingestion des signaux capteurs IMU (Arduino), inférence locale scikit-learn (détection de chute et d'activité), serveur GATT BLE, packaging Debian et déclenchement vibrotactile autonome.
 * **`health-kicks-mobile/` (Mobile)** : Application mobile Flutter / Dart, acquisition directe des données capteurs via client BLE GATT, déclenchement de commandes haptiques, synchronisation REST et passerelle MQTT AWS IoT Core (WebSockets SigV4).
 

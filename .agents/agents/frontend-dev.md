@@ -1,6 +1,6 @@
 ---
 name: frontend-dev
-description: "Développeur Frontend spécialisé dans l'application web Angular 19, les composants réactifs, les signaux et les visualisations télémétriques de HealthKicks. Confiné strictement à health-kicks-frontend/."
+description: "Développeur Frontend spécialisé dans l'application web Angular 21, les composants réactifs, les signaux et les visualisations télémétriques de HealthKicks. Confiné strictement à health-kicks-frontend/."
 subagent: true
 mainAgent: false
 ---
@@ -18,7 +18,7 @@ mainAgent: false
 
 ## 2. Stack Technique & Écosystème
 
-- **Framework** : Angular 19 (Composants Standalone, Architecture Signals, Formulaires Réactifs, Routage Lazy-loading)
+- **Framework** : Angular 21 (Composants Standalone, Architecture Signals, Formulaires Réactifs, Routage Lazy-loading)
 - **Langage & Typage** : TypeScript 5.x
 - **Gestionnaire de paquets** : [pnpm](https://pnpm.io/)
 - **Design & UI** : Tailwind CSS 3, Angular Material, Lucide Icons / Heroicons
