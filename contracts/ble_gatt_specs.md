@@ -243,8 +243,9 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 ##### Commandes émises par l'application cliente (`WRITE`) :
 - `0x01` (`OTA_BEGIN`) : Début du transfert OTA. Suivi immédiatement de 4 octets Big-Endian représentant la taille totale du binaire `.bin` en octets :
   `[0x01, size_b3, size_b2, size_b1, size_b0]` (5 octets au total).
-- `0x02` (`OTA_END`) : Clôture du transfert. Demande la validation du CRC de l'image binaire dans la partition inactive et la mise à jour de la table `otadata` pour pointer vers le nouveau slot au prochain boot :
-  `[0x02]` (1 octet).
+- `0x02` (`OTA_END`) : Clôture du transfert. Demande la validation d'intégrité, le contrôle cryptographique SHA-256 et la bascule du slot de boot :
+  * Format sécurisé (recommandé) : `[0x02, sha256_0, ..., sha256_31]` (33 octets avec condensat SHA-256 du fichier `.bin`).
+  * Format rétro-compatible : `[0x02]` (1 octet, sans vérification SHA-256 explicite).
 - `0x03` (`OTA_ABORT`) : Annulation d'urgence. Abandonne la transaction OTA courante, efface les handles de flash et réactive les services nominaux (IMU/Edge AI) :
   `[0x03]` (1 octet).
 
@@ -264,6 +265,7 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
   - `0x04` : `OTA_ERR_SIZE_MISMATCH` (le volume d'octets écrits ne correspond pas à la taille déclarée).
   - `0x05` : `OTA_ERR_VALIDATION_FAILED` (image binaire invalide ou signature/CRC incorrect au `esp_ota_end`).
   - `0x06` : `OTA_ERR_SET_BOOT_FAILED` (impossible de désigner la partition cible comme bootable).
+  - `0x07` : `OTA_ERR_CHECKSUM_MISMATCH` (condensat SHA-256 calculé non conforme à l'empreinte transmise).
 
 #### 2. Caractéristique OTA Data (`7a5a0012-...`)
 - **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
@@ -271,4 +273,14 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Dimensionnement du payload** : La taille maximale d'un chunk est fixée à `ATT_MTU - 3` octets (ex: 244 octets pour une MTU de 247).
 - **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
 - **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
+
+#### 3. Sûreté de Fonctionnement : Anti-Bricking & Rollback Automatique
+- **État Initial de Démarrage** : À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
+- **Auto-Test Matériel au Boot (Self-Test)** :
+  - Dès l'amorçage dans `setup()`, le firmware interroge `esp_ota_get_state_partition()`.
+  - S'il détecte l'état `ESP_OTA_IMG_PENDING_VERIFY`, il exécute immédiatement un diagnostic matériel (vérification I2C MPU-6050 `WHO_AM_I`, intégrité mémoire et capteurs).
+  - En cas d'échec critique (ex. IMU non détecté, bus I2C figé), le firmware invoque immédiatement `esp_ota_mark_app_invalid_rollback_and_reboot()`, ce qui force le bootloader à invalider le slot courant et à redémarrer immédiatement sur la partition précédente stable.
+- **Période Probatoire (Probation Window - 15 secondes)** :
+  - Si l'ESP32 plante, part en panique ou reboot spontanément avant la fin des 15 secondes, le bootloader ESP-IDF effectue un rollback automatique vers l'ancien slot opérationnel (`ota_0` $\leftrightarrow$ `ota_1`).
+  - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et connectivité saines, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
 
