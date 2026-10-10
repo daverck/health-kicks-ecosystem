@@ -35,6 +35,8 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | **Présence Équipements (Interne)** | `POST /api/v1/internal/device-presence` | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`) | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}` |
 | **Synchronisation des Pas** | `POST /api/v1/steps/sync` | `DailyStepsSyncPayload` (`device_id`, `date`, `activities`: liste de `{"activity_type", "step_count"}`) | `{"status": "synchronized", "synced_records": int}` |
 | **Historique des Pas** | `GET /api/v1/steps/history` | Query params: `device_id` (requis), `from_date`, `to_date`, `days` (défaut: 30) | `DailyStepsHistoryResponse` (`history`: liste de `{"date", "total_steps", "by_activity"}`) |
+| **Événements d'Activités & Chutes** | `GET /api/v1/devices/{device_id}/events/activities` | Query params: `page`, `page_size`, `event_type` (valeur unique, liste séparée par virgule ex: `walk,run`, ou `falls`), `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`) | `ActivityEventPage` (liste d'`ActivityEventResponse`) |
+| **Historique Haptique** | `GET /api/v1/devices/{device_id}/haptic/history` | Query params: `page`, `page_size`, `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`) | `HapticLogPage` (liste d'`HapticLogResponse`) |
 | **Distribution Firmware S3** | `GET /api/v1/firmware/latest` | Header: `Authorization: Bearer <jwt>` | `FirmwareLatestResponse` (`version`, `download_url`, `sha256`, `size_bytes`, `expires_in_seconds`, `release_date`) |
 
 ### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
