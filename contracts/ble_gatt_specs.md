@@ -59,6 +59,9 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 | **OTA Update Service** | `7a5a0010-c529-4d64-8848-18e5904de22a` | Secondary Service | Service dédié à la mise à jour firmware Over-The-Air |
 | **OTA Control** | `7a5a0011-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | Contrôle du cycle de flash OTA (start, end, abort, status) |
 | **OTA Data** | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | Transfert haute vitesse par chunks du binaire firmware (.bin) |
+| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service | Service standard Bluetooth SIG d'identification matérielle |
+| **Firmware Revision String** | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ` | Version sémantique du firmware installé (ex: `v1.2.1-esp32s3`) |
+| **Software Revision String** | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ` | Date/heure de compilation ou de release du binaire embarqué |
 
 ---
 
@@ -286,4 +289,19 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Période Probatoire (Probation Window - 15 secondes)** :
   - Si l'ESP32 plante, part en panique ou reboot spontanément avant la fin des 15 secondes, le bootloader ESP-IDF effectue un rollback automatique vers l'ancien slot opérationnel (`ota_0` $\leftrightarrow$ `ota_1`).
   - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et connectivité saines, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
+
+---
+
+### G. Service Standard Device Information (DIS `0x180A`)
+
+Le service Device Information Service standard Bluetooth SIG permet au client mobile d'inspecter l'identité matérielle et la version du firmware actuellement actif sur l'ESP32 sans recourir à des protocoles propriétaires.
+
+#### 1. Firmware Revision String (`0x2A26`)
+- **Propriétés** : `READ`
+- **Format** : Chaîne ASCII UTF-8 (ex: `"v1.2.1-esp32s3"`).
+
+#### 2. Software Revision String (`0x2A28`)
+- **Propriétés** : `READ`
+- **Format** : Chaîne ASCII UTF-8 contenant la date/heure de compilation du binaire ou son timestamp UTC ISO (ex: `"2026-10-11T10:24:36Z"` ou `__DATE__ " " __TIME__`).
+- **Usage Mobile** : Permet à l'application mobile de comparer instantanément la date du firmware installé avec la date de publication d'une release Cloud (`release_date`) avant tout téléchargement.
 
