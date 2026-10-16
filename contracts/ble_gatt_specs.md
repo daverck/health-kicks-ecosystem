@@ -282,12 +282,15 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
 - **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
 
-#### 3. Sécurité BLE GATT (LE Secure Connections) & Sûreté Anti-Bricking
-- **Chiffrement BLE LE Secure Connections (Option 1A - Just Works + Bonding)** :
+#### 3. Sécurité BLE GATT (LE Secure Connections & Appairage par Bouton Physique) & Sûreté Anti-Bricking
+- **Chiffrement BLE LE Secure Connections & Verrouillage d'Appairage par Bouton Physique (`GPIO 14`)** :
   - Le serveur NimBLE initialise le Security Manager avec `Bonding = true`, `MITM = false`, `SC (Secure Connections) = true` et `IOCap = BLE_HS_IO_NO_INPUT_OUTPUT`.
-  - Dès la connexion d'un client (`onConnect`), le serveur demande l'établissement du chiffrement L2CAP (`NimBLEDevice::startSecurity`).
-  - En cas d'échec d'authentification dû à une clé de bonding obsolète côté smartphone (`onAuthenticationComplete`), le serveur purge automatiquement le bond obsolète (`NimBLEDevice::deleteBond`) pour éviter tout blocage de reconnexion.
-  - **Fenêtre de Sauvetage Matériel (Hardware Rescue Window - GPIO 14)** : Pour garantir à 100% qu'un appareil dont le port USB est défectueux ne puisse jamais être bloqué par une incompatibilité de pile BLE OS, les caractéristiques GATT restent accessibles au niveau ATT sans blocage dur, et un appui court sur le bouton physique (GPIO 14) ouvre une fenêtre de secours de 60 secondes autorisant les commandes et l'OTA même si la négociation SMP du téléphone échoue.
+  - **Mode Nominal (Verrouillé aux appareils déjà appairés)** :
+    - Lorsqu'au moins un smartphone est déjà appairé en mémoire NVS (`NimBLEDevice::getNumBonds() > 0`) et que la fenêtre d'appairage est fermée, **seul un smartphone déjà appairé (`NimBLEDevice::isBonded`)** est autorisé à se connecter et à interagir avec la chaussure.
+    - Tout téléphone inconnu tentant de se connecter ou de s'appairer sans appui préalable sur le bouton physique est **immédiatement rejeté et déconnecté**, et les clés existantes ne sont jamais effacées.
+  - **Mode Appairage sur Action Physique (`GPIO 14` - Fenêtre de 60 secondes)** :
+    - Un appui court sur le bouton physique de la chaussure (`GPIO 14`) ouvre une **fenêtre d'appairage de 60 secondes** (`openPairingWindow(60000)`).
+    - Uniquement pendant ces 60 secondes (ou lors du tout premier démarrage si `getNumBonds() == 0`), la chaussure accepte d'appairer un nouveau smartphone (`startSecurity`) ou de renouveler une clé de bonding obsolète (`deleteBond` puis ré-appairage).
 - **État Initial de Démarrage & Rollback Automatique** :
   - À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
   - Dès l'amorçage dans `setup()`, le firmware interroge `esp_ota_get_state_partition()`.
