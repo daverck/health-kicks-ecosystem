@@ -25,7 +25,10 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 
 | Domaine | Méthode & Route | Payload Requête | Payload Réponse |
 | :--- | :--- | :--- | :--- |
-| **Authentification** | `POST /api/v1/auth/refresh` | `{"refresh_token": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}` |
+| **Authentification OAuth2 (Login)** | `GET /api/v1/auth/{provider}/login` | Query params: `redirect_uri`, `state`, `code_challenge` *(optionnel, PKCE S256)*, `code_challenge_method` (`S256`) | `{"authorization_url": "string", "state": "string"}` |
+| **Échange Ticket OAuth2 (One-Time)** | `POST /api/v1/auth/token/exchange` | `{"ticket": "string", "code_verifier": "string"}` *(code_verifier optionnel si PKCE initié)* | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}` |
+| **Callback OAuth2 (POST)** | `POST /api/v1/auth/{provider}/callback` | `{"code": "string", "state": "string", "redirect_uri": "string", "code_verifier": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}` |
+| **Rafraîchissement JWT** | `POST /api/v1/auth/refresh` | `{"refresh_token": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}` |
 | **Identifiants IoT STS** | `POST /api/v1/auth/iot-credentials` | `{"device_id": "string"}` *(optionnel)* | `{"access_key_id": "string", "secret_access_key": "string", "session_token": "string", "expiration": "datetime", "iot_endpoint": "string", "region": "string"}` |
 | **Haptique** | `POST /api/v1/devices/{id}/haptic/trigger` | `{"intensity": 200, "duration_ms": 500}` | `{"status": "queued", "device_id": "HK-1", "command_id": "uuid"}` |
 | **Studio Sessions** | `GET /api/v1/studio/sessions` | Query params: `page`, `size`, `is_validated`, `label` (valeur unique ou liste séparée par virgule ex: `walk,run`), `device_id` (valeur unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`), `user_id` (valeur unique ou liste séparée par virgule ex: `1,2`, ou `all` pour administrateurs), `start_date`, `end_date` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary`) |
