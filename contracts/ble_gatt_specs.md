@@ -292,7 +292,7 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
   - À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
   - Dès l'amorçage dans `setup()`, le firmware interroge `esp_ota_get_state_partition()`.
   - S'il détecte l'état `ESP_OTA_IMG_PENDING_VERIFY`, il exécute un diagnostic matériel (vérification I2C MPU-6050 `WHO_AM_I`, intégrité mémoire et serveur BLE).
-  - **Rollback Manuel d'Urgence (GPIO 14)** : Si le bouton physique (GPIO 14) est maintenu enfoncé au démarrage ou pendant la fenêtre probatoire de 15 secondes, le firmware invoque immédiatement `esp_ota_mark_app_invalid_rollback_and_reboot()` pour revenir à la partition précédente.
+  - Si l'ESP32 plante, part en panique ou si l'IMU échoue avant la fin des 15 secondes, le bootloader ESP-IDF effectue un rollback automatique vers l'ancien slot opérationnel (`ota_0` $\leftrightarrow$ `ota_1`).
   - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et pile BLE initialisée, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
 
 ---
