@@ -251,8 +251,9 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - `0x01` (`OTA_BEGIN`) : Début du transfert OTA. Suivi immédiatement de 4 octets Big-Endian représentant la taille totale du binaire `.bin` en octets :
   `[0x01, size_b3, size_b2, size_b1, size_b0]` (5 octets au total).
 - `0x02` (`OTA_END`) : Clôture du transfert. Demande la validation d'intégrité, le contrôle cryptographique SHA-256 et la bascule du slot de boot :
-  * Format sécurisé (recommandé) : `[0x02, sha256_0, ..., sha256_31]` (33 octets avec condensat SHA-256 du fichier `.bin`).
-  * Format rétro-compatible : `[0x02]` (1 octet, sans vérification SHA-256 explicite).
+  * Format obligatoire (33 octets) : `[0x02, sha256_0, ..., sha256_31]` (opcode `0x02` suivi des 32 octets du condensat SHA-256 binaire du fichier `.bin`).
+  * Tout paquet `OTA_END` de taille inférieure à 33 octets est **immédiatement rejeté** avec `OTA_ERROR` (`0x07` : `OTA_ERR_CHECKSUM_MISMATCH`) et annulation (`Update.abort()`).
+  * De plus, le tout premier bloc reçu sur `OTA Data` doit obligatoirement débuter par l'octet magique d'image ESP-IDF `0xE9` (sinon rejet immédiat avec `0x05` : `OTA_ERR_VALIDATION_FAILED`).
 - `0x03` (`OTA_ABORT`) : Annulation d'urgence. Abandonne la transaction OTA courante, efface les handles de flash et réactive les services nominaux (IMU/Edge AI) :
   `[0x03]` (1 octet).
 
@@ -270,9 +271,9 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
   - `0x02` : `OTA_ERR_BEGIN_FAILED` (échec d'initialisation du descripteur `esp_ota_begin`).
   - `0x03` : `OTA_ERR_WRITE_FAILED` (échec d'écriture dans la mémoire flash `esp_ota_write`).
   - `0x04` : `OTA_ERR_SIZE_MISMATCH` (le volume d'octets écrits ne correspond pas à la taille déclarée).
-  - `0x05` : `OTA_ERR_VALIDATION_FAILED` (image binaire invalide ou signature/CRC incorrect au `esp_ota_end`).
+  - `0x05` : `OTA_ERR_VALIDATION_FAILED` (image binaire invalide, octet magique `0xE9` absent ou signature/CRC incorrect au `esp_ota_end`).
   - `0x06` : `OTA_ERR_SET_BOOT_FAILED` (impossible de désigner la partition cible comme bootable).
-  - `0x07` : `OTA_ERR_CHECKSUM_MISMATCH` (condensat SHA-256 calculé non conforme à l'empreinte transmise).
+  - `0x07` : `OTA_ERR_CHECKSUM_MISMATCH` (condensat SHA-256 absent ou non conforme à l'empreinte transmise).
 
 #### 2. Caractéristique OTA Data (`7a5a0012-...`)
 - **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
@@ -281,15 +282,18 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
 - **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
 
-#### 3. Sûreté de Fonctionnement : Anti-Bricking & Rollback Automatique
-- **État Initial de Démarrage** : À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
-- **Auto-Test Matériel au Boot (Self-Test)** :
+#### 3. Sécurité BLE GATT (LE Secure Connections) & Sûreté Anti-Bricking
+- **Chiffrement BLE LE Secure Connections (Option 1A - Just Works + Bonding)** :
+  - Le serveur NimBLE initialise le Security Manager avec `Bonding = true`, `MITM = false`, `SC (Secure Connections) = true` et `IOCap = BLE_HS_IO_NO_INPUT_OUTPUT`.
+  - Dès la connexion d'un client (`onConnect`), le serveur demande l'établissement du chiffrement L2CAP (`NimBLEDevice::startSecurity`).
+  - En cas d'échec d'authentification dû à une clé de bonding obsolète côté smartphone (`onAuthenticationComplete`), le serveur purge automatiquement le bond obsolète (`NimBLEDevice::deleteBond`) pour éviter tout blocage de reconnexion.
+  - **Fenêtre de Sauvetage Matériel (Hardware Rescue Window - GPIO 14)** : Pour garantir à 100% qu'un appareil dont le port USB est défectueux ne puisse jamais être bloqué par une incompatibilité de pile BLE OS, les caractéristiques GATT restent accessibles au niveau ATT sans blocage dur, et un appui court sur le bouton physique (GPIO 14) ouvre une fenêtre de secours de 60 secondes autorisant les commandes et l'OTA même si la négociation SMP du téléphone échoue.
+- **État Initial de Démarrage & Rollback Automatique** :
+  - À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
   - Dès l'amorçage dans `setup()`, le firmware interroge `esp_ota_get_state_partition()`.
-  - S'il détecte l'état `ESP_OTA_IMG_PENDING_VERIFY`, il exécute immédiatement un diagnostic matériel (vérification I2C MPU-6050 `WHO_AM_I`, intégrité mémoire et capteurs).
-  - En cas d'échec critique (ex. IMU non détecté, bus I2C figé), le firmware invoque immédiatement `esp_ota_mark_app_invalid_rollback_and_reboot()`, ce qui force le bootloader à invalider le slot courant et à redémarrer immédiatement sur la partition précédente stable.
-- **Période Probatoire (Probation Window - 15 secondes)** :
-  - Si l'ESP32 plante, part en panique ou reboot spontanément avant la fin des 15 secondes, le bootloader ESP-IDF effectue un rollback automatique vers l'ancien slot opérationnel (`ota_0` $\leftrightarrow$ `ota_1`).
-  - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et connectivité saines, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
+  - S'il détecte l'état `ESP_OTA_IMG_PENDING_VERIFY`, il exécute un diagnostic matériel (vérification I2C MPU-6050 `WHO_AM_I`, intégrité mémoire et serveur BLE).
+  - **Rollback Manuel d'Urgence (GPIO 14)** : Si le bouton physique (GPIO 14) est maintenu enfoncé au démarrage ou pendant la fenêtre probatoire de 15 secondes, le firmware invoque immédiatement `esp_ota_mark_app_invalid_rollback_and_reboot()` pour revenir à la partition précédente.
+  - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et pile BLE initialisée, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
 
 ---
 
