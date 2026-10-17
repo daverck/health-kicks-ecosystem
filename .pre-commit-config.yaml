@@ -40,4 +40,3 @@ repos:
         name: prettier (frontend & docs)
         files: ^(health-kicks-frontend/src/|docs/|contracts/).*\.(ts|html|scss|json|md)$
         exclude: ^(.*node_modules/|.*\.min\..*)$
-

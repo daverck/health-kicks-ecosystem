@@ -1,0 +1,38 @@
+name: Root Ecosystem CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pre-commit-and-sanity:
+    name: Pre-Commit & Monorepo Sanity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run pre-commit checks
+        run: |
+          uv tool run pre-commit run --all-files --show-diff-on-failure
+
+      - name: Verify submodules cleanliness
+        run: |
+          git status --porcelain
+          test -z "$(git status --porcelain)"
+
