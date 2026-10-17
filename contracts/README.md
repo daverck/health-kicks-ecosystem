@@ -23,25 +23,25 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 
 ### A. Endpoints Principaux & Schémas Associés
 
-| Domaine | Méthode & Route | Payload Requête | Payload Réponse |
-| :--- | :--- | :--- | :--- |
-| **Authentification OAuth2 (Login)** | `GET /api/v1/auth/{provider}/login` | Query params: `redirect_uri`, `state`, `code_challenge` *(optionnel, PKCE S256)*, `code_challenge_method` (`S256`) | `{"authorization_url": "string", "state": "string"}` |
-| **Échange Ticket OAuth2 (One-Time)** | `POST /api/v1/auth/token/exchange` | `{"ticket": "string", "code_verifier": "string"}` *(code_verifier optionnel si PKCE initié)* | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}` |
-| **Callback OAuth2 (POST)** | `POST /api/v1/auth/{provider}/callback` | `{"code": "string", "state": "string", "redirect_uri": "string", "code_verifier": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}` |
-| **Rafraîchissement JWT** | `POST /api/v1/auth/refresh` | `{"refresh_token": "string"}` | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}` |
-| **Identifiants IoT STS** | `POST /api/v1/auth/iot-credentials` | `{"device_id": "string"}` *(optionnel)* | `{"access_key_id": "string", "secret_access_key": "string", "session_token": "string", "expiration": "datetime", "iot_endpoint": "string", "region": "string"}` |
-| **Haptique** | `POST /api/v1/devices/{id}/haptic/trigger` | `{"intensity": 200, "duration_ms": 500}` | `{"status": "queued", "device_id": "HK-1", "command_id": "uuid"}` |
-| **Studio Sessions** | `GET /api/v1/studio/sessions` | Query params: `page`, `size`, `is_validated`, `label` (valeur unique ou liste séparée par virgule ex: `walk,run`), `device_id` (valeur unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`), `user_id` (valeur unique ou liste séparée par virgule ex: `1,2`, ou `all` pour administrateurs), `start_date`, `end_date` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary` avec `subject_pseudonym`, `is_pseudonymized` et masquage PII pour les tiers) |
-| **Studio Authors** | `GET /api/v1/studio/sessions/authors` | - | `list[StudioAuthorSummary]` (`[{"id": int, "email": str, "name": str, "subject_pseudonym": str, "is_pseudonymized": bool}]` avec pseudonymisation déterministe pour les tiers) |
-| **Studio Telemetry** | `GET /api/v1/studio/sessions/{id}/readings` | - | `StudioSessionReadingsResponse` (`readings`: liste d'échantillons IMU) |
-| **Requalification** | `PATCH /api/v1/studio/sessions/{id}` | `{"label": "walk", "is_validated": true}` | `StudioSessionSummary` |
-| **Ingestion Webhook** | `POST /api/v1/ingest/event` | Header: `X-HealthKicks-Ingest-Token`<br>Body: Payload d'événement détection | `{"status": "accepted", "event_id": "uuid"}` |
-| **Présence Équipements (Interne)** | `POST /api/v1/internal/device-presence` | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`) | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}` |
-| **Synchronisation des Pas** | `POST /api/v1/steps/sync` | `DailyStepsSyncPayload` (`device_id`, `date`, `activities`: liste de `{"activity_type", "step_count"}`) | `{"status": "synchronized", "synced_records": int}` |
-| **Historique des Pas** | `GET /api/v1/steps/history` | Query params: `device_id` (requis), `from_date`, `to_date`, `days` (défaut: 30) | `DailyStepsHistoryResponse` (`history`: liste de `{"date", "total_steps", "by_activity"}`) |
-| **Événements d'Activités & Chutes** | `GET /api/v1/devices/{device_id}/events/activities` | Query params: `page`, `page_size`, `event_type` (valeur unique, liste séparée par virgule ex: `walk,run`, ou `falls`), `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`) | `ActivityEventPage` (liste d'`ActivityEventResponse`) |
-| **Historique Haptique** | `GET /api/v1/devices/{device_id}/haptic/history` | Query params: `page`, `page_size`, `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`) | `HapticLogPage` (liste d'`HapticLogResponse`) |
-| **Distribution Firmware S3** | `GET /api/v1/firmware/latest` | Header: `Authorization: Bearer <jwt>` | `FirmwareLatestResponse` (`version`, `download_url`, `sha256`, `size_bytes`, `expires_in_seconds`, `release_date`) |
+| Domaine                              | Méthode & Route                                     | Payload Requête                                                                                                                                                                                                                                                                                                                | Payload Réponse                                                                                                                                                                |
+| :----------------------------------- | :-------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authentification OAuth2 (Login)**  | `GET /api/v1/auth/{provider}/login`                 | Query params: `redirect_uri`, `state`, `code_challenge` _(optionnel, PKCE S256)_, `code_challenge_method` (`S256`)                                                                                                                                                                                                             | `{"authorization_url": "string", "state": "string"}`                                                                                                                           |
+| **Échange Ticket OAuth2 (One-Time)** | `POST /api/v1/auth/token/exchange`                  | `{"ticket": "string", "code_verifier": "string"}` _(code_verifier optionnel si PKCE initié)_                                                                                                                                                                                                                                   | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}`                                                                   |
+| **Callback OAuth2 (POST)**           | `POST /api/v1/auth/{provider}/callback`             | `{"code": "string", "state": "string", "redirect_uri": "string", "code_verifier": "string"}`                                                                                                                                                                                                                                   | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer", "user": UserProfileResponse}`                                                                   |
+| **Rafraîchissement JWT**             | `POST /api/v1/auth/refresh`                         | `{"refresh_token": "string"}`                                                                                                                                                                                                                                                                                                  | `{"access_token": "string", "refresh_token": "string", "token_type": "bearer"}`                                                                                                |
+| **Identifiants IoT STS**             | `POST /api/v1/auth/iot-credentials`                 | `{"device_id": "string"}` _(optionnel)_                                                                                                                                                                                                                                                                                        | `{"access_key_id": "string", "secret_access_key": "string", "session_token": "string", "expiration": "datetime", "iot_endpoint": "string", "region": "string"}`                |
+| **Haptique**                         | `POST /api/v1/devices/{id}/haptic/trigger`          | `{"intensity": 200, "duration_ms": 500}`                                                                                                                                                                                                                                                                                       | `{"status": "queued", "device_id": "HK-1", "command_id": "uuid"}`                                                                                                              |
+| **Studio Sessions**                  | `GET /api/v1/studio/sessions`                       | Query params: `page`, `size`, `is_validated`, `label` (valeur unique ou liste séparée par virgule ex: `walk,run`), `device_id` (valeur unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`), `user_id` (valeur unique ou liste séparée par virgule ex: `1,2`, ou `all` pour administrateurs), `start_date`, `end_date` | `PaginatedSessionsResponse` (liste de `StudioSessionSummary` avec `subject_pseudonym`, `is_pseudonymized` et masquage PII pour les tiers)                                      |
+| **Studio Authors**                   | `GET /api/v1/studio/sessions/authors`               | -                                                                                                                                                                                                                                                                                                                              | `list[StudioAuthorSummary]` (`[{"id": int, "email": str, "name": str, "subject_pseudonym": str, "is_pseudonymized": bool}]` avec pseudonymisation déterministe pour les tiers) |
+| **Studio Telemetry**                 | `GET /api/v1/studio/sessions/{id}/readings`         | -                                                                                                                                                                                                                                                                                                                              | `StudioSessionReadingsResponse` (`readings`: liste d'échantillons IMU)                                                                                                         |
+| **Requalification**                  | `PATCH /api/v1/studio/sessions/{id}`                | `{"label": "walk", "is_validated": true}`                                                                                                                                                                                                                                                                                      | `StudioSessionSummary`                                                                                                                                                         |
+| **Ingestion Webhook**                | `POST /api/v1/ingest/event`                         | Header: `X-HealthKicks-Ingest-Token`<br>Body: Payload d'événement détection                                                                                                                                                                                                                                                    | `{"status": "accepted", "event_id": "uuid"}`                                                                                                                                   |
+| **Présence Équipements (Interne)**   | `POST /api/v1/internal/device-presence`             | Header: `X-Ingest-Token`<br>Body: `DevicePresencePayload` (`device_id` ou `user_id`, `state`)                                                                                                                                                                                                                                  | `{"status": "ok", "device_id": "string", "device_status": "online/offline"}`                                                                                                   |
+| **Synchronisation des Pas**          | `POST /api/v1/steps/sync`                           | `DailyStepsSyncPayload` (`device_id`, `date`, `activities`: liste de `{"activity_type", "step_count"}`)                                                                                                                                                                                                                        | `{"status": "synchronized", "synced_records": int}`                                                                                                                            |
+| **Historique des Pas**               | `GET /api/v1/steps/history`                         | Query params: `device_id` (requis), `from_date`, `to_date`, `days` (défaut: 30)                                                                                                                                                                                                                                                | `DailyStepsHistoryResponse` (`history`: liste de `{"date", "total_steps", "by_activity"}`)                                                                                     |
+| **Événements d'Activités & Chutes**  | `GET /api/v1/devices/{device_id}/events/activities` | Query params: `page`, `page_size`, `event_type` (valeur unique, liste séparée par virgule ex: `walk,run`, ou `falls`), `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`)                                                                           | `ActivityEventPage` (liste d'`ActivityEventResponse`)                                                                                                                          |
+| **Historique Haptique**              | `GET /api/v1/devices/{device_id}/haptic/history`    | Query params: `page`, `page_size`, `start_date`, `end_date`<br>Path param: `device_id` (identifiant unique, liste séparée par virgule ex: `HK-1,HK-2`, ou `all`)                                                                                                                                                               | `HapticLogPage` (liste d'`HapticLogResponse`)                                                                                                                                  |
+| **Distribution Firmware S3**         | `GET /api/v1/firmware/latest`                       | Header: `Authorization: Bearer <jwt>`                                                                                                                                                                                                                                                                                          | `FirmwareLatestResponse` (`version`, `download_url`, `sha256`, `size_bytes`, `expires_in_seconds`, `release_date`)                                                             |
 
 ### B. Format d'un Échantillon IMU Télémétrique (`IMUReading`)
 
@@ -63,7 +63,8 @@ Permet aux clients (ex: application mobile Flutter) de récupérer une URL de t�
 
 **Règle de rétention S3 :** Un seul et unique binaire firmware est conservé sur S3 (clé `firmware/esp32s3/latest/firmware.bin`), écrasé à chaque exécution du pipeline de publication.
 
-*Exemple de réponse JSON (`FirmwareLatestResponse`)* :
+_Exemple de réponse JSON (`FirmwareLatestResponse`)_ :
+
 ```json
 {
   "version": "v1.2.1-esp32s3",
@@ -82,6 +83,7 @@ Permet aux clients (ex: application mobile Flutter) de récupérer une URL de t�
 Les communications IoT utilisent le protocole MQTT sur AWS IoT Core avec une convention de nommage hiérarchique stricte sous le préfixe `healthkicks/v1/{device_id}/`.
 
 ### A. Topic d'Alerte de Détection : `healthkicks/v1/{device_id}/events/detection`
+
 Publié par l'agent Edge ou la passerelle mobile en QoS 1 lorsqu'un événement (activité ou chute critique) est détecté par le modèle ML local :
 
 ```json
@@ -94,7 +96,9 @@ Publié par l'agent Edge ou la passerelle mobile en QoS 1 lorsqu'un événement 
   "haptic_triggered": true
 }
 ```
-*Contraintes de validation* :
+
+_Contraintes de validation_ :
+
 - `device_id` : Identifiant du capteur (chaîne non vide).
 - `event_type` : Type d'activité détectée (`idle`, `walk`, `run`, `stairs_up`, `stairs_down`, `fall_forward`, `fall_backward`, `fall_lateral`, `fall_recovery`, `fall_generic`, `stumble_recover`).
 - `confidence` : Flottant compris entre `0.0` et `1.0`.
@@ -103,6 +107,7 @@ Publié par l'agent Edge ou la passerelle mobile en QoS 1 lorsqu'un événement 
 - `haptic_triggered` : Booléen (`true` si vibration locale autonome déclenchée).
 
 ### B. Topic de Commande Haptique : `healthkicks/v1/{device_id}/commands/haptic`
+
 Publié par le backend Cloud via AWS IoT Core `iot-data` pour commander une vibration sur la chaussure :
 
 ```json
@@ -114,11 +119,14 @@ Publié par le backend Cloud via AWS IoT Core `iot-data` pour commander une vibr
   "created_at": "2026-09-13T10:14:02.000Z"
 }
 ```
-*Contraintes de validation* :
+
+_Contraintes de validation_ :
+
 - `intensity` : entier compris entre `0` (arrêt) et `255` (puissance maximale).
 - `duration_ms` : entier compris entre `50` et `10000` millisecondes.
 
 ### C. Topic de Statut & Heartbeat : `healthkicks/v1/{device_id}/status`
+
 Publié périodiquement par l'agent Edge avec rétention / Last Will and Testament (LWT) configuré sur la déconnexion :
 
 ```json
@@ -131,7 +139,9 @@ Publié périodiquement par l'agent Edge avec rétention / Last Will and Testame
   "timestamp": "2026-09-13T10:14:05.000Z"
 }
 ```
-*LWT Payload (en cas de perte de connexion inopinée)* :
+
+_LWT Payload (en cas de perte de connexion inopinée)_ :
+
 ```json
 {
   "device_id": "HK-1",
@@ -141,6 +151,7 @@ Publié périodiquement par l'agent Edge avec rétention / Last Will and Testame
 ```
 
 ### D. Topic de Télémétrie Studio : `healthkicks/v1/{device_id}/telemetry/raw`
+
 Publié à l'issue d'une session de capture Studio pour enregistrement dans Amazon DynamoDB :
 
 ```json
@@ -151,13 +162,30 @@ Publié à l'issue d'une session de capture Studio pour enregistrement dans Amaz
   "trigger": "studio",
   "sample_rate_hz": 100,
   "readings": [
-    {"timestamp": 1726224000.00, "ax": 0.02, "ay": 0.98, "az": 0.11, "gx": 0.01, "gy": -0.01, "gz": 0.02},
-    {"timestamp": 1726224000.01, "ax": 0.03, "ay": 0.97, "az": 0.12, "gx": 0.02, "gy": -0.02, "gz": 0.01}
+    {
+      "timestamp": 1726224000.0,
+      "ax": 0.02,
+      "ay": 0.98,
+      "az": 0.11,
+      "gx": 0.01,
+      "gy": -0.01,
+      "gz": 0.02
+    },
+    {
+      "timestamp": 1726224000.01,
+      "ax": 0.03,
+      "ay": 0.97,
+      "az": 0.12,
+      "gx": 0.02,
+      "gy": -0.02,
+      "gz": 0.01
+    }
   ]
 }
 ```
 
 ### E. Topic LWT Passerelle Utilisateur : `healthkicks/v1/users/{user_id}/gateway-status`
+
 Publié automatiquement par le broker AWS IoT Core en cas de rupture inopinée de la passerelle mobile (crash, coupure réseau, perte de batterie) :
 
 ```json
@@ -167,5 +195,5 @@ Publié automatiquement par le broker AWS IoT Core en cas de rupture inopinée d
   "gateway": "mobile"
 }
 ```
-*Effet côté backend* : Passage de l'ensemble des équipements associés à `user_id` en statut `offline`.
 
+_Effet côté backend_ : Passage de l'ensemble des équipements associés à `user_id` en statut `offline`.

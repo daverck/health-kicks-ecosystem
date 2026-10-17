@@ -55,4 +55,3 @@ flutter test
 ```
 
 Tout échec de validation ou d'analyse statique bloque immédiatement la livraison.
-

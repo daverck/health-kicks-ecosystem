@@ -52,4 +52,3 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv run pytest
 ```
 Tout échec bloque la livraison.
-

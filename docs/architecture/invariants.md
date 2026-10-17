@@ -19,12 +19,14 @@ flowchart TD
 ```
 
 ### A. Amazon DynamoDB (`healthkicks_telemetry`)
+
 - **Périmètre** : Trames IMU brutes à haute fréquence (accéléromètre $a_x, a_y, a_z$, gyroscope $g_x, g_y, g_z$), collectées lors des sessions de capture Studio ou du streaming temps réel.
 - **Raison d'être** : Éviter l'épuisement des IOPS et l'encombrement de la base relationnelle par des séries temporelles volumineuses.
 - **Clés & Index** : Partition Key `device_id`, Sort Key temporelle ou composite `session_id#timestamp`.
 - **Rétention** : Optimisé pour l'ingestion massive et la lecture par plage temporelle pour les graphiques de waveform (Chart.js) et le cache d'entraînement ML.
 
 ### B. PostgreSQL Aurora (`healthkicks`)
+
 - **Périmètre** : Source unique de vérité relationnelle (`StudioSession`, `Device`, `DeviceOwnership`, `ActivityEvent`, `HapticLog`, `User`, `IdempotencyKey`).
 - **Raison d'être** : Intégrité référentielle ACID, gestion des identités, jointures relationnelles, droits d'accès (RBAC) et requêtes agrégées pour le Dashboard (comptage de chutes, historique des événements, pagination).
 
@@ -61,6 +63,7 @@ stateDiagram-v2
 La confidentialité des données biomécaniques et cliniques est garantie par une séparation stricte au niveau de la couche API :
 
 ### A. Rôle Clinicien / Praticien (`UserRole.USER`)
+
 - **Isolation des sessions** : Un clinicien ne peut lister, consulter, modifier ou supprimer **que ses propres sessions** (`StudioSession.user_id == user.id`).
 - Tout accès à une session d'un tiers lève immédiatement un statut `HTTP 403 Forbidden` :
   ```python
@@ -70,6 +73,7 @@ La confidentialité des données biomécaniques et cliniques est garantie par un
 - Les listes paginées filtrent automatiquement sur l'identifiant de l'utilisateur authentifié.
 
 ### B. Rôle Administrateur (`UserRole.ADMIN`)
+
 - Visibilité transverse et globale sur toutes les sessions de l'écosystème.
 - Capacité de filtrer par `user_id` spécifique ou de requêter sur l'ensemble de la flotte de dispositifs.
 
@@ -82,22 +86,22 @@ L'inférence s'exécute directement sur l'embarqué (Raspberry Pi / microcontrô
 - **Version cible commune** : `scikit-learn==1.4.2`
 - **Dépendances associées** : `joblib>=1.3.0,<2.0`, `numpy>=1.26.0,<2.0`
 - **Règle absolue d'interopérabilité** :
-  * Le pipeline d'entraînement ([`health-kicks`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks)) et le démon d'inférence temps réel ([`health-kicks-edge-script`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script)) **doivent utiliser la même version mineure et majeure de scikit-learn**.
-  * Toute divergence de version brise la désérialisation pickle de `joblib` sur l'agent Edge (`InconsistentVersionWarning` ou crash lors du `predict_proba`).
-  * Les 16 features calculées à l'entraînement ([`compute_window_features`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) et à l'inférence ([`extract_features_from_readings`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script/src/healthkicks_edge/inference/features.py)) doivent rester strictement identiques en ordre, formule et normalisation.
+  - Le pipeline d'entraînement ([`health-kicks`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks)) et le démon d'inférence temps réel ([`health-kicks-edge-script`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script)) **doivent utiliser la même version mineure et majeure de scikit-learn**.
+  - Toute divergence de version brise la désérialisation pickle de `joblib` sur l'agent Edge (`InconsistentVersionWarning` ou crash lors du `predict_proba`).
+  - Les 16 features calculées à l'entraînement ([`compute_window_features`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) et à l'inférence ([`extract_features_from_readings`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script/src/healthkicks_edge/inference/features.py)) doivent rester strictement identiques en ordre, formule et normalisation.
 
 ---
 
 ## 5. Standardisation du Repère Biomécanique ISB (Wu & Cavanagh, 1995)
 
 L'ensemble des sous-systèmes de capture, de transport et de visualisation IMU respecte le standard international de la **Société Internationale de Biomécanique (ISB)** :
-- **Repère cartésien direct (dextrorsum) lié au pied/corps** :
-  * **Axe $X$** : **Antéro-postérieur** (orienté vers l'avant / sens de marche).
-  * **Axe $Y$** : **Médio-latéral** (orienté vers la gauche pour le corps complet / face interne du pied droit).
-  * **Axe $Z$** : **Longitudinal / Vertical** (orienté vers le haut, mesure **$+1.0\,g$** au repos statique sous gravité terrestre).
-- **Règles gyroscopiques (Règle de la main droite)** :
-  * **$g_x$ (GX)** : Roulis (Inversion / Éversion).
-  * **$g_y$ (GY)** : Tangage (Flexion dorsale / plantaire).
-  * **$g_z$ (GZ)** : Lacet (Rotation interne / externe).
-- **Référence documentaire dédiée** : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
 
+- **Repère cartésien direct (dextrorsum) lié au pied/corps** :
+  - **Axe $X$** : **Antéro-postérieur** (orienté vers l'avant / sens de marche).
+  - **Axe $Y$** : **Médio-latéral** (orienté vers la gauche pour le corps complet / face interne du pied droit).
+  - **Axe $Z$** : **Longitudinal / Vertical** (orienté vers le haut, mesure **$+1.0\,g$** au repos statique sous gravité terrestre).
+- **Règles gyroscopiques (Règle de la main droite)** :
+  - **$g_x$ (GX)** : Roulis (Inversion / Éversion).
+  - **$g_y$ (GY)** : Tangage (Flexion dorsale / plantaire).
+  - **$g_z$ (GZ)** : Lacet (Rotation interne / externe).
+- **Référence documentaire dédiée** : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).

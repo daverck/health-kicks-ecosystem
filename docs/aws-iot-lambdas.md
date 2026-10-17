@@ -6,22 +6,26 @@ This document describes the AWS IoT Topic Rules, execution environments, environ
 
 ## 1. Device Presence Ingestion
 
-* **IoT Rule Name:** `healthkicks_device_presence_rule`
-* **Rule SQL:**
+- **IoT Rule Name:** `healthkicks_device_presence_rule`
+- **Rule SQL:**
+
 ```sql
 SELECT *, topic() as topic FROM 'healthkicks/v1/+/status'
 ```
-* **Trigger:** Published by footwear devices or the mobile gateway when the shoe goes online/offline.
-* **Target:** AWS Lambda Function (`healthkicks-device-presence`)
+
+- **Trigger:** Published by footwear devices or the mobile gateway when the shoe goes online/offline.
+- **Target:** AWS Lambda Function (`healthkicks-device-presence`)
 
 ### Environment Variables
-| Variable | Required | Default | Description |
-| :--- | :---: | :--- | :--- |
-| `BACKEND_URL` | Yes | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for presence ingestion. |
-| `INGEST_TOKEN` | Yes | `dev-token` | Secret API authentication token sent via `X-Ingest-Token`. |
-| `VERIFY_SSL` | No | `true` | Set to `false` only in development if using self-signed TLS certificates. |
+
+| Variable       | Required | Default                                                                | Description                                                               |
+| :------------- | :------: | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for presence ingestion.                                  |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                            | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                                 | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
+
 ```python
 import json
 import os
@@ -89,22 +93,26 @@ def lambda_handler(event, context):
 
 ## 2. User Gateway Presence Ingestion (LWT)
 
-* **IoT Rule Name:** `healthkicks_user_gateway_presence_rule`
-* **Rule SQL:**
+- **IoT Rule Name:** `healthkicks_user_gateway_presence_rule`
+- **Rule SQL:**
+
 ```sql
 SELECT *, topic() as topic FROM 'healthkicks/v1/users/+/gateway-status'
 ```
-* **Trigger:** AWS IoT Core Last Will and Testament (LWT) or mobile app disconnect events.
-* **Target:** AWS Lambda Function (`healthkicks-user-gateway-presence`)
+
+- **Trigger:** AWS IoT Core Last Will and Testament (LWT) or mobile app disconnect events.
+- **Target:** AWS Lambda Function (`healthkicks-user-gateway-presence`)
 
 ### Environment Variables
-| Variable | Required | Default | Description |
-| :--- | :---: | :--- | :--- |
-| `BACKEND_URL` | Yes | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for gateway presence updates. |
-| `INGEST_TOKEN` | Yes | `dev-token` | Secret API authentication token sent via `X-Ingest-Token`. |
-| `VERIFY_SSL` | No | `true` | Set to `false` only in development if using self-signed TLS certificates. |
+
+| Variable       | Required | Default                                                                | Description                                                               |
+| :------------- | :------: | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for gateway presence updates.                            |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                            | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                                 | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
+
 ```python
 import json
 import os
@@ -172,22 +180,26 @@ def lambda_handler(event, context):
 
 ## 3. Raw Studio Telemetry Ingestion (DynamoDB & Aurora Sync)
 
-* **IoT Rule Name:** `HealthKicksToDynamoDBLambda`
-* **Rule SQL:**
+- **IoT Rule Name:** `HealthKicksToDynamoDBLambda`
+- **Rule SQL:**
+
 ```sql
 SELECT *, topic(4) as device_id FROM 'healthkicks/v1/+/telemetry/raw'
 ```
-* **Trigger:** Published by the mobile gateway when an IMU burst session finishes.
-* **Target:** AWS Lambda Function (`healthkicks-telemetry-ingest`)
+
+- **Trigger:** Published by the mobile gateway when an IMU burst session finishes.
+- **Target:** AWS Lambda Function (`healthkicks-telemetry-ingest`)
 
 ### Environment Variables
-| Variable | Required | Default | Description |
-| :--- | :---: | :--- | :--- |
-| `TABLE_NAME` | Yes | `healthkicks_telemetry` | Target Amazon DynamoDB table for raw IMU data points. |
-| `BACKEND_INGEST_URL` | Yes | `https://api.healthkicks.local/api/v1/ingest/telemetry/raw` | FastAPI webhook endpoint used to update session metadata and sample counts in Aurora PostgreSQL. |
-| `INGEST_TOKEN` | No | `""` | Optional API key passed via the `X-HealthKicks-Ingest-Token` header. |
+
+| Variable             | Required | Default                                                     | Description                                                                                      |
+| :------------------- | :------: | :---------------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
+| `TABLE_NAME`         |   Yes    | `healthkicks_telemetry`                                     | Target Amazon DynamoDB table for raw IMU data points.                                            |
+| `BACKEND_INGEST_URL` |   Yes    | `https://api.healthkicks.local/api/v1/ingest/telemetry/raw` | FastAPI webhook endpoint used to update session metadata and sample counts in Aurora PostgreSQL. |
+| `INGEST_TOKEN`       |    No    | `""`                                                        | Optional API key passed via the `X-HealthKicks-Ingest-Token` header.                             |
 
 ### Source Code (`lambda_function.py`)
+
 ```python
 import json
 import boto3
@@ -335,24 +347,28 @@ def lambda_handler(event, context):
 
 ## 4. Edge Activity Detection Ingestion (Aurora DB Direct Access)
 
-* **IoT Rule Name:** `HealthKicks_ActivityDetectionIngest`
-* **Rule SQL:**
+- **IoT Rule Name:** `HealthKicks_ActivityDetectionIngest`
+- **Rule SQL:**
+
 ```sql
 SELECT * FROM 'healthkicks/v1/+/events/detection'
 ```
-* **Trigger:** Edge device or local gateway ML inference reporting detected steps, jumps, or gait patterns.
-* **Target:** AWS Lambda Function (`healthkicks-activity-detection-ingest`)
+
+- **Trigger:** Edge device or local gateway ML inference reporting detected steps, jumps, or gait patterns.
+- **Target:** AWS Lambda Function (`healthkicks-activity-detection-ingest`)
 
 ### Environment Variables
-| Variable | Required | Default | Description |
-| :--- | :---: | :--- | :--- |
-| `DB_HOST` | Yes | — | Aurora PostgreSQL endpoint hostname. |
-| `DB_PORT` | No | `5432` | Aurora PostgreSQL connection port. |
-| `DB_USER` | Yes | `postgres` | Database username configured for IAM authentication. |
-| `DB_NAME` | Yes | `postgres` | Target database name. |
-| `AWS_REGION`| No | `eu-north-1` | AWS Region where the Aurora cluster is located. |
+
+| Variable     | Required | Default      | Description                                          |
+| :----------- | :------: | :----------- | :--------------------------------------------------- |
+| `DB_HOST`    |   Yes    | —            | Aurora PostgreSQL endpoint hostname.                 |
+| `DB_PORT`    |    No    | `5432`       | Aurora PostgreSQL connection port.                   |
+| `DB_USER`    |   Yes    | `postgres`   | Database username configured for IAM authentication. |
+| `DB_NAME`    |   Yes    | `postgres`   | Target database name.                                |
+| `AWS_REGION` |    No    | `eu-north-1` | AWS Region where the Aurora cluster is located.      |
 
 ### Source Code (`lambda_function.py`)
+
 ```python
 import json
 import logging
@@ -446,9 +462,9 @@ def lambda_handler(event, context):
 
 ## 5. Summary Table
 
-| IoT Rule Name | MQTT Topic Filter | Destination Service | Final Data Sink |
-| :--- | :--- | :--- | :--- |
-| `healthkicks_device_presence_rule` | `healthkicks/v1/+/status` | Lambda -> FastAPI REST | Aurora DB (`devices.status`) |
-| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status` | Lambda -> FastAPI REST | Aurora DB (`devices.status`) |
-| `HealthKicksToDynamoDBLambda` | `healthkicks/v1/+/telemetry/raw` | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`) |
-| `HealthKicks_ActivityDetectionIngest` | `healthkicks/v1/+/events/detection` | Lambda -> PostgreSQL (IAM Token) | Aurora DB (`activity_events`) |
+| IoT Rule Name                            | MQTT Topic Filter                       | Destination Service                  | Final Data Sink                                                              |
+| :--------------------------------------- | :-------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------------- |
+| `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`               | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
+| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status` | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
+| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`        | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`) |
+| `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`     | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |

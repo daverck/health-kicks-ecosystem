@@ -1,0 +1,43 @@
+# HealthKicks Ecosystem - Pre-commit Configuration
+# Run manually: uv tool run pre-commit run --all-files
+# Install git hooks: uv tool run pre-commit install
+
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(.*node_modules/|.*\.min\..*|contracts/.*\.raw)$
+      - id: end-of-file-fixer
+        exclude: ^(.*node_modules/|.*\.min\..*)$
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        exclude: ^(.*node_modules/|.*templates/.*)$
+      - id: check-json
+        exclude: ^(.*node_modules/|.*tsconfig.*\.json|\.vscode/.*)$
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        name: ruff (linter)
+        files: ^(health-kicks|health-kicks-edge-script)/.*\.py$
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+        name: ruff (formatter)
+        files: ^(health-kicks|health-kicks-edge-script)/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: prettier (frontend & docs)
+        files: ^(health-kicks-frontend/src/|docs/|contracts/).*\.(ts|html|scss|json|md)$
+        exclude: ^(.*node_modules/|.*\.min\..*)$
+
