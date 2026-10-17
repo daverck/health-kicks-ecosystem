@@ -31,8 +31,11 @@ jobs:
         run: |
           uv tool run pre-commit run --all-files --show-diff-on-failure
 
+      - name: Verify BLE GATT Contracts Sync
+        run: |
+          python scripts/verify_ble_contracts.py
+
       - name: Verify submodules cleanliness
         run: |
           git status --porcelain
           test -z "$(git status --porcelain)"
-

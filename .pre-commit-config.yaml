@@ -40,3 +40,12 @@ repos:
         name: prettier (frontend & docs)
         files: ^(health-kicks-frontend/src/|docs/|contracts/).*\.(ts|html|scss|json|md)$
         exclude: ^(.*node_modules/|.*\.min\..*)$
+
+  - repo: local
+    hooks:
+      - id: verify-ble-contracts
+        name: verify-ble-contracts
+        entry: python scripts/verify_ble_contracts.py
+        language: system
+        pass_filenames: false
+        files: ^(contracts/|health-kicks-esp32-s3/include/|health-kicks-edge-script/.*constants\.py|health-kicks-mobile/.*ble_constants\.dart)

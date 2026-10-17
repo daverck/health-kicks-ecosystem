@@ -124,3 +124,55 @@ L'ensemble des composants respecte la norme de l'**International Society of Biom
 - **Axe Y (Médio-latéral)** : Positif vers la gauche de la chaussure.
 - **Axe Z (Longitudinal / Vertical)** : Positif vers le haut ($+1.0\,g$ statique au repos sur sol plat).
 - Plus d'informations : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+
+---
+
+## 5. Cycle de Mise à Jour OTA & Reconnexion Automatique
+
+La mise à jour logicielle de la chaussure connectée s'exécute exclusivement over-the-air (BLE OTA), le port USB physique étant réservé à l'alimentation ou sujet aux contraintes d'étanchéité mécanique.
+
+### 5.1 Protocole de Transfert & Validation d'Intégrité
+
+1. **Transfert par Chunks** : L'application mobile découpe le binaire du firmware en blocs de 240 octets (adaptés au MTU négocié) et les transmet séquentiellement sur la caractéristique `CHAR_OTA_DATA_UUID`.
+2. **Contrôle Magic Byte** : À l'offset 0, l'ESP32 valide l'octet magique `0xE9` (signature de l'en-tête ESP-IDF). Tout paquet initial non conforme provoque l'avortement immédiat (`Update.abort()`) et le renvoi de l'erreur `OTA_ERR_VALIDATION_FAILED` (0x05).
+3. **Contrôle Cryptographique SHA-256** : À la fin du transfert, la commande `OTA_CMD_END` transporte obligatoirement l'empreinte SHA-256 de 32 octets. L'ESP32 compare l'empreinte calculée au vol via mbedTLS avec l'empreinte transmise. Si elles divergent ou si le condensat est absent, la mise à jour est rejetée (`OTA_ERR_CHECKSUM_MISMATCH`, 0x07).
+4. **Basculement de Partition & Reboot** : L'ESP32 valide l'image dans la partition inactive (`ota_0` ou `ota_1`), configure le bootloader pour basculer sur ce slot au prochain démarrage, et invoque `esp_restart()`.
+
+### 5.2 Séquence de Reconnexion Automatique Post-Reboot
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Utilisateur
+    participant Mobile as App Mobile (Flutter)
+    participant BLE as NimBLE Stack
+    participant ESP32 as Firmware ESP32-S3
+    participant IMU as Capteur IMU MPU-6050
+
+    Mobile->>ESP32: OTA_CMD_END + SHA-256 (32 octets)
+    ESP32->>ESP32: Vérification SHA-256 & esp_ota_set_boot_partition()
+    ESP32-->>Mobile: Statut Succès (0x00) & Déconnexion BLE
+    ESP32->>ESP32: esp_restart()
+    Note over Mobile: Début temporisation sécurité (3s)
+    ESP32->>ESP32: Boot sur nouveau slot (otaPendingVerification = true)
+    ESP32->>BLE: openPairingWindow(60s) + Advertising BLE
+    ESP32->>IMU: Test initialisation & calibration (15s probation)
+    alt Défaillance IMU pendant la probation
+        ESP32->>ESP32: esp_ota_mark_app_invalid_rollback_and_reboot()
+    else IMU Opérationnel
+        ESP32->>ESP32: esp_ota_mark_app_valid_cancel_rollback()
+    end
+    Mobile->>BLE: BleConnectionManager.startAutoConnect(targetDeviceId, timeout: 45s)
+    BLE->>Mobile: BleConnectionStatus.ready (Liaison LESC chiffrée)
+    Mobile->>BLE: readDeviceFirmwareInfo() (DIS 0x180A)
+    BLE-->>Mobile: Firmware Version (0x2A26) & Build Date (0x2A28)
+    Mobile->>Mobile: FirmwareService.saveLocalInstalledFirmware(...)
+    Mobile->>User: Notification succès & mise à jour en direct (Settings & Dashboard)
+```
+
+### 5.3 Détails d'Implémentation Mobile & Firmware
+
+- **Temporisation de Reboot (3 secondes)** : `FirmwareUpdateScreen._triggerAutoReconnectAfterReboot()` introduit un délai de garde de 3 s (`Future.delayed(const Duration(seconds: 3))`) afin de laisser à l'ESP32 le temps de redémarrer son SoC, de réinitialiser le sous-système radio Bluetooth et de recommencer à émettre ses trames d'annonce (_advertisements_).
+- **Fenêtre de Sauvetage / Appairage (60 secondes)** : Au redémarrage post-OTA, le firmware détecte le drapeau `otaPendingVerification` et ouvre automatiquement une fenêtre d'appairage physique de 60 secondes (`bleServer.openPairingWindow(60000)`). Même en cas de régénération des clés de liaison SMP ou de purge du cache côté OS mobile, la reconnexion et le ré-appairage s'exécutent de façon transparente sans blocage.
+- **Interrogation du DIS (Device Information Service)** : Dès la reconnexion confirmée (`BleConnectionStatus.ready`), l'application lit la caractéristique standard `0x2A26` (_Firmware Revision String_) et `0x2A28` (_Hardware / Build Date_).
+- **Persistance & Propagation Réactive** : La nouvelle version lue est enregistrée dans le stockage local `SharedPreferences`. Elle se propage instantanément à la modale de suivi OTA, à la tuile "INFORMATIONS SYSTÈME" de l'écran des Paramètres (`SettingsScreen`) et au widget d'état du matériel du Tableau de Bord (`_GatewayDashboardScreenState`).
