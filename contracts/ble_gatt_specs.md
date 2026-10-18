@@ -198,9 +198,36 @@ Dès que `FINISHED` est notifié sur Studio Control, le serveur GATT commence l'
 
 | Offset | Champ         | Type   | Description                                                             |
 | :----- | :------------ | :----- | :---------------------------------------------------------------------- |
-| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Compression Delta sans perte) |
+| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Compression Delta sans perte)<br>`0x05` = RLE_CHUNK (Run-Length Encoding statique sans perte) |
 | 1..2   | `seq_num`     | uint16 | Numéro de séquence séquentiel (0, 1, 2...)                              |
 | 3      | `payload_len` | uint8  | Nombre d'octets de charge utile contenue dans ce paquet                 |
+
+#### Structure d'un Paquet `DELTA_CHUNK` (`packet_type = 0x04`)
+
+Permet de doubler le débit lors de variations continues.
+- `header` (4 octets) : `[0x04, seq_num_hi, seq_num_lo, payload_len]`
+- `total_frames` (1 octet uint8) : Nombre total de trames contenues dans le paquet ($1 + \text{delta\_count}$).
+- `keyframe` (14 octets) : Première trame IMU absolue complète (14 octets standard).
+- `deltas` ($K \times 7$ octets) : Pour chaque trame suivante ($k \in [1, \text{delta\_count}]$) :
+  - `diff_ms` (1 octet uint8) : Écart de temps avec la trame précédente ($\le 255$ ms).
+  - `diff_ax, diff_ay, diff_az` (3 octets int8) : Écarts d'accélération ($-127$ à $+127$ milli-$g$).
+  - `diff_gx, diff_gy, diff_gz` (3 octets int8) : Écarts de vitesse angulaire ($-127$ à $+127$ dixièmes de deg/s).
+
+#### Structure d'un Paquet `RLE_CHUNK` (`packet_type = 0x05`)
+
+Compresse massivement les séquences stationnaires / statiques (immobilité, posture assise, repos) où les signaux IMU sont identiques ou quasi-constants.
+Taille de charge utile fixe : **16 octets** (soit un paquet BLE de 20 octets) pouvant représenter jusqu'à **255 trames consécutives** (gain jusqu'à $\times 178$ sur la bande passante radio).
+
+- `header` (4 octets) : `[0x05, seq_num_hi, seq_num_lo, 0x10]` (`payload_len` = 16)
+- `run_count` (1 octet uint8, offset 4) : Nombre de trames successives répétées ($2 \le N \le 255$).
+- `start_delta_ms` (2 octets uint16 big-endian, offset 5..6) : Horodatage relatif de la première trame.
+- `step_ms` (1 octet uint8, offset 7) : Pas de temps constant entre chaque trame (ex: 20 ms à 50 Hz).
+- $a_x, a_y, a_z$ (6 octets int16 big-endian, offset 8..13) : Accélérations constantes (milli-$g$).
+- $g_x, g_y, g_z$ (6 octets int16 big-endian, offset 14..19) : Vitesses angulaires constantes (dixièmes de deg/s).
+
+*Reconstruction côté client* : Pour chaque index $i \in [0, \text{run\_count} - 1]$ :
+$$\text{delta\_ms}_i = \text{start\_delta\_ms} + i \times \text{step\_ms}$$
+avec des grandeurs physiques $(a_x, a_y, a_z, g_x, g_y, g_z)$ identiques.
 
 #### Structure d'une Trame IMU Découpée (14 octets)
 
