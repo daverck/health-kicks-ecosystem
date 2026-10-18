@@ -197,3 +197,13 @@ Publié automatiquement par le broker AWS IoT Core en cas de rupture inopinée d
 ```
 
 _Effet côté backend_ : Passage de l'ensemble des équipements associés à `user_id` en statut `offline`.
+
+---
+
+## 4. Spécifications Binaires Matérielles (Firmware & Mobile)
+
+Pour les échanges directs par Bluetooth Low Energy (BLE GATT), les protocoles binaires canoniques sont documentés dans des spécifications dédiées :
+
+- [`contracts/ble_gatt_specs.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/ble_gatt_specs.md) : Table des UUIDs de services et caractéristiques, codes d'état d'activité, structures binaires packées.
+- [`contracts/studio_burst_protocol.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/studio_burst_protocol.md) : Protocole de transmission haute fréquence des signaux IMU (opcodes de contrôle, header 4 octets, trames IMU 12 octets big-endian int16).
+- [`contracts/ota_ble_protocol.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/ota_ble_protocol.md) : Protocole de mise à jour firmware sans fil (opcodes Start/Data/End, magic byte `0xE9`, digest SHA-256 obligatoire de 32 octets, codes d'erreurs et période de probation).

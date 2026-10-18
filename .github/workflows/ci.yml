@@ -63,10 +63,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Run Ruff Linting
+        working-directory: health-kicks
+        run: uv run ruff check .
+
       - name: Run Backend Tests
         working-directory: health-kicks
-        run: |
-          uv run pytest
+        run: uv run pytest
 
   frontend-tests:
     name: Frontend Build & Vitest (health-kicks-frontend)
