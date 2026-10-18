@@ -35,6 +35,10 @@ jobs:
         run: |
           python scripts/verify_ble_contracts.py
 
+      - name: Verify OpenAPI & Frontend Types Drift
+        run: |
+          python scripts/verify_openapi_drift.py
+
       - name: Verify submodules cleanliness
         run: |
           git status --porcelain

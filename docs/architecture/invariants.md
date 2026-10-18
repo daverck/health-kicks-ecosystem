@@ -105,3 +105,53 @@ L'ensemble des sous-systèmes de capture, de transport et de visualisation IMU r
   - **$g_y$ (GY)** : Tangage (Flexion dorsale / plantaire).
   - **$g_z$ (GZ)** : Lacet (Rotation interne / externe).
 - **Référence documentaire dédiée** : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+
+---
+
+## 6. Odomètre Différentiel et Continuité Temporelle des Pas Mobile
+
+Le comptage et la consolidation des pas entre le matériel embarqué, l'application mobile et le backend cloud respectent un algorithme différentiel strict :
+
+### A. Contrainte Matérielle de l'ESP32-S3
+
+1. **Absence d'horloge calendaire sauvegardée (RTC)** : Le firmware embarqué ne dispose ni de pile de sauvegarde RTC ni d'accès Internet autonome pour synchroniser l'heure NTP.
+2. **Odomètre monotone matériel** : Le compteur embarqué (`StepDetector`) accumule les pas de manière strictement croissante depuis son initialisation (`totalSteps`, `walkSteps`, `runSteps`, `stairsSteps`, `unclassifiedSteps`).
+3. **Comportement à minuit et au reboot** :
+   - L'odomètre matériel **ne se remet jamais à zéro à minuit**.
+   - En cas de coupure batterie, reboot matériel, mise en veille profonde ou mise à jour OTA, l'odomètre matériel **retombe à zéro**.
+
+### B. Table d'État SQLite Mobile (`device_odometer_state`)
+
+Pour garantir qu'aucun pas de la veille ne vienne polluer le compteur du jour suivant, et qu'aucun pas ne soit perdu après un redémarrage de la chaussure, l'application Flutter maintient un état odométrique par dispositif :
+
+```sql
+CREATE TABLE IF NOT EXISTS device_odometer_state (
+  device_id TEXT PRIMARY KEY,
+  last_date TEXT NOT NULL,
+  raw_walk INTEGER NOT NULL,
+  raw_run INTEGER NOT NULL,
+  raw_stairs INTEGER NOT NULL,
+  raw_unclassified INTEGER NOT NULL,
+  updated_at TEXT NOT NULL
+);
+```
+
+### C. Algorithme de Calcul Différentiel (`recordOdometerSnapshot`)
+
+Pour chaque flux de télémétrie BLE reçu et pour chaque catégorie d'activité $k \in \{\text{walk, run, stairs, unclassified}\}$ :
+
+1. **Détection de Redémarrage Matériel** :
+   Si la lecture brute courante $R_t$ est inférieure à la dernière lecture mémorisée $R_{t-1}$ ($R_t < R_{t-1}$), un reboot du microcontrôleur est avéré :
+   $$\Delta_k = R_t$$
+2. **Progression Nominale** :
+   Si $R_t \ge R_{t-1}$ :
+   $$\Delta_k = R_t - R_{t-1}$$
+3. **Partitionnement Calendaire Local & Transition de Minuit** :
+   - La date calendaire locale de l'utilisateur (`YYYY-MM-DD`) régit l'agrégation quotidienne.
+   - Au franchissement de minuit, la date locale bascule à $J+1$ :
+     - Les totaux du jour $J$ restent figés dans `local_daily_steps`.
+     - L'incrément $\Delta_k$ calculé par rapport à la dernière lecture de la veille est imputé au jour $J+1$.
+     - L'odomètre matériel continu ne "bave" ainsi jamais sur les jours suivants.
+4. **Persistance et Synchronisation Cloud** :
+   - Si $\Delta_k > 0$, la valeur est ajoutée au cumul de la journée dans `local_daily_steps` et l'enregistrement est marqué `sync_status = 0` (à synchroniser).
+   - `device_odometer_state` est mis à jour avec les nouvelles valeurs $R_t$ et l'horodatage UTC courant.

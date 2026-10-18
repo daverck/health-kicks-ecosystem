@@ -49,3 +49,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^(contracts/|health-kicks-esp32-s3/include/|health-kicks-edge-script/.*constants\.py|health-kicks-mobile/.*ble_constants\.dart)
+      - id: verify-openapi-drift
+        name: verify-openapi-drift
+        entry: python scripts/verify_openapi_drift.py
+        language: system
+        pass_filenames: false
+        files: ^(health-kicks/(app/|openapi\.json)|health-kicks-frontend/src/app/models/generated-api\.types\.ts|scripts/verify_openapi_drift\.py)
