@@ -367,3 +367,25 @@ Le service Device Information Service standard Bluetooth SIG permet au client mo
 - **Propriétés** : `READ`
 - **Format** : Chaîne ASCII UTF-8 contenant la date/heure de compilation du binaire ou son timestamp UTC ISO (ex: `"2026-10-11T10:24:36Z"` ou `__DATE__ " " __TIME__`).
 - **Usage Mobile** : Permet à l'application mobile de comparer instantanément la date du firmware installé avec la date de publication d'une release Cloud (`release_date`) avant tout téléchargement.
+
+---
+
+### H. Gestion Dynamique de l'Intervalle de Connexion BLE (Dynamic Connection Interval)
+
+Afin de maximiser l'autonomie sur batterie en usage quotidien tout en garantissant un débit instantané optimal lors des sessions de calibration Studio, la chaussure implémente une négociation adaptative des paramètres de connexion BLE (`GAP Connection Parameters Update`) :
+
+#### 1. Mode Nominal (Veille Active & Podométrie Continue)
+- **Intervalle Min** : 100 ms (`min_conn_interval = 80` unités de 1.25 ms).
+- **Intervalle Max** : 125 ms (`max_conn_interval = 100` unités de 1.25 ms).
+- **Latence Esclave** : 0 événement (`latency = 0`).
+- **Supervision Timeout** : 4000 ms (`supervision_timeout = 400` unités de 10 ms).
+- **Bénéfice** : Réduit les réveils radio périodiques, maintenant la consommation de veille active à moins de 15 mA tout en assurant une latence imperceptible pour le comptage de pas (19 Hz) et les alertes d'activité ou de chute.
+
+#### 2. Mode Burst Haute Vitesse (Session Studio Active)
+- **Intervalle Min** : 15 ms (`min_conn_interval = 12` unités de 1.25 ms).
+- **Intervalle Max** : 20 ms (`max_conn_interval = 16` unités de 1.25 ms).
+- **Latence Esclave** : 0 événement (`latency = 0`).
+- **Supervision Timeout** : 4000 ms (`supervision_timeout = 400` unités de 10 ms).
+- **Déclenchement** : Automatique dès la réception de la commande Studio `START` sur `Studio Control` (`0004`).
+- **Rétablissement Nominal** : Automatique dès la fin du transfert (`END_OF_BURST`), l'annulation (`CANCEL`) ou la déconnexion.
+- **Bénéfice** : Vitesse de transfert multipliée par un facteur de 6 à 8, ramenant la synchronisation de 1500 trames IMU (30 s à 50 Hz) à moins de 2.5 secondes.
