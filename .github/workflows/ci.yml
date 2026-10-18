@@ -167,3 +167,23 @@ jobs:
       - name: Run Native Invariants Tests
         working-directory: health-kicks-esp32-s3
         run: pio test -e native
+
+  security-sast:
+    name: Security SAST Scan (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Run Semgrep Security Audit
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/python
+            p/typescript
+            p/secrets
+
