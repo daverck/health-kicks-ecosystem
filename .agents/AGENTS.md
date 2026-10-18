@@ -67,6 +67,11 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
   * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
 * Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
+### Règle d'Or 4 : Commits Granulaires Systématiques à Chaque Étape Significative
+* Dès qu'une sous-tâche, refactorisation ou fonctionnalité est validée et que les tests associés sont 100% au vert, l'agent **doit impérativement créer un commit Git atomique** avec un message Conventionnel précis (`feat(...)`, `refactor(...)`, `fix(...)`, `test(...)`, `chore(...)`).
+* Ne jamais accumuler plusieurs étapes ou composants indépendants dans un seul commit monolithique.
+* Les commits doivent être effectués dans le sous-dépôt du projet concerné (puis le pointeur de sous-module mis à jour à la racine). Ne jamais exécuter `git push` sans demande explicite de l'utilisateur.
+
 ---
 
 ## 3. Cartographie des Sous-Agents (Emplacement Officiel Antigravity)

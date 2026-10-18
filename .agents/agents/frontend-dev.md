@@ -53,3 +53,7 @@ pnpm test
 ```
 *(ou `pnpm run test:ci` / `ng test --watch=false`)*
 Tout échec bloque la livraison.
+
+## 5. Règle des Commits Granulaires
+Dès qu'une étape significative (découpage de composant, nouveau service, correction de bug) est validée par des tests au vert, l'agent **doit impérativement commiter immédiatement** avec un message Conventionnel précis (ex: `refactor(ui): ...`, `feat(studio): ...`). Ne jamais attendre la fin de la conversation pour faire un gros commit unique.
+

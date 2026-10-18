@@ -54,3 +54,7 @@ Avant toute validation de tâche ou commit, l'agent doit exécuter et obtenir 10
 uv tool run --from platformio pio run
 ```
 Tout échec de compilation bloque la livraison.
+
+## 5. Règle des Commits Granulaires
+Dès qu'une étape significative (optimisation BLE, nouveau service, correction de bug) est validée par compilation au vert (`pio run`), l'agent **doit impérativement commiter immédiatement** avec un message Conventionnel précis (ex: `feat(ble): ...`, `fix(firmware): ...`). Ne jamais attendre la fin de la conversation pour faire un gros commit unique.
+
