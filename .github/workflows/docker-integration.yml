@@ -1,0 +1,66 @@
+name: Docker Compose Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docker-compose-integration:
+    name: Docker Compose Integration & Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config
+
+      - name: Start PostgreSQL, LocalStack & Mosquitto
+        run: |
+          docker compose up -d postgres localstack mosquitto
+
+      - name: Wait for PostgreSQL Healthcheck
+        run: |
+          echo "Waiting for postgres to become healthy..."
+          timeout 60s bash -c 'until docker compose ps postgres | grep -q "healthy"; do sleep 2; done'
+          echo "PostgreSQL is healthy."
+
+      - name: Build and Start Backend Service
+        run: |
+          docker compose up -d --build backend
+
+      - name: Wait for Backend Healthcheck
+        run: |
+          echo "Waiting for backend service to become healthy..."
+          timeout 120s bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 3; echo "Checking backend status..."; done'
+          echo "Backend is healthy."
+
+      - name: Run Backend Smoke Tests
+        run: |
+          echo "Testing /health endpoint..."
+          curl -f -s http://localhost:8000/health | jq .
+          echo "Testing OpenAPI /openapi.json endpoint..."
+          curl -f -s http://localhost:8000/openapi.json | jq .info
+          echo "Testing Prometheus /metrics endpoint..."
+          curl -f -s http://localhost:8000/metrics | grep "healthkicks_" | head -n 10
+
+      - name: Display Container Logs on Failure
+        if: failure()
+        run: |
+          docker compose logs --tail=100
+
+      - name: Clean up Docker Compose
+        if: always()
+        run: |
+          docker compose down -v --remove-orphans
