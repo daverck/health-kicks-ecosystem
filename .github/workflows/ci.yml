@@ -43,3 +43,148 @@ jobs:
         run: |
           git status --porcelain
           test -z "$(git status --porcelain)"
+
+  backend-tests:
+    name: Backend Pytest (health-kicks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Backend Tests
+        working-directory: health-kicks
+        run: |
+          uv run pytest
+
+  frontend-tests:
+    name: Frontend Build & Vitest (health-kicks-frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'health-kicks-frontend/pnpm-lock.yaml'
+
+      - name: Install Dependencies
+        working-directory: health-kicks-frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Angular Application
+        working-directory: health-kicks-frontend
+        run: pnpm run build
+
+      - name: Run Vitest Unit Tests
+        working-directory: health-kicks-frontend
+        run: pnpm test:ci
+
+  edge-tests:
+    name: Edge AI Tests (health-kicks-edge-script)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Edge Tests
+        working-directory: health-kicks-edge-script
+        run: |
+          uv run pytest
+
+  mobile-tests:
+    name: Mobile Flutter Analyze & Tests (health-kicks-mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        working-directory: health-kicks-mobile
+        run: flutter pub get
+
+      - name: Analyze Mobile Code
+        working-directory: health-kicks-mobile
+        run: flutter analyze
+
+      - name: Run Mobile Unit & Widget Tests
+        working-directory: health-kicks-mobile
+        run: flutter test
+
+  firmware-build:
+    name: Firmware ESP32-S3 Build & Native Tests (health-kicks-esp32-s3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            health-kicks-esp32-s3/.pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('health-kicks-esp32-s3/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+
+      - name: Build Firmware for ESP32-S3
+        working-directory: health-kicks-esp32-s3
+        run: pio run -e esp32-s3-devkitc-1
+
+      - name: Run Native Invariants Tests
+        working-directory: health-kicks-esp32-s3
+        run: pio test -e native
