@@ -24,7 +24,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=dynamodb,s3
+      - SERVICES=dynamodb,s3,iot
       - AWS_DEFAULT_REGION=eu-north-1
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
@@ -38,6 +38,54 @@ services:
       - "1883:1883"
       - "9001:9001"
     command: mosquitto -c /mosquitto-no-auth.conf
+
+  backend:
+    build:
+      context: ./health-kicks
+      dockerfile: Dockerfile
+    container_name: healthkicks-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgrespassword@postgres:5432/healthkicks
+      DATABASE_SSLMODE: disable
+      DYNAMODB_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: eu-north-1
+      AWS_DEFAULT_REGION: eu-north-1
+      AWS_ACCESS_KEY_ID: mock-access-key
+      AWS_SECRET_ACCESS_KEY: mock-secret-key
+      HEALTHKICKS_JWT_SECRET: dev-secret-for-docker-compose-minimum-32-chars-long
+      HEALTHKICKS_INGEST_TOKEN: dev-ingest-token-healthkicks-local-12345
+      HEALTHKICKS_ENVIRONMENT: development
+      HEALTHKICKS_AUTO_CREATE_TABLES: "false"
+      MIGRATE_ON_START: "true"
+      PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./health-kicks-frontend
+      dockerfile: Dockerfile
+    container_name: healthkicks-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    profiles:
+      - full
 
 volumes:
   postgres_data:
