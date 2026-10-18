@@ -198,9 +198,9 @@ Dès que `FINISHED` est notifié sur Studio Control, le serveur GATT commence l'
 
 | Offset | Champ         | Type   | Description                                                             |
 | :----- | :------------ | :----- | :---------------------------------------------------------------------- |
-| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST |
+| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Compression Delta sans perte) |
 | 1..2   | `seq_num`     | uint16 | Numéro de séquence séquentiel (0, 1, 2...)                              |
-| 3      | `payload_len` | uint8  | Nombre de trames IMU contenues dans ce paquet                           |
+| 3      | `payload_len` | uint8  | Nombre d'octets de charge utile contenue dans ce paquet                 |
 
 #### Structure d'une Trame IMU Découpée (14 octets)
 

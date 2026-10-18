@@ -88,30 +88,62 @@ Chaque paquet binaire débute par un en-tête de synchronisation de 4 octets :
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Opcode (0x02)|     Sequence Number (uint16_t MSB, LSB)      |
+|  Opcode (0x02/4)|    Sequence Number (uint16_t MSB, LSB)      |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |  PayloadBytes |           Charge utile IMU ...                |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-1. **`Opcode` (1 octet)** : `0x02` (`BURST_PACKET_DATA_CHUNK`).
+1. **`Opcode` (1 octet)** :
+   - `0x01` : `BURST_PACKET_START_OF_BURST` (Optionnel, annonce d'échantillons).
+   - `0x02` : `BURST_PACKET_DATA_CHUNK` (Trames brutes non compressées, 14 octets par frame).
+   - `0x03` : `BURST_PACKET_END_OF_BURST` (Fin de burst avec total échantillons et CRC32).
+   - `0x04` : `BURST_PACKET_DELTA_CHUNK` (Compression delta sans perte avec Keyframe).
 2. **`Sequence Number` (2 octets)** : Entier non signé 16-bit en ordre _Big-Endian_, incrémenté de $1$ à chaque paquet ($0, 1, 2, \dots$). Permet la détection immédiate de perte de paquets.
-3. **`PayloadBytes` (1 octet)** : Longueur en octets de la charge utile IMU contenue dans ce paquet (doit être un multiple exact de 12 octets).
+3. **`PayloadBytes` (1 octet)** : Longueur en octets de la charge utile IMU contenue dans ce paquet.
 
-### B. Format Binaire d'une Frame IMU (12 octets)
+---
 
-Chaque mesure inertielle est représentée par 6 valeurs `int16_t` encodées en _Big-Endian_ (ordre réseau `htons`) :
+### B. Format Binaire d'une Frame IMU Brute (14 octets)
 
-| Offset | Champ |   Type    |             Échelle & Unité              |     Formule de conversion      |
-| :----: | :---: | :-------: | :--------------------------------------: | :----------------------------: |
-|  `+0`  | `ax`  | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{valeur} / 1000.0$ |
-|  `+2`  | `ay`  | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{valeur} / 1000.0$ |
-|  `+4`  | `az`  | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{valeur} / 1000.0$ |
-|  `+6`  | `gx`  | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{valeur} / 10.0$  |
-|  `+8`  | `gy`  | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{valeur} / 10.0$  |
-| `+10`  | `gz`  | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{valeur} / 10.0$  |
+Chaque mesure inertielle brute est représentée par 1 valeur temporelle `uint16_t` et 6 valeurs `int16_t` encodées en _Big-Endian_ (ordre réseau `htons`) :
 
-_Taille totale par frame_ : $6 \times 2 = 12\,\text{octets}$.
+| Offset | Champ      |   Type    |             Échelle & Unité              |     Formule de conversion      |
+| :----: | :--------- | :-------: | :--------------------------------------: | :----------------------------: |
+|  `+0`  | `delta_ms` | `uint16_t`| $1\,\text{LSB} = 1\,\text{ms}$           | Millisecondes depuis début     |
+|  `+2`  | `ax`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{valeur} / 1000.0$ |
+|  `+4`  | `ay`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{valeur} / 1000.0$ |
+|  `+6`  | `az`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{valeur} / 1000.0$ |
+|  `+8`  | `gx`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{valeur} / 10.0$  |
+| `+10`  | `gy`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{valeur} / 10.0$  |
+| `+12`  | `gz`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{valeur} / 10.0$  |
+
+_Taille totale par frame brute_ : $2 + (6 \times 2) = 14\,\text{octets}$.
+
+---
+
+### C. Format Binaire d'un Paquet Delta Compressé (`Opcode 0x04`)
+
+Pour maximiser le débit sans perte de fidélité, le protocole supporte l'encodage différentiel (Delta-Encoding) :
+
+#### Charge utile d'un paquet `0x04` :
+1. **`frame_count` (1 octet)** : Nombre total de trames incluses dans le paquet ($1 + K$).
+2. **Keyframe de référence (14 octets)** : Trame brute complète encodée selon la table 4.B ci-dessus.
+3. **Trames Delta ($K \times 7$ octets)** : Pour chaque trame suivante ($i = 1 \dots K$), les différences par rapport à la trame précédente ($t_{i-1}$) sont quantifiées sur 1 octet signé :
+   - `d_ms` (1 octet, `uint8_t`) : $\Delta \text{delta\_ms} = t_i - t_{i-1}$ (typiquement $20\,\text{ms}$ à $50\,\text{Hz}$, plage $0 \dots 255$).
+   - `d_ax` (1 octet, `int8_t`) : $\Delta a_x \in [-127, +127]\,\text{mg}$.
+   - `d_ay` (1 octet, `int8_t`) : $\Delta a_y \in [-127, +127]\,\text{mg}$.
+   - `d_az` (1 octet, `int8_t`) : $\Delta a_z \in [-127, +127]\,\text{mg}$.
+   - `d_gx` (1 octet, `int8_t`) : $\Delta g_x \in [-127, +127]\,(0.1^\circ/\text{s})$.
+   - `d_gy` (1 octet, `int8_t`) : $\Delta g_y \in [-127, +127]\,(0.1^\circ/\text{s})$.
+   - `d_gz` (1 octet, `int8_t`) : $\Delta g_z \in [-127, +127]\,(0.1^\circ/\text{s})$.
+
+_Taille totale par trame delta_ : $7\,\text{octets}$ (gain de **$50\%$** par rapport aux 14 octets bruts).
+
+#### Mécanisme de Repli Dynamique (Fallback) & Sécurité
+- Si une variation dynamique ou un choc violent fait déborder un delta hors de $[-127, +127]$ ou $\Delta \text{ms} > 255$, le microcontrôleur coupe le paquet delta ou émet un paquet brut `0x02`.
+- Les opcodes `0x02` et `0x04` sont parfaitement composables au sein d'une même session.
+- **Vérification d'intégrité cryptographique** : Le CRC32 IEEE 802.3 transmis dans `BURST_PACKET_END_OF_BURST` (`0x03`) est systématiquement calculé sur les trames décompressées (14 octets $\times N$). Le client mobile valide ce même CRC32 après décompression, garantissant mathématiquement une intégrité à 100%.
 
 ---
 
@@ -120,16 +152,15 @@ _Taille totale par frame_ : $6 \times 2 = 12\,\text{octets}$.
 Le protocole calcule dynamiquement la densité de paquets en fonction de la taille MTU négociée lors de la connexion BLE :
 
 $$\text{Taille Utile} = \text{MTU} - 3\,(\text{En-tête ATT}) - 4\,(\text{En-tête Burst})$$
-$$\text{Frames par Paquet} = \left\lfloor \frac{\text{Taille Utile}}{12} \right\rfloor$$
 
-|           MTU Négocié           | En-tête ATT + Burst | Taille Utile |        Frames / Paquet         | Octets Payload |
-| :-----------------------------: | :-----------------: | :----------: | :----------------------------: | :------------: |
-|     **23** (Défaut BLE 4.0)     |      7 octets       |  16 octets   |          **1 frame**           |   12 octets    |
-|     **185** (iOS Standard)      |      7 octets       |  178 octets  |         **14 frames**          |   168 octets   |
-| **256** (HealthKicks Preferred) |      7 octets       |  249 octets  |    **17 frames** (Plafond)     |   204 octets   |
-|      **512** (Android Max)      |      7 octets       |  505 octets  | **17 frames** (Plafond tampon) |   204 octets   |
+| Mode de Transfert | MTU Négocié | En-tête ATT + Burst | Taille Utile | Frames / Paquet | Octets Payload |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Brut (`0x02`)** | **185** (iOS) | 7 octets | 178 octets | **12 frames** | 168 octets |
+| **Brut (`0x02`)** | **256** (HealthKicks) | 7 octets | 249 octets | **17 frames** | 238 octets |
+| **Delta (`0x04`)** | **185** (iOS) | 7 octets | 178 octets | **24 frames** (1 Key + 23 Delta) | 176 octets |
+| **Delta (`0x04`)** | **256** (HealthKicks) | 7 octets | 249 octets | **33 frames** (1 Key + 32 Delta) | 239 octets |
 
 ### Régulation de Flux & Anti-Saturation
 
 - Un délai inter-paquet de **$5\,\text{ms}$** est appliqué sur le microcontrôleur entre deux envois consécutifs. Ce délai garantit que le contrôleur radio NimBLE ne sature pas sa file d'attente de transmission (évite les erreurs `BLE_HS_ENOMEM`).
-- À $17\,\text{frames/paquet}$, une session complète de $5\,\text{secondes}$ à $50\,\text{Hz}$ ($250\,\text{frames}$) est entièrement transmise en **$15\,\text{paquets}$**, soit moins de **$150\,\text{millisecondes}$** de transfert réseau.
+- Grâce à la compression Delta (`0x04`), une session complète de $5\,\text{secondes}$ à $50\,\text{Hz}$ ($250\,\text{frames}$) est entièrement transmise en **$8\,\text{paquets}$** (contre 15 paquets auparavant), réduisant la durée d'occupation radio de moitié.
