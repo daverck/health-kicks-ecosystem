@@ -6,26 +6,25 @@ Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce
 
 ## 0. Contexte Métier & Architecture Globale
 
-**HealthKicks** est un écosystème connecté de surveillance et d'analyse biomécanique en temps réel combinant intelligence embarquée à la source (*Edge AI*), centralisation analytique (*Backend*) et restitution clinique (*Frontend*).
+**HealthKicks** est un écosystème connecté de surveillance et d'analyse biomécanique en temps réel combinant intelligence embarquée à la source (*Firmware ESP32-S3*), passerelle mobile de terrain (*Mobile Flutter*), centralisation analytique (*Backend FastAPI*) et restitution clinique (*Frontend Angular*).
 
 #### Pipeline de données
 ```text
-[ Capteurs / IMU Chaussure ]
-         │ (UART / Série)
+[ Chaussure Connectée ESP32-S3 ]
+         │ (BLE GATT LESC Chiffré / Fast Burst)
          ▼
-[ health-kicks-edge-script ] ──(BLE GATT / MQTT)──┬──► [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
-         ▲                                        │           │
-         │ (BLE GATT)                             │           │ (REST OpenAPI / WebSockets)
-         ▼                                        ▼           ▼
-[ health-kicks-mobile ] ──────────────────────────┴──► [ health-kicks-frontend ] (Angular 21 UI)
-  (Flutter / Dart UI)      (REST / WebSockets SigV4)
+[ health-kicks-mobile ] ──(REST / MQTT WebSockets SigV4)──┬──► [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
+  (Flutter / Dart UI)                                     │           │
+                                                          │           │ (REST OpenAPI / WebSockets)
+                                                          ▼           ▼
+                                                 [ health-kicks-frontend ] (Angular 22 UI)
 ```
 
 ### Périmètre des sous-projets indépendants
-* **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement.
-* **`health-kicks-frontend/` (Frontend)** : Application web Angular 21 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
-* **`health-kicks-edge-script/` (Edge AI)** : Ingestion des signaux capteurs IMU (Arduino), inférence locale scikit-learn (détection de chute et d'activité), serveur GATT BLE, packaging Debian et déclenchement vibrotactile autonome.
-* **`health-kicks-mobile/` (Mobile)** : Application mobile Flutter / Dart, acquisition directe des données capteurs via client BLE GATT, déclenchement de commandes haptiques, synchronisation REST et passerelle MQTT AWS IoT Core (WebSockets SigV4).
+* **`health-kicks-esp32-s3/` (Firmware)** : Firmware embarqué FreeRTOS / PlatformIO (ESP32-S3), acquisition MPU-6050 19 Hz, inférence locale d'activité et de chute multiclasse en C++, serveur BLE GATT LESC sécurisé, contrôle haptique PWM et bootloader OTA avec rollback automatique.
+* **`health-kicks-mobile/` (Mobile)** : Application mobile Flutter / Dart, acquisition directe des données capteurs via client BLE GATT, déclenchement de commandes haptiques, odométrie différentielle SQLite, synchronisation REST et passerelle MQTT AWS IoT Core (WebSockets SigV4).
+* **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement / génération de modèles C.
+* **`health-kicks-frontend/` (Frontend)** : Application web Angular 22 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
 
 ### Références documentaires partagées
 * `docs/architecture/system_overview.md`
@@ -53,21 +52,19 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
 
 ### Règle d'Or 2 : Confinement Strict du Périmètre de Modification
 * Chaque sous-agent est confiné dans le sous-dossier de son projet :
+  * `firmware-dev` : modifications autorisées **uniquement** dans `health-kicks-esp32-s3/`.
+  * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
   * `backend-dev` : modifications autorisées **uniquement** dans `health-kicks/`.
   * `frontend-dev` : modifications autorisées **uniquement** dans `health-kicks-frontend/`.
-  * `edge-dev` : modifications autorisées **uniquement** dans `health-kicks-edge-script/`.
-  * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
-  * `firmware-dev` : modifications autorisées **uniquement** dans `health-kicks-esp32-s3/`.
 * **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
 * L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
 
 ### Règle d'Or 3 : Validation Systématique des Tests Locaux Avant Tout Commit
 * Aucun sous-agent ne peut déclarer une tâche terminée ou commiter des modifications si les suites de tests unitaires et d'intégration de son périmètre ne sont pas 100% au vert :
+  * `health-kicks-esp32-s3` : `uv tool run --from platformio pio run`
+  * `health-kicks-mobile` : `flutter analyze && flutter test`
   * `health-kicks` : `uv run pytest` (ou `python -m pytest`)
   * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
-  * `health-kicks-edge-script` : `uv run pytest` (ou `python -m pytest`)
-  * `health-kicks-mobile` : `flutter analyze && flutter test`
-  * `health-kicks-esp32-s3` : `uv tool run --from platformio pio run`
 * Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
 
 ---
@@ -78,11 +75,10 @@ Les sous-agents personnalisés sont déclarés sous `.agents/agents/<nom>.md` se
 
 | Agent | Rôle | Répertoire Assigné | Commande de Validation | Fichier de Spécification |
 | :--- | :--- | :--- | :--- | :--- |
+| **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
+| **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
 | **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev.md` |
 | **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev.md` |
-| **`edge-dev`** | Edge AI & Embedded | `health-kicks-edge-script/` | `uv run pytest` | `.agents/agents/edge-dev.md` |
-| **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
-| **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
 
 ---
 
@@ -94,22 +90,22 @@ sequenceDiagram
     actor User as Développeur / Utilisateur
     participant Orch as Orchestrateur Racine
     participant Contract as contracts/
+    participant FW as Agent Firmware
+    participant Mobile as Agent Mobile
     participant Backend as Agent Backend
     participant Frontend as Agent Frontend
-    participant Edge as Agent Edge
-    participant Mobile as Agent Mobile
 
     User->>Orch: Demande de feature transverse (ex: Nouveau type d'alerte / Télémétrie)
-    Orch->>Contract: Rédige / Valide le contrat d'échange (REST / BLE / MQTT)
+    Orch->>Contract: Rédige / Valide le contrat d'échange (BLE / REST / MQTT)
     par Délégation Confinée
-        Orch->>Backend: Implémente endpoints & modèles (health-kicks/)
-        Orch->>Edge: Adapte détection & publication BLE/MQTT (health-kicks-edge-script/)
-        Orch->>Mobile: Adapte client BLE & synchronisation API/Cloud (health-kicks-mobile/)
+        Orch->>FW: Adapte capture, inférence et services BLE (health-kicks-esp32-s3/)
+        Orch->>Mobile: Adapte client BLE, odométrie & synchronisation MQTT/API (health-kicks-mobile/)
+        Orch->>Backend: Implémente endpoints, persistance & STS (health-kicks/)
     end
-    Backend-->>Orch: Tests backend validés (uv run pytest)
-    Edge-->>Orch: Tests edge validés (uv run pytest)
+    FW-->>Orch: Build firmware validé (pio run)
     Mobile-->>Orch: Tests mobile validés (flutter analyze && flutter test)
-    Orch->>Frontend: Implémente affichage & alertes (health-kicks-frontend/)
+    Backend-->>Orch: Tests backend validés (uv run pytest)
+    Orch->>Frontend: Implémente affichage clinique & alertes (health-kicks-frontend/)
     Frontend-->>Orch: Tests frontend validés (pnpm test)
     Orch->>User: Rapport de synchronisation & intégration réussie
 ```

@@ -16,24 +16,18 @@ flowchart TD
         FlutterApp["Application Flutter / Dart\n• Client BLE GATT chiffré & Bouton d'appairage\n• Passerelle MQTT AWS IoT Core (WebSockets SigV4)\n• Négociation STS éphémère (Scoped Policy)\n• Authentification OAuth2 PKCE (S256 + Ticket)\n• Odomètre différentiel net (SQLite)\n• Mise à jour OTA avec vérification SHA-256 & SemVer"]
     end
 
-    subgraph EdgePi["3. Nœud Edge Déporté (health-kicks-edge-script)"]
-        RaspberryPi["Raspberry Pi / Linux\n• Ingestion série UART capteurs\n• Détection locale scikit-learn (chutes)\n• Pont MQTT mTLS (Mosquitto)\n• Déclencheur autonome vibrotactile"]
-    end
-
-    subgraph Cloud["4. Backend & Données Cloud (health-kicks)"]
+    subgraph Cloud["3. Backend & Données Cloud (health-kicks)"]
         IoTCore["AWS IoT Core (Broker MQTT v1)"]
         FastAPI["API REST FastAPI / Uvicorn\n• Courtier de jetons AWS STS\n• Échange de tickets OAuth2 PKCE\n• Historique activités & podométrie\n• Gestionnaire de sessions Studio\n• S3 Firmware Release Manager\n• Probes /health & métriques opérationnelles"]
         Postgres[("Aurora PostgreSQL 16\nVérité Relationnelle & Audit")]
         DynamoDB[("DynamoDB\nTélémétrie brute haute fréquence")]
     end
 
-    subgraph Client["5. Restitution Clinique (health-kicks-frontend)"]
-        AngularUI["Tableau de Bord Web (Angular 21)\n• Angular Signals & Standalone Components\n• Visualisation temps réel & alertes chutes\n• Requalification et validation Studio (is_validated)\n• Déclencheur haptique & calibration à distance\n• Calendrier d'activité & rapports cliniques"]
+    subgraph Client["4. Restitution Clinique (health-kicks-frontend)"]
+        AngularUI["Tableau de Bord Web (Angular 22)\n• Angular Signals & Standalone Components\n• Visualisation temps réel & alertes chutes\n• Requalification et validation Studio (is_validated)\n• Déclencheur haptique & calibration à distance\n• Calendrier d'activité & rapports cliniques"]
     end
 
     ESP32 <-->|BLE GATT LESC Chiffré| FlutterApp
-    ESP32 -.->|UART Série Déporté| RaspberryPi
-    RaspberryPi <-->|mTLS MQTT| IoTCore
     FlutterApp <-->|MQTT WebSockets SigV4| IoTCore
     FlutterApp <-->|REST HTTPS / JWT| FastAPI
     IoTCore -->|Rule Engine / Ingestion| FastAPI
@@ -88,18 +82,11 @@ flowchart TD
 
 ### D. Frontend Web (`health-kicks-frontend/`)
 
-- **Technologies** : Angular 21 (Standalone Components, Signals), Tailwind CSS, Angular Material, Chart.js, pnpm.
+- **Technologies** : Angular 22 (Standalone Components, Signals), Tailwind CSS 4, Angular Material, Chart.js, pnpm.
 - **Responsabilités** :
   - **Supervision clinique** : Suivi des patients, détection des chutes en direct, analyse des cadences de marche.
   - **Module Studio & Annotation** : Enregistrement de sessions calibrées avec compte à rebours visuel/sensoriel, visualisation des signaux 3-axes ($a_x, a_y, a_z, g_x, g_y, g_z$), requalification et validation des labels cliniques (`is_validated`).
   - **Contrôle matériel distant** : Déclenchement de stimulations haptiques et configuration des seuils d'inactivité.
-
-### E. Agent Edge Déporté (`health-kicks-edge-script/`)
-
-- **Technologies** : Python 3.11, scikit-learn 1.4.2, NumPy, Paho-MQTT, PySerial, Bluezero, packaging Debian.
-- **Responsabilités** :
-  - Nœud passerelle de secours pour installations fixes (ex: chambre d'hôpital, centre de rééducation) via Raspberry Pi.
-  - Acquisition directe par câble USB/Série et inférence de secours sans dépendance au smartphone.
 
 ---
 

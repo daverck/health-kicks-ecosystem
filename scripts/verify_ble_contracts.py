@@ -4,8 +4,7 @@
 Verifies 100% adherence between:
 1. Canonical contract: contracts/ble_gatt_specs.md
 2. Firmware:           health-kicks-esp32-s3/include/invariants.h
-3. Edge AI:            health-kicks-edge-script/src/healthkicks_edge/transport/ble/constants.py
-4. Mobile:             health-kicks-mobile/lib/core/constants/ble_constants.dart
+3. Mobile:             health-kicks-mobile/lib/core/constants/ble_constants.dart
 """
 
 from __future__ import annotations
@@ -18,7 +17,6 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 
 CONTRACT_FILE = ROOT_DIR / "contracts" / "ble_gatt_specs.md"
 FIRMWARE_HEADER = ROOT_DIR / "health-kicks-esp32-s3" / "include" / "invariants.h"
-EDGE_CONSTANTS = ROOT_DIR / "health-kicks-edge-script" / "src" / "healthkicks_edge" / "transport" / "ble" / "constants.py"
 MOBILE_CONSTANTS = ROOT_DIR / "health-kicks-mobile" / "lib" / "core" / "constants" / "ble_constants.dart"
 
 EXPECTED_UUIDS = {
@@ -79,11 +77,6 @@ def main() -> int:
 
     print("Checking Firmware definitions (health-kicks-esp32-s3/include/invariants.h)...")
     verify_file_contains_uuids(FIRMWARE_HEADER, EXPECTED_UUIDS, errors)
-
-    print("Checking Edge Script definitions (health-kicks-edge-script/src/.../constants.py)...")
-    # Edge script implements primary footwear service and characteristics 0001 to 0005
-    edge_subset = {k: v for k, v in EXPECTED_UUIDS.items() if "OTA" not in k and k != "CHAR_STEP_COUNTER_UUID"}
-    verify_file_contains_uuids(EDGE_CONSTANTS, edge_subset, errors)
 
     print("Checking Mobile definitions (health-kicks-mobile/lib/.../ble_constants.dart)...")
     verify_file_contains_uuids(MOBILE_CONSTANTS, EXPECTED_UUIDS, errors)

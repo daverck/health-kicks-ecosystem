@@ -13,10 +13,6 @@
       "path": "health-kicks-frontend"
     },
     {
-      "name": "Edge AI (health-kicks-edge-script)",
-      "path": "health-kicks-edge-script"
-    },
-    {
       "name": "Mobile (health-kicks-mobile)",
       "path": "health-kicks-mobile"
     },
@@ -28,8 +24,7 @@
   "settings": {
     "python.defaultInterpreterPath": "${workspaceFolder:Backend (health-kicks)}/.venv/Scripts/python.exe",
     "python.analysis.extraPaths": [
-      "${workspaceFolder:Backend (health-kicks)}",
-      "${workspaceFolder:Edge AI (health-kicks-edge-script)}/src"
+      "${workspaceFolder:Backend (health-kicks)}"
     ]
   }
 }

@@ -27,11 +27,11 @@ repos:
     hooks:
       - id: ruff
         name: ruff (linter)
-        files: ^(health-kicks|health-kicks-edge-script)/.*\.py$
+        files: ^(health-kicks)/.*\.py$
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
         name: ruff (formatter)
-        files: ^(health-kicks|health-kicks-edge-script)/.*\.py$
+        files: ^(health-kicks)/.*\.py$
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
@@ -48,7 +48,7 @@ repos:
         entry: python scripts/verify_ble_contracts.py
         language: system
         pass_filenames: false
-        files: ^(contracts/|health-kicks-esp32-s3/include/|health-kicks-edge-script/.*constants\.py|health-kicks-mobile/.*ble_constants\.dart)
+        files: ^(contracts/|health-kicks-esp32-s3/include/|health-kicks-mobile/.*ble_constants\.dart)
       - id: verify-openapi-drift
         name: verify-openapi-drift
         entry: python scripts/verify_openapi_drift.py

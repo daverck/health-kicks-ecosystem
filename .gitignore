@@ -34,6 +34,5 @@ Thumbs.db
 # Explicit submodules safeguarding
 !health-kicks/
 !health-kicks-frontend/
-!health-kicks-edge-script/
 !health-kicks-mobile/
 !health-kicks-esp32-s3/

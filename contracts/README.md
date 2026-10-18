@@ -11,7 +11,7 @@ Tout agent ou développeur doit suivre le protocole **Spec-First** décrit ci-de
 1. **Interdiction de modification unilatérale** : Aucun sous-projet ne peut altérer un payload JSON, un topic MQTT ou un endpoint REST sans modification préalable d'un contrat dans ce répertoire.
 2. **Cycle d'évolution** :
    - L'orchestrateur ou le développeur propose une mise à jour d'un contrat dans `contracts/rest/` ou `contracts/mqtt/`.
-   - Les impacts sont revus auprès des agents concernés (`backend-dev`, `frontend-dev`, `edge-dev`).
+   - Les impacts sont revus auprès des agents concernés (`firmware-dev`, `mobile-dev`, `backend-dev`, `frontend-dev`).
    - Une fois le contrat validé, les implémentations dans les sous-projets sont réalisées en parallèle ou de manière ordonnée.
    - Les tests de compatibilité de schéma sont validés.
 

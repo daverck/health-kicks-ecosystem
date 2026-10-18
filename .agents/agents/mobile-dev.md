@@ -12,7 +12,7 @@ mainAgent: false
 - **Identifiant** : `mobile-dev`
 - **Périmètre d'écriture exclusif** : [`health-kicks-mobile/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-mobile/)
 - **Périmètres en lecture seule** : [`contracts/`](file:///f:/Programmation/healthkicks-ecosystem/contracts/), [`docs/`](file:///f:/Programmation/healthkicks-ecosystem/docs/)
-- **Interdiction formelle** : Ne jamais modifier de fichiers en dehors de `health-kicks-mobile/` (notamment `health-kicks/`, `health-kicks-frontend/`, `health-kicks-edge-script/` ou la racine du workspace).
+- **Interdiction formelle** : Ne jamais modifier de fichiers en dehors de `health-kicks-mobile/` (notamment `health-kicks/`, `health-kicks-frontend/`, `health-kicks-esp32-s3/` ou la racine du workspace).
 
 ---
 
@@ -21,7 +21,7 @@ mainAgent: false
 - **Framework & Runtime** : Flutter 3.x / Dart SDK (Android / iOS)
 - **Gestion d'État & Architecture** : Provider / ChangeNotifier / Riverpod, services découplés
 - **Communication Périphérique (BLE / GATT)** :
-  * Client BLE (`flutter_blue_plus`) pour la communication directe avec `health-kicks-edge-script` et `health-kicks-esp32-s3`.
+  * Client BLE (`flutter_blue_plus`) pour la communication directe avec la chaussure connectée `health-kicks-esp32-s3`.
   * Gestion des caractéristiques GATT (Activity, Haptic Command, Studio Control, Studio Burst, Step Counter).
   * Gestion des permissions d'exécution Android 14 (API 34) et iOS (`BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, `ACCESS_FINE_LOCATION`).
 - **Synchronisation Réseau & Cloud** :

@@ -1,6 +1,6 @@
 # Invariants d'Architecture Critiques - HealthKicks Ecosystem
 
-Ce document consigne les règles fondamentales et non négociables régissant l'écosystème **HealthKicks** (`health-kicks`, `health-kicks-frontend`, `health-kicks-edge-script`).
+Ce document consigne les règles fondamentales et non négociables régissant l'écosystème **HealthKicks** (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`).
 
 ---
 
@@ -79,16 +79,15 @@ La confidentialité des données biomécaniques et cliniques est garantie par un
 
 ---
 
-## 4. Alignement Strict de Version ML sur le Runtime Edge (`scikit-learn==1.4.2`)
+## 4. Pipeline ML & Transpilation Embarquée C++ (`health-kicks` ↔ `health-kicks-esp32-s3`)
 
-L'inférence s'exécute directement sur l'embarqué (Raspberry Pi / microcontrôleur) en chargeant un artefact sérialisé au format `joblib` :
+L'inférence d'activité et de détection de chute s'exécute directement sur le microcontrôleur ESP32-S3 via du code C++ pur auto-généré :
 
-- **Version cible commune** : `scikit-learn==1.4.2`
-- **Dépendances associées** : `joblib>=1.3.0,<2.0`, `numpy>=1.26.0,<2.0`
-- **Règle absolue d'interopérabilité** :
-  - Le pipeline d'entraînement ([`health-kicks`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks)) et le démon d'inférence temps réel ([`health-kicks-edge-script`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script)) **doivent utiliser la même version mineure et majeure de scikit-learn**.
-  - Toute divergence de version brise la désérialisation pickle de `joblib` sur l'agent Edge (`InconsistentVersionWarning` ou crash lors du `predict_proba`).
-  - Les 16 features calculées à l'entraînement ([`compute_window_features`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) et à l'inférence ([`extract_features_from_readings`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script/src/healthkicks_edge/inference/features.py)) doivent rester strictement identiques en ordre, formule et normalisation.
+- **Pipeline d'entraînement** : [`health-kicks/scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py) entraîne le classifieur Random Forest (`scikit-learn==1.4.2`).
+- **Génération C++ embarquée** : [`health-kicks/scripts/update_edge_model.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/update_edge_model.py) transpile les arbres de décision directement en code C sans dépendance runtime (`health-kicks-esp32-s3/include/activity_detector_model.h`).
+- **Règle absolue d'interopérabilité des features** :
+  - Les 16 features calculées à l'entraînement (`compute_window_features`) et à l'inférence embarquée dans `health-kicks-esp32-s3` (`activity_detector.cpp`) **doivent rester strictement identiques** en ordre, formule, fenêtre (5 secondes / ~94 échantillons à 19 Hz) et normalisation.
+  - Tout changement dans le pipeline d'extraction de features impose une régénération et une compilation du firmware PlatformIO.
 
 ---
 

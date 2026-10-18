@@ -12,7 +12,7 @@ mainAgent: false
 - **Identifiant** : `frontend-dev`
 - **Périmètre d'écriture exclusif** : [`health-kicks-frontend/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-frontend/)
 - **Périmètres en lecture seule** : [`contracts/`](file:///f:/Programmation/healthkicks-ecosystem/contracts/), [`docs/`](file:///f:/Programmation/healthkicks-ecosystem/docs/)
-- **Interdiction formelle** : Ne jamais modifier de fichiers en dehors de `health-kicks-frontend/` (notamment `health-kicks/`, `health-kicks-edge-script/` ou la racine du workspace).
+- **Interdiction formelle** : Ne jamais modifier de fichiers en dehors de `health-kicks-frontend/` (notamment `health-kicks/`, `health-kicks-mobile/`, `health-kicks-esp32-s3/` ou la racine du workspace).
 
 ---
 

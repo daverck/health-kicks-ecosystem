@@ -78,17 +78,15 @@ Le script [`scripts/verify_openapi_drift.py`](file:///f:/Programmation/healthkic
 
 ---
 
-## 3. Pipeline BLE GATT (Firmware ↔ Edge ↔ Mobile)
+## 3. Pipeline BLE GATT (Firmware ↔ Mobile)
 
 ```mermaid
 flowchart TD
     Contract["Contrat Canonique BLE<br/>(contracts/ble_gatt_specs.md)"]
     Contract -->|Miroir C++| FW["Firmware ESP32-S3<br/>(include/invariants.h)"]
-    Contract -->|Miroir Python| Edge["Edge Script<br/>(transport/ble/constants.py)"]
     Contract -->|Miroir Dart| Mob["Mobile Flutter<br/>(core/constants/ble_constants.dart)"]
     Verif["scripts/verify_ble_contracts.py"] -.->|Audit Automatisé| Contract
     Verif -.->|Audit Automatisé| FW
-    Verif -.->|Audit Automatisé| Edge
     Verif -.->|Audit Automatisé| Mob
 ```
 
@@ -97,7 +95,6 @@ flowchart TD
 1. **Source de Vérité** : [`contracts/ble_gatt_specs.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/ble_gatt_specs.md) définit tous les UUIDs de services (`0x0001` à `0x0010`), caractéristiques (`0x0002` à `0x0012`), codes d'état d'activité (`0x00` Idle, `0x01` Walk, `0x02` Run, `0x10`-`0x12` Falls) et formats binaires.
 2. **Alignement Obligatoire** :
    - C++ : [`health-kicks-esp32-s3/include/invariants.h`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-esp32-s3/include/invariants.h)
-   - Python : [`health-kicks-edge-script/src/healthkicks_edge/transport/ble/constants.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-edge-script/src/healthkicks_edge/transport/ble/constants.py)
    - Dart : [`health-kicks-mobile/lib/core/constants/ble_constants.dart`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-mobile/lib/core/constants/ble_constants.dart)
 3. **Vérification Automatique** : Le script [`scripts/verify_ble_contracts.py`](file:///f:/Programmation/healthkicks-ecosystem/scripts/verify_ble_contracts.py) s'exécute en pre-commit et en CI pour certifier l'égalité stricte des constantes.
 
