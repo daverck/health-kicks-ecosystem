@@ -1,0 +1,74 @@
+name: SAST Security Scan (Semgrep)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1' # Weekly security audit every Monday at 03:00 UTC
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  semgrep-scan:
+    name: Semgrep Static Application Security Testing
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+
+    steps:
+      - name: Checkout monorepo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Run Semgrep SAST Scan with SARIF Generation
+        run: |
+          semgrep scan \
+            --config=auto \
+            --config=p/owasp-top-ten \
+            --config=p/cwe-top-25 \
+            --sarif \
+            --output=semgrep.sarif \
+            --exclude="node_modules" \
+            --exclude=".venv" \
+            --exclude=".pio" \
+            --exclude="build" \
+            --exclude="dist" \
+            --exclude=".dart_tool" \
+            --exclude="coverage" \
+            --exclude="*.test.*" \
+            --exclude="test/" \
+            --exclude="tests/" || true
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+        continue-on-error: true
+
+      - name: Enforce Zero High/Critical Security Vulnerabilities
+        run: |
+          semgrep scan \
+            --config=auto \
+            --config=p/owasp-top-ten \
+            --config=p/cwe-top-25 \
+            --error \
+            --severity=ERROR \
+            --exclude="node_modules" \
+            --exclude=".venv" \
+            --exclude=".pio" \
+            --exclude="build" \
+            --exclude="dist" \
+            --exclude=".dart_tool" \
+            --exclude="coverage" \
+            --exclude="*.test.*" \
+            --exclude="test/" \
+            --exclude="tests/"
