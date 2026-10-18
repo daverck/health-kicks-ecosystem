@@ -82,7 +82,7 @@ Endianness : **Big-Endian** (réseau standard).
 | 0      | `state_code` | uint8  | Table ci-dessous | Code de l'état ou de l'événement détecté                                                     |
 | 1      | `confidence` | uint8  | `0` – `100`      | Niveau de confiance du modèle en %                                                           |
 | 2..5   | `timestamp`  | uint32 | Epoch Unix (sec) | Horodatage UTC de détection                                                                  |
-| 6      | `flags`      | uint8  | Bitfield         | Bit 0 : Détection critique (chute)<br>Bit 1 : Déclenchement haptique local autonome effectué |
+| 6      | `flags`      | uint8  | Bitfield         | Bit 0 : Détection critique (chute)<br>Bit 1 : Déclenchement haptique local autonome effectué<br>Bit 2 : Alerte différée / historisée hors-ligne (NVS) |
 
 #### Table des `state_code` :
 
