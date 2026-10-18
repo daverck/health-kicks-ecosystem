@@ -5,8 +5,6 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 3 * * 1' # Weekly security audit every Monday at 03:00 UTC
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 permissions:
@@ -72,3 +70,4 @@ jobs:
             --exclude="*.test.*" \
             --exclude="test/" \
             --exclude="tests/"
+
