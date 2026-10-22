@@ -331,7 +331,8 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
 - **Rôle** : Acheminement en flux continu des paquets bruts constituant le binaire firmware `.bin`.
 - **Dimensionnement du payload** : La taille maximale d'un chunk est fixée à `ATT_MTU - 3` octets (ex: 244 octets pour une MTU de 247).
-- **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
+- **Paramètres de débit** : Le mobile demande une MTU de 247 et utilise jusqu'à 244 octets par écriture, selon la MTU effectivement négociée. Pendant le transfert, le serveur demande un intervalle de connexion de 15 à 20 ms, puis restaure l'intervalle nominal de 100 à 125 ms à la fin ou à l'annulation.
+- **Régulation de flux (Pacing)** : Le mobile attend la fin de chaque écriture `WRITE WITHOUT RESPONSE` mais n'ajoute pas de délai fixe entre les paquets. La stack BLE conserve la régulation du transport ; un délai configurable peut être réintroduit pour les appareils qui satureraient leurs buffers.
 - **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
 
 #### 3. Sécurité BLE GATT (LE Secure Connections & Appairage par Bouton Physique) & Sûreté Anti-Bricking
