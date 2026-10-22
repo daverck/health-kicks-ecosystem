@@ -33,7 +33,10 @@ sequenceDiagram
     Mobile->>Footwear: Écriture BLE (Studio Control: START <label> <sec> <id>)
     Footwear->>Mobile: Notification BLE (Studio Control: RECORDING <sec>)
     Note over Footwear: Bufferisation RAM 50Hz (aucune émission BLE pendant la capture)
-    Footwear->>Mobile: Notification BLE (Studio Control: FINISHED <count> <id>)
+    opt Fin manuelle avant la durée demandée, après 2 secondes minimum
+        Mobile->>Footwear: Écriture BLE (Studio Control: FINISH)
+    end
+    Footwear->>Mobile: Notification BLE (Studio Control: FINISHED <count> <id> <duration_sec>)
     loop Paquets Découpés (Burst Transfer)
         Footwear->>Mobile: Notification BLE (Studio Data Burst: CHUNK seq_num)
     end
@@ -148,7 +151,7 @@ Format textuel ASCII encodé en UTF-8 :
    START <label> <duration_sec> <session_id>
    ```
    - _Exemple_ : `START walk 5.0 7b8e9f01-2345-6789-abcd-ef0123456789`
-   - Contraintes : `duration_sec` entre `1.0` et `30.0` secondes.
+   - Contraintes : `duration_sec` entre `2.0` et `30.0` secondes.
 
 2. **Annulation** :
 
@@ -156,13 +159,20 @@ Format textuel ASCII encodé en UTF-8 :
    CANCEL
    ```
 
-3. **Déclenchement de Calibration d'Assiette IMU** :
+3. **Fin anticipée d'un enregistrement** :
+
+   ```text
+   FINISH
+   ```
+   - Valide uniquement après au moins 2 secondes d'échantillonnage ; la chaussure émet alors `FINISHED` et transmet le burst IMU.
+
+4. **Déclenchement de Calibration d'Assiette IMU** :
 
    ```text
    CALIBRATE
    ```
 
-4. **Configuration du Rappel d'Inactivité** :
+5. **Configuration du Rappel d'Inactivité** :
    ```text
    SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
    ```
@@ -176,7 +186,7 @@ Format textuel ASCII encodé en UTF-8 :
 | :------------------------------------- | :----------------------------- | :------------------------------------------------------------------ |
 | `COUNTDOWN <pulse>/<total>`            | Début de session               | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`) |
 | `RECORDING <duration_sec>`             | Fin du compte à rebours        | La capture démarre en RAM à 50 Hz                                   |
-| `FINISHED <sample_count> <session_id>` | Fenêtre expirée                | Capture terminée, prête pour le déversement burst                   |
+| `FINISHED <sample_count> <session_id> <duration_sec>` | Fenêtre expirée ou commande `FINISH` | Capture terminée, prête pour le déversement burst ; durée réelle transmise |
 | `CALIBRATING <duration_sec>`           | Commande `CALIBRATE` ou `0x05` | Début de l'échantillonnage d'immobilité pour réaligner l'assiette   |
 | `CALIBRATION_OK`                       | 4.0s immobiles atteintes       | Calibration réussie, matrice de rotation persistée en NVS           |
 | `CALIBRATION_ERROR <reason>`           | Mouvement / instabilité        | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)      |

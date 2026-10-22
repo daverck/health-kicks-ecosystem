@@ -218,8 +218,14 @@ BACKEND_INGEST_URL = os.environ.get('BACKEND_INGEST_URL', 'https://api.healthkic
 INGEST_TOKEN = os.environ.get('INGEST_TOKEN', '')
 
 
-def notify_backend_aurora(device_id: str, session_id: str, label: str, sample_count: int) -> None:
-    """Notify the FastAPI backend to update the session record in Aurora DB."""
+def notify_backend_aurora(
+    device_id: str,
+    session_id: str,
+    label: str,
+    sample_count: int,
+    duration_sec: float | None,
+) -> None:
+    """Notify the FastAPI backend to update session metadata in Aurora DB."""
     if not BACKEND_INGEST_URL or not session_id:
         return
 
@@ -232,7 +238,8 @@ def notify_backend_aurora(device_id: str, session_id: str, label: str, sample_co
             "device_id": device_id,
             "session_id": session_id,
             "label": label or "unlabeled",
-            "sample_count": sample_count
+            "sample_count": sample_count,
+            "duration_sec": duration_sec
         }
     }
 
@@ -262,6 +269,7 @@ def lambda_handler(event, context):
         metadata = event.get('metadata', {})
         session_id = metadata.get('session_id') or event.get('session_id')
         label = metadata.get('label') or event.get('label')
+        duration_sec = metadata.get('duration_sec') or event.get('duration_sec')
 
         readings = event.get('readings', [])
         if not readings:
@@ -329,7 +337,8 @@ def lambda_handler(event, context):
                 device_id=default_device_id,
                 session_id=session_id,
                 label=label,
-                sample_count=inserted_count
+                sample_count=inserted_count,
+                duration_sec=duration_sec
             )
 
         return {
@@ -466,5 +475,5 @@ def lambda_handler(event, context):
 | :--------------------------------------- | :-------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------------- |
 | `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`               | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
 | `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status` | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
-| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`        | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`) |
+| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`        | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
 | `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`     | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |
