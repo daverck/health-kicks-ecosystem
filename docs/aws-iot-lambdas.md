@@ -567,3 +567,37 @@ def lambda_handler(event, context):
 | `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`              | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
 | `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`           | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |
 | `healthkicks_fall_alert_rule`            | `healthkicks/v1/users/+/events/fall-alert`    | Lambda -> FastAPI REST               | Aurora DB (`fall_alerts`, `fall_alert_notifications`) + SMTP Email Escalation |
+
+
+---
+
+## 7. EC2 Backend IoT Core Permissions
+
+The FastAPI backend runs on an EC2 instance associated with IAM Role `EC2ToAuroraBDDAuthRole` (via Instance Profile `EC2ToAuroraInstanceProfile`).
+In addition to Aurora connection and STS assume-role capabilities, the EC2 role requires permission to publish MQTT commands to devices and downlink fall alert status updates to mobile applications via AWS IoT Core (`iot-data:Publish`).
+
+### IAM Inline Policy: `HealthKicks-EC2-IoTPublishPolicy`
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowIoTPublishHapticCommands",
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish"
+      ],
+      "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/*/commands/*"
+    },
+    {
+      "Sid": "AllowIoTPublishFallAlertDownlink",
+      "Effect": "Allow",
+      "Action": [
+        "iot:Publish"
+      ],
+      "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/users/*/fall-alert/status"
+    }
+  ]
+}
+```
