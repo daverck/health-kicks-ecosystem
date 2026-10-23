@@ -1,6 +1,6 @@
 # AWS IoT Core Rules & Lambda Ingestion Architecture
 
-This document describes the AWS IoT Topic Rules, execution environments, environment variables, and handlers deployed to ingest telemetry, presence events, and activity detection into DynamoDB and Aurora PostgreSQL.
+This document describes the AWS IoT Topic Rules, execution environments, environment variables, and handlers deployed to ingest telemetry, presence events, activity detection, and fall alerts into DynamoDB and Aurora PostgreSQL.
 
 ---
 
@@ -469,11 +469,101 @@ def lambda_handler(event, context):
 
 ---
 
-## 5. Summary Table
+## 5. Fall Alert Lifecycle Relay (FastAPI Internal Webhook)
 
-| IoT Rule Name                            | MQTT Topic Filter                       | Destination Service                  | Final Data Sink                                                              |
-| :--------------------------------------- | :-------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------------- |
-| `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`               | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
-| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status` | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
-| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`        | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
-| `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`     | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |
+- **IoT Rule Name:** `healthkicks_fall_alert_rule`
+- **Rule SQL:**
+
+```sql
+SELECT *, topic(4) as user_id FROM 'healthkicks/v1/users/+/events/fall-alert'
+```
+
+- **Trigger:** Published by the mobile gateway in Active Surveillance mode when a fall is detected (`DETECTED`), confirmed early (`CONFIRM`), or cancelled manually / via recovery (`CANCEL`).
+- **Target:** AWS Lambda Function (`healthkicks-fall-alert-relay`)
+
+### Environment Variables
+
+| Variable       | Required | Default                                                           | Description                                                               |
+| :------------- | :------: | :---------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/fall-alerts` | FastAPI internal endpoint for fall alert lifecycle management.            |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                       | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                            | Set to `false` only in development if using self-signed TLS certificates. |
+
+### Source Code (`lambda_function.py`)
+
+```python
+import json
+import os
+import ssl
+import urllib.request
+
+
+def lambda_handler(event, context):
+    print(f"[FALL_ALERT] Event received: {json.dumps(event)}")
+
+    backend_url = os.environ.get(
+        "BACKEND_URL",
+        "https://healthkicks.duckdns.org:8443/api/v1/internal/fall-alerts"
+    )
+    ingest_token = os.environ.get("INGEST_TOKEN", "dev-token")
+    verify_ssl = os.environ.get("VERIFY_SSL", "true").lower() == "true"
+
+    user_id = event.get("user_id")
+    event_id = event.get("event_id")
+    action = event.get("action")
+
+    if not user_id or not event_id or not action:
+        print(f"[FALL_ALERT] Event ignored (missing user_id, event_id or action): {json.dumps(event)}")
+        return {"status": "ignored", "reason": "missing required fields"}
+
+    payload = {
+        "user_id": str(user_id),
+        "event_id": str(event_id),
+        "action": str(action),
+        "device_id": event.get("device_id"),
+        "event_type": event.get("event_type"),
+        "confidence": event.get("confidence"),
+        "detected_at": event.get("detected_at"),
+        "delivery": event.get("delivery", "live"),
+        "location": event.get("location"),
+        "cancel_reason": event.get("cancel_reason"),
+        "sent_at": event.get("sent_at"),
+    }
+
+    data_bytes = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        backend_url,
+        data=data_bytes,
+        headers={
+            "Content-Type": "application/json",
+            "X-Ingest-Token": ingest_token,
+        },
+        method="POST"
+    )
+
+    ssl_context = None if verify_ssl else ssl._create_unverified_context()
+
+    try:
+        with urllib.request.urlopen(req, timeout=10, context=ssl_context) as response:
+            resp_body = response.read().decode("utf-8")
+            print(f"[FALL_ALERT] Backend synchronized ({event_id}, {action}). HTTP {response.status}, Response: {resp_body}")
+            return {
+                "statusCode": response.status,
+                "body": resp_body
+            }
+    except Exception as e:
+        print(f"[FALL_ALERT] Error calling backend ({backend_url}): {e}")
+        raise e
+```
+
+---
+
+## 6. Summary Table
+
+| IoT Rule Name                            | MQTT Topic Filter                             | Destination Service                  | Final Data Sink                                                              |
+| :--------------------------------------- | :-------------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------------- |
+| `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`                     | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
+| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status`       | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
+| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`              | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
+| `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`           | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |
+| `healthkicks_fall_alert_rule`            | `healthkicks/v1/users/+/events/fall-alert`    | Lambda -> FastAPI REST               | Aurora DB (`fall_alerts`, `fall_alert_notifications`) + SMTP Email Escalation |
