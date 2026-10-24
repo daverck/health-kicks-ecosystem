@@ -186,6 +186,18 @@ Format textuel ASCII encodé en UTF-8 :
    - _Valeur par défaut_ : `16.2` $\text{m/s}^2$ ($\approx 1.65\,g$).
    - _Exemple_ : `SET_FALL_IMPACT 16.2`
 
+7. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
+   ```text
+   SET_HITL <enabled:0|1>
+   ```
+   - _Paramètre_ : `0` pour désactiver, `1` pour activer.
+   - _Valeur par défaut_ : `0` (désactivé).
+   - _Exemple_ : `SET_HITL 1`
+   - _Comportement_ :
+     - La chaussure maintient en permanence un buffer circulaire de 76 trames brutes IMU à 19 Hz (~4,0 secondes).
+     - À chaque notification d'activité sur `0002` (changement d'état d'activité ou détection de chute) à l'instant $T$, la chaussure continue d'enregistrer pendant 1,5 seconde (28 trames post-événement).
+     - À $T + 1.5\,\text{s}$, la chaussure notifie `FINISHED 76 hitl-<timestamp> 4.0` sur `0004` puis transmet la salve de 76 trames IMU (~2,5 s avant et ~1,5 s après la détection) sur la caractéristique Studio Data Burst `0005`.
+
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 
 Format textuel ASCII encodé en UTF-8 :
@@ -200,6 +212,8 @@ Format textuel ASCII encodé en UTF-8 :
 | `CALIBRATION_ERROR <reason>`           | Mouvement / instabilité        | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)      |
 | `FALL_IMPACT_OK <impact_ms2>`          | Commande `SET_FALL_IMPACT`     | Seuil de choc validé, appliqué au moteur Edge AI et persisté en NVS |
 | `FALL_IMPACT_ERROR <reason>`           | Commande `SET_FALL_IMPACT`     | Rejet de la commande (ex: valeur hors limite, format invalide)      |
+| `HITL_OK <0|1>`                        | Commande `SET_HITL`            | Mode HITL activé (1) ou désactivé (0) avec succès                   |
+| `HITL_ERROR <reason>`                  | Commande `SET_HITL`            | Rejet de la commande (ex: argument invalide)                        |
 | `CANCELLED`                            | Commande reçue                 | Session interrompue                                                 |
 | `ERROR <reason>`                       | Anomalie matérielle/RAM        | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`)                  |
 
