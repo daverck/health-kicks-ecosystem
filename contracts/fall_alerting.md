@@ -112,7 +112,7 @@ Publié par l'application mobile en **QoS 1**.
 }
 ```
 
-#### 4. Payload `action = "SMS_STATUS"` (retour d'exécution du relais SMS Android vers le Backend)
+#### 4. Payload `action = "SMS_STATUS"` (retour d'exécution du relais SMS Android vers le Backend via MQTT ou REST `POST /api/v1/fall-alerts/sms-status`)
 
 ```json
 {

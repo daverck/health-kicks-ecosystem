@@ -527,6 +527,9 @@ def lambda_handler(event, context):
         "delivery": event.get("delivery", "live"),
         "location": event.get("location"),
         "cancel_reason": event.get("cancel_reason"),
+        "notification_id": event.get("notification_id"),
+        "sms_status": event.get("sms_status"),
+        "error_message": event.get("error_message"),
         "sent_at": event.get("sent_at"),
     }
 
