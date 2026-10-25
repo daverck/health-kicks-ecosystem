@@ -56,7 +56,7 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 | **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Service principal de la chaussure connectée                       |
 | **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Événements d'activité et alertes de chute                         |
 | **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile                                |
-| **Studio Control**             | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état et protocole de session Studio                    |
+| **Device & Studio Control**    | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état, étalonnage assiette, réglages et protocole Studio |
 | **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | Déversement binaire haute vitesse des trames IMU                  |
 | **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Compteur de pas déterministe, ventilation par activité et cadence |
 | **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Service dédié à la mise à jour firmware Over-The-Air              |
@@ -103,6 +103,13 @@ Endianness : **Big-Endian** (réseau standard).
 - `0x1F` : `fall_generic` (chute non spécifiée)
 - `0x20` : `inactivity_alert` (rappel d'inactivité prolongée / sédentarité)
 
+#### Capacité Actuelle (256 Classes) & Feuille de Route d'Évolution
+
+- **Capacité Actuelle (`uint8`)** : Le champ `state_code` est encodé sur 1 octet (`uint8`), ce qui permet d'adresser jusqu'à **256 classes distinctes** (`0x00` à `0xFF`). Avec 13 classes allouées actuellement, le système dispose d'une marge de **243 identifiants disponibles (> 94% de réserve)**.
+- **Évolution Future si > 256 Classes** :
+  - **Option A (Extension `uint16`)** : Si le catalogue de mouvements ou d'exercices dépasse 256 classes, le champ `state_code` peut être étendu à 2 octets (`uint16`, 65 536 classes). Le payload passerait de 7 à 8 octets, restant **largement en deçà du plafond de 20 octets** de la payload ATT MTU standard (23 octets) sans provoquer aucune fragmentation radio BLE.
+  - **Option B (Structuration Hiérarchique sur 2 octets)** : Découpage en `category_id` (1 octet : 0x01 Locomotion, 0x02 Postures, 0x03 Chutes, 0x04 Pathologies/Boiteries, 0x05 Sports...) + `sub_activity_id` (1 octet au sein de la catégorie), garantissant un routage et un filtrage macro instantanés côté smartphone et Cloud.
+
 ---
 
 ### B. Caractéristique 2 : Haptic Command (`7a5a0003-...`)
@@ -136,10 +143,10 @@ Endianness : **Big-Endian**.
 
 ---
 
-### C. Caractéristique 3 : Studio Control (`7a5a0004-...`)
+### C. Caractéristique 3 : Device & Studio Control (`7a5a0004-...`)
 
 - **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio, la calibration de l'IMU et les réglages textuels.
+- **Rôle** : Centraliser l'ensemble du pilotage applicatif, le cycle de vie des captures Studio, l'étalonnage d'assiette IMU et les configurations fonctionnelles de la chaussure en format textuel ASCII UTF-8.
 
 #### 1. Commandes Écrites par le Smartphone (`WRITE`)
 
