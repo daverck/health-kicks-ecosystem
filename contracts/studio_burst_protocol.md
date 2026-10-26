@@ -38,10 +38,12 @@ sequenceDiagram
 
     Note over Shoe: Pulse Haptique de Départ (BIP Long)
     Shoe-->>Mobile: Notify Control (0x0004): "RECORDING HK-SESS-9876"
-    Note over Shoe: Échantillonnage IMU 50 Hz en RAM (5.0s = 250 frames)
+    Note over Shoe: Échantillonnage IMU 50 Hz en RAM (jusqu'à 5.0s)
+    Clinician->>Mobile: Termine après au moins 2.0s (optionnel)
+    Mobile->>Shoe: Write Control (0x0004): "FINISH"
 
     Note over Shoe: Double Pulse Haptique de Fin
-    Shoe-->>Mobile: Notify Control (0x0004): "FINISHED 250 HK-SESS-9876"
+    Shoe-->>Mobile: Notify Control (0x0004): "FINISHED <count> HK-SESS-9876 <actual_duration_sec>"
 
     loop Déchargement Burst (Opcode 0x02)
         Shoe-->>Mobile: Notify Burst (0x0005): [Header 4B + Frames IMU N*12B]
@@ -62,8 +64,9 @@ Le canal de contrôle gère la machine à états de la session. Les messages son
 
 | Commande     | Syntaxe                                     | Description                                                                              |
 | :----------- | :------------------------------------------ | :--------------------------------------------------------------------------------------- |
-| **`START`**  | `START <label> <duration_sec> <session_id>` | Initie une session avec étiquette, durée (1.0 à 30.0s) et UUID de session.               |
+| **`START`**  | `START <label> <duration_sec> <session_id>` | Initie une session avec étiquette, durée (2.0 à 30.0s) et UUID de session.               |
 | **`CANCEL`** | `CANCEL`                                    | Interrompt immédiatement l'enregistrement ou le déchargement et repasse à l'état `IDLE`. |
+| **`FINISH`** | `FINISH`                                    | Termine l'enregistrement après au moins 2.0s et transmet les échantillons recueillis. |
 
 ### B. Notifications Esclave $\to$ Maître (Chaussure $\to$ Mobile)
 
@@ -71,7 +74,7 @@ Le canal de contrôle gère la machine à états de la session. Les messages son
 | :-------------- | :-------------------------------------- | :------------------------------------------------------------------------- |
 | **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>`         | Décompte haptique préparatoire ($3$, $2$, $1$).                            |
 | **`RECORDING`** | `RECORDING <session_id>`                | Début effectif de l'acquisition des données inertielles.                   |
-| **`FINISHED`**  | `FINISHED <total_samples> <session_id>` | Fin de la capture physique ; annonce le nombre exact de frames à recevoir. |
+| **`FINISHED`**  | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Fin de la capture ; annonce le nombre et la durée réelle des frames à recevoir. |
 | **`ERROR`**     | `ERROR <message>`                       | Erreur matérielle (IMU déconnectée, débordement mémoire RAM, etc.).        |
 
 ---

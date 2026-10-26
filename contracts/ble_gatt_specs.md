@@ -33,7 +33,10 @@ sequenceDiagram
     Mobile->>Footwear: Écriture BLE (Studio Control: START <label> <sec> <id>)
     Footwear->>Mobile: Notification BLE (Studio Control: RECORDING <sec>)
     Note over Footwear: Bufferisation RAM 50Hz (aucune émission BLE pendant la capture)
-    Footwear->>Mobile: Notification BLE (Studio Control: FINISHED <count> <id>)
+    opt Fin manuelle avant la durée demandée, après 2 secondes minimum
+        Mobile->>Footwear: Écriture BLE (Studio Control: FINISH)
+    end
+    Footwear->>Mobile: Notification BLE (Studio Control: FINISHED <count> <id> <duration_sec>)
     loop Paquets Découpés (Burst Transfer)
         Footwear->>Mobile: Notification BLE (Studio Data Burst: CHUNK seq_num)
     end
@@ -53,7 +56,7 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 | **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Service principal de la chaussure connectée                       |
 | **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Événements d'activité et alertes de chute                         |
 | **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile                                |
-| **Studio Control**             | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état et protocole de session Studio                    |
+| **Device & Studio Control**    | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état, étalonnage assiette, réglages et protocole Studio |
 | **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | Déversement binaire haute vitesse des trames IMU                  |
 | **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Compteur de pas déterministe, ventilation par activité et cadence |
 | **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Service dédié à la mise à jour firmware Over-The-Air              |
@@ -100,6 +103,13 @@ Endianness : **Big-Endian** (réseau standard).
 - `0x1F` : `fall_generic` (chute non spécifiée)
 - `0x20` : `inactivity_alert` (rappel d'inactivité prolongée / sédentarité)
 
+#### Capacité Actuelle (256 Classes) & Feuille de Route d'Évolution
+
+- **Capacité Actuelle (`uint8`)** : Le champ `state_code` est encodé sur 1 octet (`uint8`), ce qui permet d'adresser jusqu'à **256 classes distinctes** (`0x00` à `0xFF`). Avec 13 classes allouées actuellement, le système dispose d'une marge de **243 identifiants disponibles (> 94% de réserve)**.
+- **Évolution Future si > 256 Classes** :
+  - **Option A (Extension `uint16`)** : Si le catalogue de mouvements ou d'exercices dépasse 256 classes, le champ `state_code` peut être étendu à 2 octets (`uint16`, 65 536 classes). Le payload passerait de 7 à 8 octets, restant **largement en deçà du plafond de 20 octets** de la payload ATT MTU standard (23 octets) sans provoquer aucune fragmentation radio BLE.
+  - **Option B (Structuration Hiérarchique sur 2 octets)** : Découpage en `category_id` (1 octet : 0x01 Locomotion, 0x02 Postures, 0x03 Chutes, 0x04 Pathologies/Boiteries, 0x05 Sports...) + `sub_activity_id` (1 octet au sein de la catégorie), garantissant un routage et un filtrage macro instantanés côté smartphone et Cloud.
+
 ---
 
 ### B. Caractéristique 2 : Haptic Command (`7a5a0003-...`)
@@ -133,10 +143,10 @@ Endianness : **Big-Endian**.
 
 ---
 
-### C. Caractéristique 3 : Studio Control (`7a5a0004-...`)
+### C. Caractéristique 3 : Device & Studio Control (`7a5a0004-...`)
 
 - **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Orchestrer le cycle de vie d'une capture de données biomécaniques Studio, la calibration de l'IMU et les réglages textuels.
+- **Rôle** : Centraliser l'ensemble du pilotage applicatif, le cycle de vie des captures Studio, l'étalonnage d'assiette IMU et les configurations fonctionnelles de la chaussure en format textuel ASCII UTF-8.
 
 #### 1. Commandes Écrites par le Smartphone (`WRITE`)
 
@@ -148,7 +158,7 @@ Format textuel ASCII encodé en UTF-8 :
    START <label> <duration_sec> <session_id>
    ```
    - _Exemple_ : `START walk 5.0 7b8e9f01-2345-6789-abcd-ef0123456789`
-   - Contraintes : `duration_sec` entre `1.0` et `30.0` secondes.
+   - Contraintes : `duration_sec` entre `2.0` et `30.0` secondes.
 
 2. **Annulation** :
 
@@ -156,17 +166,44 @@ Format textuel ASCII encodé en UTF-8 :
    CANCEL
    ```
 
-3. **Déclenchement de Calibration d'Assiette IMU** :
+3. **Fin anticipée d'un enregistrement** :
+
+   ```text
+   FINISH
+   ```
+   - Valide uniquement après au moins 2 secondes d'échantillonnage ; la chaussure émet alors `FINISHED` et transmet le burst IMU.
+
+4. **Déclenchement de Calibration d'Assiette IMU** :
 
    ```text
    CALIBRATE
    ```
 
-4. **Configuration du Rappel d'Inactivité** :
+5. **Configuration du Rappel d'Inactivité** :
    ```text
    SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
    ```
    - _Exemple_ : `SET_INACTIVITY 1 3000 600`
+
+6. **Configuration du Seuil d'Impact de Chute** :
+   ```text
+   SET_FALL_IMPACT <impact_ms2>
+   ```
+   - _Paramètre_ : `impact_ms2` (flottant en $\text{m/s}^2$, plage autorisée : `10.0` à `25.0` $\text{m/s}^2$).
+   - _Valeur par défaut_ : `16.2` $\text{m/s}^2$ ($\approx 1.65\,g$).
+   - _Exemple_ : `SET_FALL_IMPACT 16.2`
+
+7. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
+   ```text
+   SET_HITL <enabled:0|1>
+   ```
+   - _Paramètre_ : `0` pour désactiver, `1` pour activer.
+   - _Valeur par défaut_ : `0` (désactivé).
+   - _Exemple_ : `SET_HITL 1`
+   - _Comportement_ :
+     - La chaussure maintient en permanence un buffer circulaire de 76 trames brutes IMU à 19 Hz (~4,0 secondes).
+     - À chaque notification d'activité sur `0002` (changement d'état d'activité ou détection de chute) à l'instant $T$, la chaussure continue d'enregistrer pendant 1,5 seconde (28 trames post-événement).
+     - À $T + 1.5\,\text{s}$, la chaussure notifie `FINISHED 76 hitl-<timestamp> 4.0` sur `0004` puis transmet la salve de 76 trames IMU (~2,5 s avant et ~1,5 s après la détection) sur la caractéristique Studio Data Burst `0005`.
 
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 
@@ -176,10 +213,14 @@ Format textuel ASCII encodé en UTF-8 :
 | :------------------------------------- | :----------------------------- | :------------------------------------------------------------------ |
 | `COUNTDOWN <pulse>/<total>`            | Début de session               | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`) |
 | `RECORDING <duration_sec>`             | Fin du compte à rebours        | La capture démarre en RAM à 50 Hz                                   |
-| `FINISHED <sample_count> <session_id>` | Fenêtre expirée                | Capture terminée, prête pour le déversement burst                   |
+| `FINISHED <sample_count> <session_id> <duration_sec>` | Fenêtre expirée ou commande `FINISH` | Capture terminée, prête pour le déversement burst ; durée réelle transmise |
 | `CALIBRATING <duration_sec>`           | Commande `CALIBRATE` ou `0x05` | Début de l'échantillonnage d'immobilité pour réaligner l'assiette   |
 | `CALIBRATION_OK`                       | 4.0s immobiles atteintes       | Calibration réussie, matrice de rotation persistée en NVS           |
 | `CALIBRATION_ERROR <reason>`           | Mouvement / instabilité        | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)      |
+| `FALL_IMPACT_OK <impact_ms2>`          | Commande `SET_FALL_IMPACT`     | Seuil de choc validé, appliqué au moteur Edge AI et persisté en NVS |
+| `FALL_IMPACT_ERROR <reason>`           | Commande `SET_FALL_IMPACT`     | Rejet de la commande (ex: valeur hors limite, format invalide)      |
+| `HITL_OK <0|1>`                        | Commande `SET_HITL`            | Mode HITL activé (1) ou désactivé (0) avec succès                   |
+| `HITL_ERROR <reason>`                  | Commande `SET_HITL`            | Rejet de la commande (ex: argument invalide)                        |
 | `CANCELLED`                            | Commande reçue                 | Session interrompue                                                 |
 | `ERROR <reason>`                       | Anomalie matérielle/RAM        | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`)                  |
 
@@ -331,7 +372,8 @@ Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via 
 - **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
 - **Rôle** : Acheminement en flux continu des paquets bruts constituant le binaire firmware `.bin`.
 - **Dimensionnement du payload** : La taille maximale d'un chunk est fixée à `ATT_MTU - 3` octets (ex: 244 octets pour une MTU de 247).
-- **Régulation de flux (Pacing)** : Afin d'éviter la saturation des buffers Bluetooth du smartphone et de la stack NimBLE, l'émetteur applique un court délai (5 à 10 ms par paquet ou micro-sleep tous les 5 paquets).
+- **Paramètres de débit** : Le mobile demande une MTU de 247 et utilise jusqu'à 244 octets par écriture, selon la MTU effectivement négociée. Pendant le transfert, le serveur demande un intervalle de connexion de 15 à 20 ms, puis restaure l'intervalle nominal de 100 à 125 ms à la fin ou à l'annulation.
+- **Régulation de flux (Pacing)** : Le mobile attend la fin de chaque écriture `WRITE WITHOUT RESPONSE` mais n'ajoute pas de délai fixe entre les paquets. La stack BLE conserve la régulation du transport ; un délai configurable peut être réintroduit pour les appareils qui satureraient leurs buffers.
 - **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
 
 #### 3. Sécurité BLE GATT (LE Secure Connections & Appairage par Bouton Physique) & Sûreté Anti-Bricking
