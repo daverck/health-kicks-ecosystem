@@ -151,9 +151,9 @@ jobs:
           path: |
             ~/.platformio
             health-kicks-esp32-s3/.pio
-          key: ${{ runner.os }}-pio-${{ hashFiles('health-kicks-esp32-s3/platformio.ini') }}
+          key: ${{ runner.os }}-pio-v2-${{ hashFiles('health-kicks-esp32-s3/platformio.ini') }}
           restore-keys: |
-            ${{ runner.os }}-pio-
+            ${{ runner.os }}-pio-v2-
 
       - name: Install PlatformIO
         run: |
