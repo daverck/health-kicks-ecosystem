@@ -41,7 +41,7 @@ Les contrats d'échange HTTP REST sont basés sur les spécifications **OpenAPI 
 | **Alertes de Chute (Interne)**       | `POST /api/v1/internal/fall-alerts`                     | Header: `X-Ingest-Token`<br>Body: `FallAlertIngestPayload` (`user_id`, `event_id`, `action` ∈ `DETECTED\|CONFIRM\|CANCEL\|SMS_STATUS`, `device_id`, `event_type`, `confidence`, `detected_at`, `delivery`, `location`, `cancel_reason`, `notification_id`, `sms_status`, `sent_at`)                                     | `FallAlertIngestResponse` (`status`, `alert_id`, `event_id`, `state`, `duplicate`)                                                                                             |
 | **Rapport Statut SMS (Mobile)**      | `POST /api/v1/fall-alerts/sms-status`                   | Header: `Authorization: Bearer <jwt>`<br>Body: `FallAlertSmsStatusRequest` (`notification_id`, `sms_status` ∈ `SENT\|FAILED`, `error_message`, `sent_at`)                                                                                                                                                                      | `FallAlertIngestResponse` (`status`, `alert_id`, `event_id`, `state`, `duplicate`)                                                                                             |
 | **Proches d'Urgence (CRUD & Ordre)** | `GET/POST /api/v1/users/me/alert-contacts`<br>`PUT /api/v1/users/me/alert-contacts/order`<br>`PATCH/DELETE /api/v1/users/me/alert-contacts/{id}`<br>`POST /api/v1/users/me/alert-contacts/{id}/test-email` | `AlertContactCreate`, `AlertContactUpdate`, `AlertContactsOrderPayload`                                                                                                                                                                                                                                                        | `list[AlertContactResponse]`, `AlertContactResponse`, `AlertContactTestEmailResponse`                                                                                          |
-| **Historique Alertes de Chute**      | `GET /api/v1/fall-alerts`<br>`GET /api/v1/fall-alerts/{alert_id}` | Query params: `page`, `page_size`, `state`, `start_date`, `end_date`, `user_id` _(ID numérique ou pseudonyme `SUBJ-XXXXXXXX`, admin uniquement)_                                                                                                                                                                              | `PaginatedFallAlertsResponse`, `FallAlertDetail` (avec pseudonymisation systématique `Patient SUBJ-XXXXXXXX` pour l'affichage)                                                  |
+| **Historique Alertes de Chute**      | `GET /api/v1/fall-alerts`<br>`GET /api/v1/fall-alerts/{alert_id_or_uuid}` | Query params: `page`, `page_size`, `state`, `start_date`, `end_date`, `pseudonym` _(pseudonyme `SUBJ-XXXXXXXX`, admin uniquement)_                                                                                                                                                                              | `PaginatedFallAlertsResponse`, `FallAlertDetail` (avec pseudonymisation systématique `Patient SUBJ-XXXXXXXX` pour l'affichage, exposition de `uuid`, `user_uuid`, `user_pseudonym`)                                                  |
 | **Métadonnées Alerte (Public Safe)** | `GET /api/v1/fall-alerts/ack/info`                      | Query param: `token` (jeton signé HMAC 2 h)                                                                                                                                                                                                                                                                                    | `FallAlertAckInfoResponse` (lecture seule sécurisée pour la SPA frontend)                                                                                                       |
 | **Prise en Charge Alerte (Public)**  | `POST /api/v1/fall-alerts/ack`                          | Body JSON: `{"token": "string"}` (jeton signé HMAC 2 h)                                                                                                                                                                                                                                                                        | `FallAlertAckResultResponse` (`{"status": "ok", "state": "ACKNOWLEDGED", ...}`)                                                                                                |
 | **Synchronisation des Pas**          | `POST /api/v1/steps/sync`                               | `DailyStepsSyncPayload` (`device_id`, `date`, `hourly_steps`: liste de `{"hour", "activity_type", "step_count"}`)                                                                                                                                                                                                            | `{"status": "synchronized", "synced_records": int}`                                                                                                                            |
@@ -88,7 +88,7 @@ _Exemple de réponse JSON (`FirmwareLatestResponse`)_ :
 
 ## 3. Contrats MQTT IoT (Edge <-> AWS IoT Core <-> Backend)
 
-Les communications IoT utilisent le protocole MQTT sur AWS IoT Core avec une convention de nommage hiérarchique stricte sous le préfixe `healthkicks/v1/{device_id}/` ou `healthkicks/v1/users/{user_id}/`.
+Les communications IoT utilisent le protocole MQTT sur AWS IoT Core avec une convention de nommage hiérarchique stricte sous le préfixe `healthkicks/v1/{device_id}/` ou `healthkicks/v1/users/{user_uuid}/`.
 
 ### A. Topic d'Alerte de Détection : `healthkicks/v1/{device_id}/events/detection`
 
@@ -193,25 +193,25 @@ Publié à l'issue d'une session de capture Studio pour enregistrement dans Amaz
 }
 ```
 
-### E. Topic LWT Passerelle Utilisateur : `healthkicks/v1/users/{user_id}/gateway-status`
+### E. Topic LWT Passerelle Utilisateur : `healthkicks/v1/users/{user_uuid}/gateway-status`
 
 Publié automatiquement par le broker AWS IoT Core en cas de rupture inopinée de la passerelle mobile (crash, coupure réseau, perte de batterie) :
 
 ```json
 {
-  "user_id": "1",
+  "user_uuid": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "state": "offline",
   "gateway": "mobile"
 }
 ```
 
-_Effet côté backend_ : Passage de l'ensemble des équipements associés à `user_id` en statut `offline`.
+_Effet côté backend_ : Passage de l'ensemble des équipements associés à l'utilisateur en statut `offline`.
 
-### F. Topics d'Alerting de Chute : `healthkicks/v1/users/{user_id}/events/fall-alert` & `.../fall-alert/status`
+### F. Topics d'Alerting de Chute : `healthkicks/v1/users/{user_uuid}/events/fall-alert` & `.../fall-alert/status`
 
 Spécification détaillée dans [`contracts/fall_alerting.md`](fall_alerting.md) :
-- **Uplink (`healthkicks/v1/users/{user_id}/events/fall-alert`)** : émis par le mobile lors d'une détection de chute (`DETECTED`), d'une confirmation immédiate d'aide (`CONFIRM`), d'une annulation manuelle / relevage (`CANCEL`) ou du rapport d'envoi SMS (`SMS_STATUS`).
-- **Downlink (`healthkicks/v1/users/{user_id}/fall-alert/status`)** : publié par le backend à chaque changement d'état (`PENDING`, `ESCALATING`, `ACKNOWLEDGED`, `CANCELLED`, `EXHAUSTED`, `SUPPRESSED`) et porteur de l'ordre `sms_command` pour le relais GSM du mobile.
+- **Uplink (`healthkicks/v1/users/{user_uuid}/events/fall-alert`)** : émis par le mobile lors d'une détection de chute (`DETECTED`), d'une confirmation immédiate d'aide (`CONFIRM`), d'une annulation manuelle / relevage (`CANCEL`) ou du rapport d'envoi SMS (`SMS_STATUS`).
+- **Downlink (`healthkicks/v1/users/{user_uuid}/fall-alert/status`)** : publié par le backend à chaque changement d'état (`PENDING`, `ESCALATING`, `ACKNOWLEDGED`, `CANCELLED`, `EXHAUSTED`, `SUPPRESSED`) et porteur de l'ordre `sms_command` pour le relais GSM du mobile.
 
 ---
 

@@ -58,9 +58,9 @@ stateDiagram-v2
 
 ## 3. Contrats MQTT IoT (Mobile ↔ AWS IoT Core ↔ Backend)
 
-Les topics utilisent l'espace de noms utilisateur `healthkicks/v1/users/{user_id}/...` déjà autorisé en `iot:Publish`, `iot:Subscribe` et `iot:Receive` par la politique STS dynamique (`AWSSTSService.build_session_policy`).
+Les topics utilisent l'espace de noms utilisateur `healthkicks/v1/users/{user_uuid}/...` basé sur l'identifiant unique universel (UUIDv4) du compte utilisateur, déjà autorisé en `iot:Publish`, `iot:Subscribe` et `iot:Receive` par la politique STS dynamique (`AWSSTSService.build_session_policy`).
 
-### A. Topic Uplink (Mobile → Cloud) : `healthkicks/v1/users/{user_id}/events/fall-alert`
+### A. Topic Uplink (Mobile → Cloud) : `healthkicks/v1/users/{user_uuid}/events/fall-alert`
 
 Publié par l'application mobile en **QoS 1**.
 
@@ -143,7 +143,7 @@ Publié par l'application mobile en **QoS 1**.
 | `error_message` | `string \| null` | ❌ | Détail de l'erreur en cas de `sms_status == "FAILED"` (max 512 car.). |
 | `sent_at` | `int` | ✅ | Epoch UTC en millisecondes (`ms`) d'envoi du message MQTT. |
 
-### B. Topic Downlink (Cloud → Mobile) : `healthkicks/v1/users/{user_id}/fall-alert/status`
+### B. Topic Downlink (Cloud → Mobile) : `healthkicks/v1/users/{user_uuid}/fall-alert/status`
 
 Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**) à chaque création, changement d'état d'une alerte, ou demande de SMS de test (`state = "TEST_SMS"`).
 
@@ -183,7 +183,7 @@ Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**
 - **IoT Rule Name** : `healthkicks_fall_alert_rule`
 - **Rule SQL** :
   ```sql
-  SELECT *, topic(4) AS user_id FROM 'healthkicks/v1/users/+/events/fall-alert'
+  SELECT *, topic(4) AS user_uuid FROM 'healthkicks/v1/users/+/events/fall-alert'
   ```
 - **Target** : Fonction AWS Lambda `healthkicks-fall-alert-relay` qui effectue un `POST {BACKEND_URL}/api/v1/internal/fall-alerts` avec l'en-tête `X-Ingest-Token` (transmet aussi bien `DETECTED`, `CONFIRM`, `CANCEL` que `SMS_STATUS`).
 
@@ -316,7 +316,7 @@ Lors de la notification du contact de rang `k` :
 2. **Canal SMS (si `contact.phone` est non nul)** :
    - Création d'une ligne `FallAlertNotification(channel="sms", contact_phone=contact.phone, status="PENDING_SMS")`.
    - Génération d'un jeton signé dédié `(alert.id, sms_notification.id)` et construction du message SMS concis contenant le nom du patient, le lien Google Maps (si disponible) et le lien d'acquittement.
-   - Inclusion de `sms_command` dans le payload MQTT Downlink publié sur `healthkicks/v1/users/{user_id}/fall-alert/status`.
+   - Inclusion de `sms_command` dans le payload MQTT Downlink publié sur `healthkicks/v1/users/{user_uuid}/fall-alert/status`.
    - Si la publication MQTT échoue côté backend, la notification SMS passe immédiatement à `status="FAILED"`.
 3. **Progression de l'escalade** :
    - Si au moins un canal a réussi (`email` envoyé **ou** `sms_command` publié sur MQTT), le palier de 180 s démarre (`current_contact_rank = k`, `next_action_at_utc = now + 180s`).
