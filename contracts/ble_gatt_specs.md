@@ -95,6 +95,7 @@ Endianness : **Big-Endian** (réseau standard).
 - `0x03` : `stairs_up` (montée d'escaliers)
 - `0x04` : `stairs_down` (descente d'escaliers)
 - `0x05` : `sit_down` (transition assise / s'asseoir)
+- `0x06` : `stand_up` (transition debout / se lever d'une chaise)
 - `0x10` : `fall_forward` (chute avant)
 - `0x11` : `fall_backward` (chute arrière)
 - `0x12` : `fall_lateral` (chute latérale)
