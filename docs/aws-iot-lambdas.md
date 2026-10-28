@@ -184,11 +184,11 @@ def lambda_handler(event, context):
 - **Rule SQL:**
 
 ```sql
-SELECT *, topic(4) as device_id FROM 'healthkicks/v1/+/telemetry/raw'
+SELECT * FROM 'healthkicks/v1/+/telemetry/raw'
 ```
 
 - **Trigger:** Published by the mobile gateway when an IMU burst session finishes.
-- **Target:** AWS Lambda Function (`healthkicks-telemetry-ingest`)
+- **Target:** AWS Lambda Function (`healthkicks-telemetry-flattener`)
 
 ### Environment Variables
 
@@ -223,7 +223,8 @@ def notify_backend_aurora(
     session_id: str,
     label: str,
     sample_count: int,
-    duration_sec: float | None,
+    duration_sec: float | None = None,
+    is_hitl: bool = False,
 ) -> None:
     """Notify the FastAPI backend to update session metadata in Aurora DB."""
     if not BACKEND_INGEST_URL or not session_id:
@@ -232,19 +233,20 @@ def notify_backend_aurora(
     payload = {
         "header": {
             "device_id": device_id,
-            "session_id": session_id
+            "session_id": session_id,
         },
         "payload": {
             "device_id": device_id,
             "session_id": session_id,
             "label": label or "unlabeled",
             "sample_count": sample_count,
-            "duration_sec": duration_sec
-        }
+            "duration_sec": duration_sec if duration_sec is not None else 5.0,
+            "is_hitl": is_hitl,
+        },
     }
 
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     if INGEST_TOKEN:
         headers["X-HealthKicks-Ingest-Token"] = INGEST_TOKEN
@@ -254,7 +256,7 @@ def notify_backend_aurora(
             BACKEND_INGEST_URL,
             data=json.dumps(payload).encode('utf-8'),
             headers=headers,
-            method='POST'
+            method='POST',
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             print(f"[BACKEND_SYNC] Aurora updated for session {session_id}: HTTP {resp.status}")
@@ -270,6 +272,7 @@ def lambda_handler(event, context):
         session_id = metadata.get('session_id') or event.get('session_id')
         label = metadata.get('label') or event.get('label')
         duration_sec = metadata.get('duration_sec') or event.get('duration_sec')
+        is_hitl = bool(metadata.get('is_hitl', False) or event.get('is_hitl', False))
 
         readings = event.get('readings', [])
         if not readings:
@@ -318,7 +321,7 @@ def lambda_handler(event, context):
                 item = {
                     'device_id': device_id,
                     'timestamp': timestamp_epoch,
-                    **extracted_values
+                    **extracted_values,
                 }
 
                 if session_id:
@@ -338,13 +341,14 @@ def lambda_handler(event, context):
                 session_id=session_id,
                 label=label,
                 sample_count=inserted_count,
-                duration_sec=duration_sec
+                duration_sec=duration_sec,
+                is_hitl=is_hitl,
             )
 
         return {
             "status": "Success",
             "inserted_count": inserted_count,
-            "skipped_count": skipped_count
+            "skipped_count": skipped_count,
         }
 
     except Exception as e:
