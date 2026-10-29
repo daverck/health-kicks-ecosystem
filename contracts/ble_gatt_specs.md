@@ -226,7 +226,7 @@ Format textuel ASCII encodé en UTF-8 :
 | `HITL_OK <0|1>`                        | Commande `SET_HITL`            | Mode HITL activé (1) ou désactivé (0) avec succès                   |
 | `HITL_ERROR <reason>`                  | Commande `SET_HITL`            | Rejet de la commande (ex: argument invalide)                        |
 | `CANCELLED`                            | Commande reçue                 | Session interrompue                                                 |
-| `ERROR <reason>`                       | Anomalie matérielle/RAM        | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`)                  |
+| `ERROR <reason>`                       | Anomalie matérielle/RAM ou refus | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
 ---
 
