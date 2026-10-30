@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>HealthKicks Ecosystem - Présentation Synthétique IoT & ML</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap');
+
+    :root {
+      --bg-dark: #0f172a;
+      --card-dark: #1e293b;
+      --bg-light: #f8fafc;
+      --card-light: #ffffff;
+      --border-light: #e2e8f0;
+      --primary-teal: #0d9488;
+      --accent-amber: #d97706;
+      --accent-blue: #2563eb;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #f8fafc;
+      --text-teal: #14b8a6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #020617;
+      color: var(--text-dark);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .slide {
+      width: 1200px;
+      height: 675px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-light);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      padding: 40px 50px;
+    }
+
+    .slide.dark { background: var(--bg-dark); color: var(--text-light); }
+
+    .category-badge {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--primary-teal);
+      margin-bottom: 6px;
+    }
+    .slide.dark .category-badge { color: var(--text-teal); }
+
+    .slide-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 25px;
+    }
+    .slide.dark .slide-title { color: var(--text-light); }
+
+    .title-bar {
+      width: 70px;
+      height: 4px;
+      background: var(--primary-teal);
+      border-radius: 2px;
+      margin-bottom: 12px;
+    }
+
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; flex: 1; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; flex: 1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; flex: 1; }
+
+    .card {
+      background: var(--card-light);
+      border: 1.5px solid var(--border-light);
+      border-radius: 10px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+    .slide.dark .card { background: var(--card-dark); border-color: #334155; }
+    .card.teal-border { border-color: var(--primary-teal); }
+    .card.blue-border { border-color: var(--accent-blue); }
+    .card.amber-border { border-color: var(--accent-amber); }
+
+    .card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .teal-text { color: var(--primary-teal); }
+    .blue-text { color: var(--accent-blue); }
+    .amber-text { color: var(--accent-amber); }
+    .slide.dark .teal-text { color: var(--text-teal); }
+    .slide.dark .blue-text { color: #60a5fa; }
+    .slide.dark .amber-text { color: #fbbf24; }
+
+    .card-subtitle { font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+    .slide.dark .card-subtitle { color: #94a3b8; }
+
+    .item-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .item-list li { font-size: 12px; line-height: 1.5; color: var(--text-dark); }
+    .slide.dark .item-list li { color: #e2e8f0; }
+    .item-list li strong { display: block; color: var(--text-dark); font-size: 13px; margin-bottom: 2px; }
+    .slide.dark .item-list li strong { color: #f8fafc; }
+
+    .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .metric-card { background: var(--card-light); border: 1.5px solid var(--border-light); border-radius: 10px; padding: 18px; text-align: center; }
+    .metric-val { font-size: 28px; font-weight: 700; }
+    .metric-lbl { font-size: 10px; font-weight: 700; color: var(--text-dark); margin-top: 4px; letter-spacing: 0.5px; }
+    .metric-sub { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; }
+
+    .step-row { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+    .step-item { background: var(--card-light); border: 1.5px solid var(--border-light); border-radius: 8px; padding: 16px 20px; }
+    .step-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .step-item p { font-size: 11.5px; color: var(--text-dark); line-height: 1.45; }
+
+    .speaker-notes {
+      width: 1200px;
+      background: #1e293b;
+      color: #cbd5e1;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      border-left: 4px solid var(--primary-teal);
+    }
+    .speaker-notes strong { color: var(--text-teal); }
+
+    @media print {
+      body { background: #ffffff; padding: 0; }
+      .slide { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; page-break-after: always; padding: 40px 60px; }
+      .speaker-notes { display: none !important; }
+      @page { size: 13.333in 7.5in; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SLIDE 1 -->
+  <div class="slide dark">
+    <div class="title-bar"></div>
+    <div style="margin-bottom: 30px;">
+      <h1 style="font-size: 42px; font-weight: 700; color: var(--text-light); margin-bottom: 8px;">HealthKicks Ecosystem</h1>
+      <h2 style="font-size: 19px; color: var(--text-teal); font-weight: 400;">Chaussure Intelligente : Podométrie Haute Précision & Détection de Chute Autonome</h2>
+    </div>
+
+    <div class="grid-3">
+      <div class="card teal-border">
+        <div class="card-title teal-text">🏃 ACTIVITÉ & SPORT</div>
+        <ul class="item-list" style="margin-top: 14px;">
+          <li>• Podométrie podologique multi-allures (marche, course, escaliers).</li>
+          <li>• Rappel d'inactivité haptique anti-sédentarité sous la semelle.</li>
+          <li>• Zéro faux pas : insensibilité aux mouvements parasites des bras.</li>
+        </ul>
+      </div>
+
+      <div class="card amber-border">
+        <div class="card-title amber-text">🛡️ SÉCURITÉ & PROCHES</div>
+        <ul class="item-list" style="margin-top: 14px;">
+          <li>• Détection de chute autonome à la source (sur la chaussure).</li>
+          <li>• Garde biomécanique anti-fausses alertes (s'asseoir ≠ tomber).</li>
+          <li>• Alerte immédiate envoyée à l'entourage et aux aidants.</li>
+        </ul>
+      </div>
+
+      <div class="card blue-border">
+        <div class="card-title blue-text">⚡ EDGE AI & SOBRIÉTÉ</div>
+        <ul class="item-list" style="margin-top: 14px;">
+          <li>• Intelligence 100% locale sur microcontrôleur ESP32-S3.</li>
+          <li>• Zéro dépendance réseau pour la sécurité critique.</li>
+          <li>• Inférence instantanée en quelques microsecondes (< 15 µs).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 00:00 à 01:00] :</strong><br>
+    Bonjour à tous. Je vous présente HealthKicks, une chaussure intelligente d'analyse du mouvement et de sécurité. Contrairement aux montres connectées qui comptent des faux pas à cause des gestes de bras, la chaussure capture la mécanique réelle de la marche et propose un rappel d'inactivité sous la semelle. Elle intègre aussi une détection de chute autonome qui alerte instantanément les proches, sans dépendre du cloud pour la décision d'urgence.
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="slide">
+    <div class="category-badge">Vue d'Ensemble</div>
+    <div class="slide-title">Architecture Globale : Du Capteur au Cloud</div>
+
+    <div class="grid-4">
+      <div class="card teal-border">
+        <div class="card-title teal-text">1. CHAUSSURE</div>
+        <div class="card-subtitle">ESP32-S3 & Capteurs</div>
+        <ul class="item-list">
+          <li>• Centrale IMU 6-axes MPU-6050.</li>
+          <li>• Inférence Edge AI C++ (< 15 µs).</li>
+          <li>• Vibreur haptique PWM (10 kHz).</li>
+          <li>• Serveur BLE GATT sécurisé (LESC).</li>
+        </ul>
+      </div>
+
+      <div class="card blue-border">
+        <div class="card-title blue-text">2. MOBILE</div>
+        <div class="card-subtitle">Passerelle Flutter / SQLite</div>
+        <ul class="item-list">
+          <li>• Liaison BLE chiffrée & appairage 60s.</li>
+          <li>• Odométrie différentielle SQLite.</li>
+          <li>• Auth OAuth2 avec PKCE RFC 7636.</li>
+          <li>• Passerelle MQTT WebSockets SigV4.</li>
+        </ul>
+      </div>
+
+      <div class="card teal-border">
+        <div class="card-title teal-text">3. CLOUD</div>
+        <div class="card-subtitle">FastAPI & AWS IoT</div>
+        <ul class="item-list">
+          <li>• Broker AWS IoT Core (QoS 1).</li>
+          <li>• STS Token Broker : clés éphémères (15 min).</li>
+          <li>• Amazon DynamoDB & PostgreSQL 16.</li>
+          <li>• Pipeline d'entraînement MLOps.</li>
+        </ul>
+      </div>
+
+      <div class="card amber-border">
+        <div class="card-title amber-text">4. DASHBOARD</div>
+        <div class="card-subtitle">Web Angular 22</div>
+        <ul class="item-list">
+          <li>• Interface réactive Angular Signals.</li>
+          <li>• Visualisation des pas et alertes.</li>
+          <li>• Mode Studio : capture de datasets.</li>
+          <li>• Réglage distant des seuils.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 01:00 à 02:30] :</strong><br>
+    L'architecture sépare clairement les responsabilités : la chaussure (ESP32-S3) traite le signal et réagit localement ; le smartphone sert de passerelle en BLE chiffré et stocke hors-ligne en SQLite ; le Cloud AWS & FastAPI gère l'authentification OAuth2 PKCE et le courtage STS temporaire pour MQTT SigV4 ; et le tableau de bord web permet de suivre l'activité et d'enregistrer des sessions Studio.
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="slide">
+    <div class="category-badge">Système Embarqué</div>
+    <div class="slide-title">Cœur IoT : Chaussure Instrumentée & ESP32-S3</div>
+
+    <div class="grid-3">
+      <div class="card teal-border">
+        <div class="card-title teal-text">ARCHITECTURE MATÉRIELLE</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>ESP32-S3 (Xtensa 240 MHz)</strong>Dual-core, 16 MB Flash, 8 MB PSRAM.</li>
+          <li><strong>IMU 6-axes MPU-6050</strong>I2C Fast-Mode (400 kHz) : accélération et gyro 3D.</li>
+          <li><strong>Actuateur Haptique</strong>LEDC PWM 10 kHz (MOSFET AO3400 + diode roue libre).</li>
+          <li><strong>Interfaces</strong>Bouton appairage GPIO 14 & LED d'état non-bloquante.</li>
+        </ul>
+      </div>
+
+      <div class="card blue-border">
+        <div class="card-title blue-text">RÉFÉRENTIEL BIOMÉCANIQUE ISB</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Norme ISB (Wu & Cavanagh)</strong>Repère aligné sur l'anatomie du pied humain.</li>
+          <li><strong>Axe Z (Vertical)</strong>+1.0 g statique au repos sur sol plat.</li>
+          <li><strong>Axe X (Antéro-postérieur)</strong>Mesure la propulsion et la décélération de la foulée.</li>
+          <li><strong>Axe Y (Médio-latéral)</strong>Mesure la stabilité latérale et la pronation.</li>
+        </ul>
+      </div>
+
+      <div class="card amber-border">
+        <div class="card-title amber-text">SÉCURITÉ & MAINTENANCE OTA</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Chiffrement BLE LESC</strong>Appairage sécurisé avec fenêtre physique de 60s.</li>
+          <li><strong>Dual-Partition Flash A/B</strong>Mise à jour sans fil avec validation SHA-256 (32 octets).</li>
+          <li><strong>Rollback Automatique</strong>Probation 15s : retour instantané à l'ancienne version si l'IMU ne répond pas.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 02:30 à 05:00] :</strong><br>
+    Sur la chaussure, l'ESP32-S3 communique avec l'IMU en I2C à 400 kHz. L'alignement suit le standard biomécanique ISB : l'axe Z vertical mesure la gravité (+1g statique), X la propulsion et Y la stabilité. Le vibreur haptique est piloté en PWM à 10 kHz pour des alertes discrètes ou franches. Comme la semelle est hermétique, les mises à jour se font par BLE OTA. Le binaire est vérifié par SHA-256, et un rollback automatique restaure l'ancien firmware si le capteur ne répond pas dans les 15 secondes.
+  </div>
+
+  <!-- SLIDE 4 -->
+  <div class="slide">
+    <div class="category-badge">Intelligence Artificielle Embarquée</div>
+    <div class="slide-title">Edge Machine Learning : Classification & Sécurité</div>
+
+    <div class="grid-3">
+      <div class="card teal-border">
+        <div class="card-title teal-text">POURQUOI L'EDGE AI ?</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Zéro Latence Critique</strong>Réaction immédiate lors du choc sans délai réseau.</li>
+          <li><strong>Autonomie Hors-Réseau</strong>Fonctionne en zone blanche ou sans smartphone.</li>
+          <li><strong>Confidentialité Totale</strong>Les données cinématiques brutes restent sur la chaussure.</li>
+        </ul>
+      </div>
+
+      <div class="card blue-border">
+        <div class="card-title blue-text">16 INDICATEURS CANONIQUES</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Invariance en Rotation</strong>Magnitudes euclidiennes ||a|| et ||ω|| insensibles à la pose du pied.</li>
+          <li><strong>Statistiques de Forme</strong>Min, Max, Moyenne, Écart-type (Std), Pic-à-pic (P2P).</li>
+          <li><strong>Dispersion & Énergie</strong>Écarts-types axiaux et puissances moyennes de mouvement.</li>
+        </ul>
+      </div>
+
+      <div class="card amber-border">
+        <div class="card-title amber-text">CLASSIFIEUR & GARDES HYBRIDES</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>ExtraTrees Multiclasse</strong>Forêt d'arbres randomisés : robuste face au surapprentissage.</li>
+          <li><strong>Détection d'Impact</strong>Déclencheur d'accélération brutale (> 16.2 m/s²).</li>
+          <li><strong>Garde Post-Chute</strong>Vérification d'assiette et d'immobilité (isUprightFlatFootStillness).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 05:00 à 08:00] :</strong><br>
+    L'IA embarquée traite le signal à 19 Hz sur une fenêtre glissante de 2 secondes. Au lieu de traiter les signaux bruts qui dépendent de l'orientation exacte du pied, nous extrayons 16 indicateurs canoniques basés sur les magnitudes euclidiennes (invariantes en rotation) et l'énergie du mouvement. Le modèle champion est un ExtraTrees multiclasse particulièrement résistant au surapprentissage. Pour éviter les fausses alertes, nous combinons l'IA avec une garde biomécanique : détection de choc > 16.2 m/s² suivie d'une vérification de l'immobilité anormale au sol.
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="slide">
+    <div class="category-badge">Cycle d'Entraînement</div>
+    <div class="slide-title">Boucle MLOps : Du Terrain au Code C Embarqué</div>
+
+    <div class="step-row">
+      <div class="step-item" style="border-left: 5px solid var(--primary-teal);">
+        <h4 class="teal-text">1. MODE STUDIO HAUTE FRÉQUENCE</h4>
+        <p>Acquisition brute (54 / 100 Hz) déclenchée depuis l'application. Streaming en burst BLE avec contrôle CRC32 vers DynamoDB pour constituer les jeux de données.</p>
+      </div>
+
+      <div class="step-item" style="border-left: 5px solid var(--accent-blue);">
+        <h4 class="blue-text">2. STRATIFIED 5-FOLD CROSS VALIDATION</h4>
+        <p>Cache local incrémental pour minimiser les coûts AWS. 5 plis stratifiés garantissant la même proportion de chutes rares. Optimisation sur le Macro F1-score.</p>
+      </div>
+
+      <div class="step-item" style="border-left: 5px solid var(--primary-teal);">
+        <h4 class="teal-text">3. TRANSPILATION C PURE SANS RUNTIME (m2cgen)</h4>
+        <p>Conversion automatique du modèle scikit-learn en C standard (activity_model_generated.h). Aucun framework lourd (zéro TFLite). Exécution en ~12 µs.</p>
+      </div>
+
+      <div class="step-item" style="border-left: 5px solid var(--accent-amber);">
+        <h4 class="amber-text">4. QUALITY GATE & CONTRÔLE DU FIRMWARE</h4>
+        <p>Quality Gate bloquant : Macro F1-score ≥ 85% obligatoire. Compilation automatique PlatformIO (pio run) validant les quotas Flash/RAM avant tout déploiement.</p>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 08:00 à 10:30] :</strong><br>
+    L'entraînement est automatisé par notre script update_edge_model.py : le mode Studio enregistre des sessions réelles à 54 ou 100 Hz ; l'évaluation utilise une validation croisée stratifiée en 5 plis (Stratified 5-Fold) pour répartir équitablement les chutes rares et optimiser le Macro F1-score ; le modèle champion est transpilé en C pur via m2cgen en 12 microsecondes sans aucun framework externe ; et un Quality Gate bloque la mise à jour si le F1-score est inférieur à 85%.
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="slide">
+    <div class="category-badge">Gestion des Données</div>
+    <div class="slide-title">Réseau & Podométrie Différentielle Nette</div>
+
+    <div class="grid-2">
+      <div class="card teal-border">
+        <div class="card-title teal-text">PODOMÉTRIE DIFFÉRENTIELLE (SQLite)</div>
+        <ul class="item-list" style="margin-top: 12px;">
+          <li><strong>Compteur Matériel Monotone</strong>L'ESP32 incrémente ses pas continuellement sans date ni heure.</li>
+          <li><strong>Calcul du Delta Net</strong>Le mobile compare chaque snapshot : delta = current - previous.</li>
+          <li><strong>Résilience aux Redémarrages</strong>Si current < previous (reboot chaussure), le delta s'adapte sans perte.</li>
+          <li><strong>Bascule Propre à Minuit</strong>Le compteur matériel continue mais le delta est isolé pour le nouveau jour.</li>
+          <li><strong>Ventilation Horaire Réelle</strong>Envoi par tranche horaire réelle (hourly_steps) sans heuristique artificielle.</li>
+        </ul>
+      </div>
+
+      <div class="card blue-border">
+        <div class="card-title blue-text">PASSERELLE TEMPS RÉEL (AWS IoT Core)</div>
+        <ul class="item-list" style="margin-top: 12px;">
+          <li><strong>WebSockets MQTT Persistant</strong>Session maintenue ouverte en tâche de fond pour latence minimale.</li>
+          <li><strong>Authentification SigV4</strong>Signature cryptographique avec clé temporaire STS (15 min).</li>
+          <li><strong>Alerte de Chute (QoS 1)</strong>Publication immédiate avec accusé de réception vers AWS IoT Core.</li>
+          <li><strong>Supervision de Liaison</strong>Notification de l'état de connexion Bluetooth et réseau.</li>
+          <li><strong>Commandes Haptiques</strong>Déclenchement distant d'une vibration via topic commands/haptic.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 10:30 à 12:30] :</strong><br>
+    Pour la podométrie, l'ESP32 possède un compteur monotone physique qui ne connaît pas les jours. Notre application mobile implémente une odométrie différentielle SQLite : elle calcule le delta net de pas, gère les redémarrages de chaussure et ventile les pas heure par heure de manière 100% réelle. Pour les alertes, le mobile maintient une connexion WebSockets MQTT signée en SigV4 vers AWS IoT Core, ce qui permet d'envoyer l'alerte de chute en quelques dizaines de millisecondes aux proches.
+  </div>
+
+  <!-- SLIDE 7 -->
+  <div class="slide">
+    <div class="category-badge">Validation & Contrôle</div>
+    <div class="slide-title">Performances Mesurées & Personnalisation</div>
+
+    <div class="metric-row">
+      <div class="metric-card" style="border-color: var(--primary-teal);">
+        <div class="metric-val teal-text">~12 µs</div>
+        <div class="metric-lbl">TEMPS D'INFÉRENCE</div>
+        <div class="metric-sub">Évaluation C sur ESP32 (240 MHz)</div>
+      </div>
+      <div class="metric-card" style="border-color: var(--accent-blue);">
+        <div class="metric-val blue-text">&lt; 35 ms</div>
+        <div class="metric-lbl">RÉACTION HAPTIQUE</div>
+        <div class="metric-sub">Délai impact ➔ vibration locale</div>
+      </div>
+      <div class="metric-card" style="border-color: var(--primary-teal);">
+        <div class="metric-val teal-text">&gt; 88%</div>
+        <div class="metric-lbl">MACRO F1-SCORE</div>
+        <div class="metric-sub">Séparation des allures motrices</div>
+      </div>
+      <div class="metric-card" style="border-color: var(--accent-amber);">
+        <div class="metric-val amber-text">&gt; 94%</div>
+        <div class="metric-lbl">SENSIBILITÉ CHUTE</div>
+        <div class="metric-sub">Détection fiable avec gardes</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card amber-border">
+        <div class="card-title amber-text">PARAMÉTRAGE SUR L'APPLICATION MOBILE</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Seuil d'Impact Ajustable</strong>Sensibilité de décélération réglable (seuil haut pour trail/running, fin pour seniors).</li>
+          <li><strong>Rappel d'Inactivité Configurable</strong>Intervalle de sédentarité au choix (30, 45, 60 min) avec vibrations plantaires.</li>
+          <li><strong>Gestion des Destinataires</strong>Configuration des contacts prévenus immédiatement en cas d'accident.</li>
+        </ul>
+      </div>
+
+      <div class="card teal-border">
+        <div class="card-title teal-text">RIGUEUR LOGICIELLE & TESTS AUTOMATISÉS</div>
+        <ul class="item-list" style="margin-top: 10px;">
+          <li><strong>Approche Contract-Driven</strong>Tout échange (BLE, REST, MQTT) est régi par des contrats formels sous contracts/.</li>
+          <li><strong>324 Tests Backend FastAPI</strong>Suite complète pytest validant l'authentification, les endpoints et la persistance.</li>
+          <li><strong>210 Tests Application Mobile</strong>Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation.</li>
+          <li><strong>Validation Mémoire Firmware</strong>PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 12:30 à 14:00] :</strong><br>
+    Côté résultats : l'inférence C prend moins de 15 microsecondes avec 0 Ko d'allocation dynamique. Le modèle atteint un Macro F1-score > 88% et plus de 94% de sensibilité sur les chutes. Sur l'application mobile, l'utilisateur peut personnaliser la sensibilité du seuil d'impact ainsi que l'intervalle de rappel d'inactivité. Le projet est fiabilisé par plus de 530 tests automatisés au vert sur le mobile et le backend.
+  </div>
+
+  <!-- SLIDE 8 -->
+  <div class="slide dark">
+    <div class="category-badge">Synthèse & Perspectives d'Avenir</div>
+    <div class="slide-title">L'Alliance de l'Intelligence Artificielle et de la Sobriété IoT</div>
+
+    <div class="grid-2">
+      <div class="card teal-border">
+        <div class="card-title teal-text">CE QUE NOUS AVONS DÉMONTRÉ</div>
+        <ul class="item-list" style="margin-top: 14px;">
+          <li><strong>✔ TinyML Frugal & Performant</strong>Un microcontrôleur low-cost peut classifier la démarche humaine en temps réel sans runtime IA lourd.</li>
+          <li><strong>✔ Chaîne IoT Sécurisée</strong>Chiffrement BLE LESC, mise à jour OTA avec rollback, auth OAuth2 PKCE et jetons temporaires AWS STS.</li>
+          <li><strong>✔ Podométrie Nette & Vérifiable</strong>Élimination des faux pas et restitution fidèle heure par heure pour l'utilisateur.</li>
+          <li><strong>✔ Sérénité pour les Proches</strong>Alerte rapide et fiable lors d'un accident sans fausses alarmes répétitives.</li>
+        </ul>
+      </div>
+
+      <div class="card amber-border">
+        <div class="card-title amber-text">FEUILLE DE ROUTE TECHNOLOGIQUE</div>
+        <ul class="item-list" style="margin-top: 14px;">
+          <li><strong>➔ Capteurs Piézorésistifs (FSR)</strong>Mesure de la répartition des pressions plantaires talon / plante.</li>
+          <li><strong>➔ Adaptation Continue On-Device</strong>Ajustement fin des seuils à la foulée propre à chaque personne.</li>
+          <li><strong>➔ Connectivité Cellulaire NB-IoT</strong>Option d'autonomie totale en extérieur sans smartphone à proximité.</li>
+          <li><strong>➔ Intégration en Semelle Amovible</strong>Format glissable dans n'importe quelle chaussure de sport ou de ville.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    <strong>[Notes Orateur - 14:00 à 15:00] :</strong><br>
+    En conclusion, HealthKicks prouve qu'on peut concilier l'Intelligence Artificielle et la frugalité IoT dans un objet du quotidien. Nous qualifions le mouvement à la source pour encourager le sport, prévenir la sédentarité et alerter l'entourage en cas d'accident. Je vous remercie pour votre attention et je réponds avec grand plaisir à vos questions.
+  </div>
+
+</body>
+</html>
