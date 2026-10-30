@@ -99,6 +99,7 @@ Endianness : **Big-Endian** (réseau standard).
 - `0x07` : `lying_supine` (posture couchée sur le dos / décubitus dorsal)
 - `0x08` : `lying_prone` (posture couchée sur le ventre / décubitus ventral)
 - `0x09` : `lying_lateral` (posture couchée sur le côté / décubitus latéral)
+- `0x0A` : `jump` (saut / impulsion verticale)
 - `0x10` : `fall_forward` (chute avant)
 - `0x11` : `fall_backward` (chute arrière)
 - `0x12` : `fall_lateral` (chute latérale)

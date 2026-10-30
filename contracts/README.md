@@ -111,7 +111,7 @@ Publié par l'agent Edge ou la passerelle mobile en QoS 1 lorsqu'un événement 
 _Contraintes de validation_ :
 
 - `device_id` : Identifiant du capteur (chaîne non vide).
-- `event_type` : Type d'activité détectée (`idle`, `walk`, `run`, `stairs_up`, `stairs_down`, `fall_forward`, `fall_backward`, `fall_lateral`, `fall_recovery`, `fall_generic`, `stumble_recover`).
+- `event_type` : Type d'activité détectée (`idle`, `walk`, `run`, `stairs_up`, `stairs_down`, `sit_down`, `stand_up`, `lying_supine`, `lying_prone`, `lying_lateral`, `jump`, `fall_forward`, `fall_backward`, `fall_lateral`, `fall_recovery`, `fall_generic`, `stumble_recover`, `inactivity_alert`).
 - `confidence` : Flottant compris entre `0.0` et `1.0`.
 - `timestamp` : Entier représentant l'horodatage Epoch UTC en millisecondes (`ms`).
 - `is_fall` : Booléen (`true` si chute critique).
