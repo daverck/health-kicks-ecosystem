@@ -19,6 +19,50 @@ _backgroundColor: #f8fafc
 _color: #0f172a
 -->
 
+![bg right:33% w:260px](qr-code.png)
+
+# **Qui suis-je ? — Mon Parcours**
+### David Serck | Développeur Full-Stack, Cloud & IoT
+
+* **Parcours & Expérience** :
+  - Conception et développement d'architectures logicielles de bout en bout (*Web, Mobile, Cloud*).
+  - Bachelier en informatique de gestion / Formation IoT et Intelligence Artificielle embarquée.
+* **Compétences Clés mobilisées sur ce projet** :
+  - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
+  - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
+* **Mon Portfolio en ligne** : Scannez le QR code ci-contre pour découvrir mes réalisations et mon CV complet.
+
+<!-- Notes orateur :
+Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à scanner le QR code vers mon portfolio.
+-->
+
+---
+
+<!--
+_class: lead
+_backgroundColor: #0f172a
+_color: #f8fafc
+-->
+
+# **Démonstration en Direct**
+### Du Capteur sous la Semelle jusqu'au Cloud en Temps Réel
+
+1. **Chaussure Connectée (ESP32-S3)** — Acquisition IMU 6 axes, détection d'allure & retour haptique.
+2. **Application Mobile (Flutter)** — Appairage BLE LESC, podométrie temps réel & détection de chute.
+3. **Supervision Cloud & Web (FastAPI / Angular)** — Remontée d'alerte MQTT QoS 1 et suivi clinique en direct.
+
+<!-- Notes orateur :
+Enchaîner directement sur la démonstration concrète avant de détailler l'architecture technique sous le capot.
+Montrer d'abord la chaussure et l'application mobile connectée en BLE, puis la réactivité du système en temps réel.
+-->
+
+---
+
+<!--
+_backgroundColor: #f8fafc
+_color: #0f172a
+-->
+
 # **1. Architecture Globale : Du Capteur au Cloud**
 ### Pipeline Hybride Temps Réel & Ségrégation des Responsabilités
 
