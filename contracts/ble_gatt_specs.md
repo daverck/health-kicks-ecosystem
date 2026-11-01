@@ -191,15 +191,7 @@ Format textuel ASCII encodé en UTF-8 :
    ```
    - _Exemple_ : `SET_INACTIVITY 1 3000 600`
 
-6. **Configuration du Seuil d'Impact de Chute** :
-   ```text
-   SET_FALL_IMPACT <impact_ms2>
-   ```
-   - _Paramètre_ : `impact_ms2` (flottant en $\text{m/s}^2$, plage autorisée : `10.0` à `25.0` $\text{m/s}^2$).
-   - _Valeur par défaut_ : `16.2` $\text{m/s}^2$ ($\approx 1.65\,g$).
-   - _Exemple_ : `SET_FALL_IMPACT 16.2`
-
-7. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
+6. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
    ```text
    SET_HITL <enabled:0|1>
    ```
@@ -223,8 +215,6 @@ Format textuel ASCII encodé en UTF-8 :
 | `CALIBRATING <duration_sec>`           | Commande `CALIBRATE` ou `0x05` | Début de l'échantillonnage d'immobilité pour réaligner l'assiette   |
 | `CALIBRATION_OK`                       | 4.0s immobiles atteintes       | Calibration réussie, matrice de rotation persistée en NVS           |
 | `CALIBRATION_ERROR <reason>`           | Mouvement / instabilité        | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)      |
-| `FALL_IMPACT_OK <impact_ms2>`          | Commande `SET_FALL_IMPACT`     | Seuil de choc validé, appliqué au moteur Edge AI et persisté en NVS |
-| `FALL_IMPACT_ERROR <reason>`           | Commande `SET_FALL_IMPACT`     | Rejet de la commande (ex: valeur hors limite, format invalide)      |
 | `HITL_OK <0|1>`                        | Commande `SET_HITL`            | Mode HITL activé (1) ou désactivé (0) avec succès                   |
 | `HITL_ERROR <reason>`                  | Commande `SET_HITL`            | Rejet de la commande (ex: argument invalide)                        |
 | `CANCELLED`                            | Commande reçue                 | Session interrompue                                                 |
