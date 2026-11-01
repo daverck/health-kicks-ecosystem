@@ -375,8 +375,8 @@ def create_presentation():
         "[05:00 - 08:00]\n"
         "L'IA embarquée traite le signal à 19 Hz sur une fenêtre glissante de 2 secondes.\n"
         "Au lieu de traiter les signaux bruts qui dépendent de l'orientation exacte du pied, nous extrayons 16 indicateurs canoniques basés sur les magnitudes euclidiennes (invariantes en rotation) et l'énergie du mouvement.\n"
-        "Le modèle champion est un ExtraTrees multiclasse (forêt d'arbres décisionnels avec seuils randomisés), particulièrement résistant au surapprentissage.\n"
-        "Pour éviter les fausses alertes (ex: s'asseoir vivement dans un fauteuil), nous combinons l'IA avec une garde biomécanique : détection de choc > 16.2 m/s² suivie d'une vérification de l'immobilité anormale au sol."
+        "Le modèle champion retenu est un Random Forest multiclasse à 40 arbres avec profondeur contrôlée (max_depth=12) et équilibrage strict des classes rares.\n"
+        "Pour capturer fidèlement toutes les chutes réelles (y compris vers l'arrière ou amorties sans choc violent au talon), nous avons éliminé le verrou d'impact rigide tout en conservant un debouncing temporel de 5 secondes."
     )
 
     # ==========================================
