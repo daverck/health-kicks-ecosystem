@@ -260,9 +260,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             ("Dispersion & Energie", "Ecarts-types axiaux et puissances moyennes.")
         ]),
         ("CLASSIFIEUR & GARDES HYBRIDES", ACCENT_AMBER, [
-            ("ExtraTrees Multiclasse", "Foret d'arbres randomises : robuste face au surapprentissage."),
-            ("Detection d'Impact", "Declencheur d'acceleration brutale (> 16.2 m/s2)."),
-            ("Garde Post-Chute", "Verification d'assiette et d'immobilite au sol.")
+            ("Random Forest Equilibre", "40 arbres de decision avec ponderation dynamique des classes."),
+            ("Detection Chute Sensible", "Inference ML directe sans verrou d'impact rigide (chutes amorties)."),
+            ("Cooldown Anti-Rebond", "Debouncing temporel de 5000 ms pour eviter les faux declenchements.")
         ])
     ]
 
@@ -402,8 +402,8 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     metric_data = [
         ("~12 us", "TEMPS D'INFERENCE", "Evaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
         ("< 35 ms", "REACTION HAPTIQUE", "Delai impact -> vibration locale", ACCENT_BLUE),
-        ("> 88%", "MACRO F1-SCORE", "Separation allures motrices", PRIMARY_TEAL),
-        ("> 94%", "SENSIBILITE CHUTE", "Detection fiable avec gardes", ACCENT_AMBER)
+        ("91.3%", "MACRO F1-SCORE", "16 allures motrices classees", PRIMARY_TEAL),
+        ("95.5%", "RAPPEL CHUTES", "95.8% F1 sur chute arriere", ACCENT_AMBER)
     ]
     for idx, (val, lbl, sub, accent) in enumerate(metric_data):
         x = 50 + idx * 220
@@ -450,7 +450,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     tests_info = [
         ("Approche Contract-Driven", "Tout echange (BLE, REST, MQTT) est regi par des contrats formels sous contracts/."),
         ("324 Tests Backend FastAPI", "Suite complete pytest validant authentification, endpoints et persistance."),
-        ("210 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odometrie SQLite et la synchronisation."),
+        ("320 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odometrie SQLite et la synchronisation."),
         ("Validation Memoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.")
     ]
     cur_y = 280

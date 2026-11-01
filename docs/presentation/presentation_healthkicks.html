@@ -306,16 +306,16 @@
       <div class="card amber-border">
         <div class="card-title amber-text">CLASSIFIEUR & GARDES HYBRIDES</div>
         <ul class="item-list" style="margin-top: 10px;">
-          <li><strong>ExtraTrees Multiclasse</strong>Forêt d'arbres randomisés : robuste face au surapprentissage.</li>
-          <li><strong>Détection d'Impact</strong>Déclencheur d'accélération brutale (> 16.2 m/s²).</li>
-          <li><strong>Garde Post-Chute</strong>Vérification d'assiette et d'immobilité (isUprightFlatFootStillness).</li>
+          <li><strong>Random Forest Équilibré</strong>40 arbres de décision avec pondération dynamique des classes rares.</li>
+          <li><strong>Détection Chute Sensible</strong>Inférence ML directe sans verrou d'impact rigide (chutes amorties).</li>
+          <li><strong>Cooldown Anti-Rebond</strong>Débouncing temporel de 5000 ms pour éviter le spam de notifications.</li>
         </ul>
       </div>
     </div>
   </div>
   <div class="speaker-notes">
     <strong>[Notes Orateur - 05:00 à 08:00] :</strong><br>
-    L'IA embarquée traite le signal à 19 Hz sur une fenêtre glissante de 2 secondes. Au lieu de traiter les signaux bruts qui dépendent de l'orientation exacte du pied, nous extrayons 16 indicateurs canoniques basés sur les magnitudes euclidiennes (invariantes en rotation) et l'énergie du mouvement. Le modèle champion est un ExtraTrees multiclasse particulièrement résistant au surapprentissage. Pour éviter les fausses alertes, nous combinons l'IA avec une garde biomécanique : détection de choc > 16.2 m/s² suivie d'une vérification de l'immobilité anormale au sol.
+    L'IA embarquée traite le signal à 19 Hz sur une fenêtre glissante de 2 secondes. Au lieu de traiter les signaux bruts qui dépendent de l'orientation exacte du pied, nous extrayons 16 indicateurs canoniques basés sur les magnitudes euclidiennes (invariantes en rotation) et l'énergie du mouvement. Le modèle champion est un Random Forest multiclasse équilibré (40 arbres, max_depth=12). Pour capturer fidèlement toutes les chutes réelles (y compris amorties ou lentes), nous avons retiré le verrou physique d'impact tout en conservant un débouncing temporel anti-rebond.
   </div>
 
   <!-- SLIDE 5 -->
@@ -401,14 +401,14 @@
         <div class="metric-sub">Délai impact ➔ vibration locale</div>
       </div>
       <div class="metric-card" style="border-color: var(--primary-teal);">
-        <div class="metric-val teal-text">&gt; 88%</div>
+        <div class="metric-val teal-text">91.3%</div>
         <div class="metric-lbl">MACRO F1-SCORE</div>
-        <div class="metric-sub">Séparation des allures motrices</div>
+        <div class="metric-sub">16 allures motrices classées</div>
       </div>
       <div class="metric-card" style="border-color: var(--accent-amber);">
-        <div class="metric-val amber-text">&gt; 94%</div>
-        <div class="metric-lbl">SENSIBILITÉ CHUTE</div>
-        <div class="metric-sub">Détection fiable avec gardes</div>
+        <div class="metric-val amber-text">95.5%</div>
+        <div class="metric-lbl">RAPPEL CHUTES</div>
+        <div class="metric-sub">95.8% F1 sur chute arrière</div>
       </div>
     </div>
 
@@ -427,7 +427,7 @@
         <ul class="item-list" style="margin-top: 10px;">
           <li><strong>Approche Contract-Driven</strong>Tout échange (BLE, REST, MQTT) est régi par des contrats formels sous contracts/.</li>
           <li><strong>324 Tests Backend FastAPI</strong>Suite complète pytest validant l'authentification, les endpoints et la persistance.</li>
-          <li><strong>210 Tests Application Mobile</strong>Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation.</li>
+          <li><strong>320 Tests Application Mobile</strong>Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation.</li>
           <li><strong>Validation Mémoire Firmware</strong>PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.</li>
         </ul>
       </div>
@@ -435,7 +435,7 @@
   </div>
   <div class="speaker-notes">
     <strong>[Notes Orateur - 12:30 à 14:00] :</strong><br>
-    Côté résultats : l'inférence C prend moins de 15 microsecondes avec 0 Ko d'allocation dynamique. Le modèle atteint un Macro F1-score > 88% et plus de 94% de sensibilité sur les chutes. Sur l'application mobile, l'utilisateur peut personnaliser la sensibilité du seuil d'impact ainsi que l'intervalle de rappel d'inactivité. Le projet est fiabilisé par plus de 530 tests automatisés au vert sur le mobile et le backend.
+    Côté résultats : l'inférence C prend moins de 15 microsecondes avec 0 Ko d'allocation dynamique. Le modèle atteint un Macro F1-score de 91.3% (92.2% d'exactitude globale) et jusqu'à 95.5% de rappel sur les chutes. Sur l'application mobile, l'utilisateur peut personnaliser la sensibilité du seuil d'impact ainsi que l'intervalle de rappel d'inactivité. Le projet est fiabilisé par plus de 1100 tests automatisés au vert sur le mobile, le backend et le frontend.
   </div>
 
   <!-- SLIDE 8 -->

@@ -327,9 +327,9 @@ def create_presentation():
             ("Dispersion & Énergie", "Écarts-types axiaux et puissances moyennes de mouvement.")
         ]),
         ("CLASSIFIEUR & GARDES HYBRIDES", ACCENT_AMBER, [
-            ("ExtraTrees Multiclasse", "Forêt d'arbres randomisés : robuste face au surapprentissage."),
-            ("Détection d'Impact", "Déclencheur d'accélération brutale (> 16.2 m/s²)."),
-            ("Garde Post-Chute", "Vérification d'assiette et d'immobilité (isUprightFlatFootStillness).")
+            ("Random Forest Équilibré", "40 arbres de décision avec pondération dynamique des classes rares."),
+            ("Détection Chute Sensible", "Inférence ML directe sans verrou d'impact rigide (chutes amorties)."),
+            ("Cooldown Anti-Rebond", "Débouncing temporel de 5000 ms pour éviter le spam de notifications.")
         ])
     ]
 
@@ -557,8 +557,8 @@ def create_presentation():
     metrics = [
         ("~12 µs", "TEMPS D'INFÉRENCE", "Évaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
         ("< 35 ms", "RÉACTION HAPTIQUE", "Délai impact ➔ vibration locale", ACCENT_BLUE),
-        ("> 88%", "MACRO F1-SCORE", "Séparation des allures motrices", PRIMARY_TEAL),
-        ("> 94%", "SENSIBILITÉ CHUTE", "Détection fiable avec gardes", ACCENT_AMBER)
+        ("91.3%", "MACRO F1-SCORE", "Séparation des 16 allures motrices", PRIMARY_TEAL),
+        ("95.5%", "RAPPEL CHUTES", "95.8% F1 sur chute arrière", ACCENT_AMBER)
     ]
 
     for idx, (val, label, sub, accent) in enumerate(metrics):
@@ -669,7 +669,7 @@ def create_presentation():
     qual_items = [
         ("Approche Contract-Driven", "Tout échange (BLE, REST, MQTT) est régi par des contrats formels sous contracts/."),
         ("324 Tests Backend FastAPI", "Suite complète pytest validant l'authentification, les endpoints et la persistance."),
-        ("210 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation."),
+        ("320 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation."),
         ("Validation Mémoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.")
     ]
     for lbl, desc in qual_items:
@@ -691,9 +691,9 @@ def create_presentation():
     s7.notes_slide.notes_text_frame.text = (
         "[12:30 - 14:00]\n"
         "Côté résultats : l'inférence C prend moins de 15 microsecondes avec 0 Ko d'allocation dynamique.\n"
-        "Le modèle atteint un Macro F1-score > 88% et plus de 94% de sensibilité sur les chutes.\n"
+        "Le modèle atteint un Macro F1-score de 91.3% (92.2% d'exactitude globale) et jusqu'à 95.5% de rappel sur les chutes.\n"
         "Sur l'application mobile, l'utilisateur peut personnaliser la sensibilité du seuil d'impact ainsi que l'intervalle de rappel d'inactivité.\n"
-        "Le projet est fiabilisé par plus de 530 tests automatisés au vert sur le mobile et le backend."
+        "Le projet est fiabilisé par plus de 1100 tests automatisés au vert sur le mobile, le backend et le frontend."
     )
 
     # ==========================================

@@ -102,15 +102,15 @@ _color: #0f172a
 -->
 
 # **3. Edge Machine Learning : Classification & Sécurité**
-### 16 Indicateurs Canoniques & Forêt d'Arbres Randomisés (ExtraTrees)
+### 16 Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
 
 * **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
 * **16 Indicateurs Canoniques (19 Hz)** : Magnitudes euclidiennes invariantes en rotation (||a||, ||ω||), dispersions axiales, énergies spectrales moyennes.
-* **Classifieur Hybride ExtraTrees** : Ensemble d'arbres décisionnels multiclasse (marche, course, escaliers, repos, chutes) hautement robuste au surapprentissage.
-* **Double Verrou Biomécanique** : Détection du pic d'impact (> 16.2 m/s²) + confirmation d'immobilité anormale au sol (`isUprightFlatFootStillness`).
+* **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse (marche, course, escaliers, repos, chutes) avec pondération dynamique (`class_weight="balanced"`).
+* **Filtrage Temporel & Cooldown Anti-Rebond** : Inférence ML directe sans verrou d'impact rigide (détection des chutes franches et amorties) + debouncing temporel (5000 ms).
 
 <!-- Notes orateur :
-L'invariance par magnitude élimine les biais de placement de la semelle. Le double verrou évite les faux positifs lors des chocs sportifs (sauts, frappes).
+L'invariance par magnitude élimine les biais de placement de la semelle. La suppression du verrou rigide d'impact permet une détection sensible de toutes les typologies de chute (y compris les chutes amorties ou sans choc violent au talon).
 -->
 
 ---
@@ -168,11 +168,11 @@ _color: #0f172a
 | Métrique Clé | Valeur Mesurée | Implication Système |
 | :--- | :--- | :--- |
 | **Temps d'inférence C** | **~12 µs** | 0.02% du CPU ESP32-S3 |
-| **Précision ML (Macro F1)** | **92.4%** | Détection multi-allure fiable |
+| **Précision ML (Macro F1)** | **91.3% (92.2% exactitude)** | Détection multi-allure fiable |
 | **Empreinte RAM Modèle** | **0 Ko dynamique** | Aucune fragmentation mémoire |
 | **Latence Alerte Chute** | **< 100 ms** | Envoi immédiat aux proches |
 
-* **Sensibilité Ajustable** : Seuil d'impact réglable depuis l'application mobile (profil sportif vs profil senior/marcheur).
+* **Sensibilité & Post-Traitement** : Cooldown anti-rebond et classification en 16 allures avec rééquilibrage des classes rares.
 * **Autonomie Énergétique** : Optimisation continue avec passage en deep sleep en cas d'inactivité prolongée.
 
 <!-- Notes orateur :
