@@ -55,3 +55,6 @@ Tout échec bloque la livraison.
 
 ## 5. Règle des Commits Granulaires
 Dès qu'une étape significative (découpage de routeur/service, nouvelle fonctionnalité, correction de bug) est validée par des tests au vert, l'agent **doit impérativement commiter immédiatement** avec un message Conventionnel précis (ex: `refactor(backend): ...`, `fix(api): ...`). Ne jamais attendre la fin de la conversation pour faire un gros commit unique.
+
+## 6. Règle Linguistique des Commentaires de Code
+* **Commentaires de code exclusivement en anglais** : Tous les commentaires de code, docstrings, annotations et TODOs doivent être écrits en anglais sans exception.

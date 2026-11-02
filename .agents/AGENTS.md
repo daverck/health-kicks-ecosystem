@@ -72,6 +72,10 @@ L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pou
 * Ne jamais accumuler plusieurs étapes ou composants indépendants dans un seul commit monolithique.
 * Les commits doivent être effectués dans le sous-dépôt du projet concerné (puis le pointeur de sous-module mis à jour à la racine). Ne jamais exécuter `git push` sans demande explicite de l'utilisateur.
 
+### Règle d'Or 5 : Rédaction Systématique des Commentaires de Code en Anglais
+* **Tous les commentaires de code, docstrings, annotations techniques et TODOs** au sein des codebases (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`, `contracts`) **doivent être rédigés en anglais exclusivement**.
+* Les communications avec l'utilisateur dans le chat restent dans la langue choisie par l'utilisateur (français ou anglais), mais le code source et sa documentation intégrée demeurent strictement en anglais pour garantir la maintenabilité internationale.
+
 ---
 
 ## 3. Cartographie des Sous-Agents (Emplacement Officiel Antigravity)
