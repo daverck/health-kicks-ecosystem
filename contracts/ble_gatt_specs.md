@@ -51,20 +51,20 @@ sequenceDiagram
 
 Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-c529-4d64-8848-18e5904de22a` :
 
-| Élément                        | UUID 128-bit                                      | Propriétés                        | Description                                                       |
-| :----------------------------- | :------------------------------------------------ | :-------------------------------- | :---------------------------------------------------------------- |
-| **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Service principal de la chaussure connectée                       |
-| **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Événements d'activité et alertes de chute                         |
-| **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile                                |
+| Élément                        | UUID 128-bit                                      | Propriétés                        | Description                                                        |
+| :----------------------------- | :------------------------------------------------ | :-------------------------------- | :----------------------------------------------------------------- |
+| **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Service principal de la chaussure connectée                        |
+| **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Événements d'activité et alertes de chute                          |
+| **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile                                 |
 | **Device & Studio Control**    | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état, étalonnage assiette, réglages et protocole Studio |
-| **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | Déversement binaire haute vitesse des trames IMU                  |
-| **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Compteur de pas déterministe, ventilation par activité et cadence |
-| **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Service dédié à la mise à jour firmware Over-The-Air              |
-| **OTA Control**                | `7a5a0011-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle du cycle de flash OTA (start, end, abort, status)        |
-| **OTA Data**                   | `7a5a0012-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Transfert haute vitesse par chunks du binaire firmware (.bin)     |
-| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service                  | Service standard Bluetooth SIG d'identification matérielle        |
-| **Firmware Revision String**   | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ`                            | Version sémantique du firmware installé (ex: `v1.2.1-esp32s3`)    |
-| **Software Revision String**   | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ`                            | Date/heure de compilation ou de release du binaire embarqué       |
+| **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | Déversement binaire haute vitesse des trames IMU                   |
+| **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Compteur de pas déterministe, ventilation par activité et cadence  |
+| **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Service dédié à la mise à jour firmware Over-The-Air               |
+| **OTA Control**                | `7a5a0011-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle du cycle de flash OTA (start, end, abort, status)         |
+| **OTA Data**                   | `7a5a0012-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Transfert haute vitesse par chunks du binaire firmware (.bin)      |
+| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service                  | Service standard Bluetooth SIG d'identification matérielle         |
+| **Firmware Revision String**   | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ`                            | Version sémantique du firmware installé (ex: `v1.2.1-esp32s3`)     |
+| **Software Revision String**   | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ`                            | Date/heure de compilation ou de release du binaire embarqué        |
 
 ---
 
@@ -80,11 +80,11 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 
 Endianness : **Big-Endian** (réseau standard).
 
-| Offset | Champ        | Type   | Plage / Valeurs  | Description                                                                                  |
-| :----- | :----------- | :----- | :--------------- | :------------------------------------------------------------------------------------------- |
-| 0      | `state_code` | uint8  | Table ci-dessous | Code de l'état ou de l'événement détecté                                                     |
-| 1      | `confidence` | uint8  | `0` – `100`      | Niveau de confiance du modèle en %                                                           |
-| 2..5   | `timestamp`  | uint32 | Epoch Unix (sec) | Horodatage UTC de détection                                                                  |
+| Offset | Champ        | Type   | Plage / Valeurs  | Description                                                                                                                                           |
+| :----- | :----------- | :----- | :--------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | `state_code` | uint8  | Table ci-dessous | Code de l'état ou de l'événement détecté                                                                                                              |
+| 1      | `confidence` | uint8  | `0` – `100`      | Niveau de confiance du modèle en %                                                                                                                    |
+| 2..5   | `timestamp`  | uint32 | Epoch Unix (sec) | Horodatage UTC de détection                                                                                                                           |
 | 6      | `flags`      | uint8  | Bitfield         | Bit 0 : Détection critique (chute)<br>Bit 1 : Déclenchement haptique local autonome effectué<br>Bit 2 : Alerte différée / historisée hors-ligne (NVS) |
 
 #### Table des `state_code` :
@@ -186,6 +186,7 @@ Format textuel ASCII encodé en UTF-8 :
    ```
 
 5. **Configuration du Rappel d'Inactivité** :
+
    ```text
    SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
    ```
@@ -207,18 +208,18 @@ Format textuel ASCII encodé en UTF-8 :
 
 Format textuel ASCII encodé en UTF-8 :
 
-| Notification                           | Déclencheur                    | Description                                                         |
-| :------------------------------------- | :----------------------------- | :------------------------------------------------------------------ |
-| `COUNTDOWN <pulse>/<total>`            | Début de session               | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`) |
-| `RECORDING <duration_sec>`             | Fin du compte à rebours        | La capture démarre en RAM à 50 Hz                                   |
+| Notification                                          | Déclencheur                          | Description                                                                |
+| :---------------------------------------------------- | :----------------------------------- | :------------------------------------------------------------------------- |
+| `COUNTDOWN <pulse>/<total>`                           | Début de session                     | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`)        |
+| `RECORDING <duration_sec>`                            | Fin du compte à rebours              | La capture démarre en RAM à 50 Hz                                          |
 | `FINISHED <sample_count> <session_id> <duration_sec>` | Fenêtre expirée ou commande `FINISH` | Capture terminée, prête pour le déversement burst ; durée réelle transmise |
-| `CALIBRATING <duration_sec>`           | Commande `CALIBRATE` ou `0x05` | Début de l'échantillonnage d'immobilité pour réaligner l'assiette   |
-| `CALIBRATION_OK`                       | 4.0s immobiles atteintes       | Calibration réussie, matrice de rotation persistée en NVS           |
-| `CALIBRATION_ERROR <reason>`           | Mouvement / instabilité        | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)      |
-| `HITL_OK <0|1>`                        | Commande `SET_HITL`            | Mode HITL activé (1) ou désactivé (0) avec succès                   |
-| `HITL_ERROR <reason>`                  | Commande `SET_HITL`            | Rejet de la commande (ex: argument invalide)                        |
-| `CANCELLED`                            | Commande reçue                 | Session interrompue                                                 |
-| `ERROR <reason>`                       | Anomalie matérielle/RAM ou refus | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
+| `CALIBRATING <duration_sec>`                          | Commande `CALIBRATE` ou `0x05`       | Début de l'échantillonnage d'immobilité pour réaligner l'assiette          |
+| `CALIBRATION_OK`                                      | 4.0s immobiles atteintes             | Calibration réussie, matrice de rotation persistée en NVS                  |
+| `CALIBRATION_ERROR <reason>`                          | Mouvement / instabilité              | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)             |
+| `HITL_OK <0                                           | 1>`                                  | Commande `SET_HITL`                                                        | Mode HITL activé (1) ou désactivé (0) avec succès |
+| `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
+| `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
+| `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
 ---
 
@@ -233,15 +234,16 @@ Dès que `FINISHED` est notifié sur Studio Control, le serveur GATT commence l'
 
 #### Structure de l'En-Tête de Paquet (4 octets)
 
-| Offset | Champ         | Type   | Description                                                             |
-| :----- | :------------ | :----- | :---------------------------------------------------------------------- |
+| Offset | Champ         | Type   | Description                                                                                                                                                                                    |
+| :----- | :------------ | :----- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Compression Delta sans perte)<br>`0x05` = RLE_CHUNK (Run-Length Encoding statique sans perte) |
-| 1..2   | `seq_num`     | uint16 | Numéro de séquence séquentiel (0, 1, 2...)                              |
-| 3      | `payload_len` | uint8  | Nombre d'octets de charge utile contenue dans ce paquet                 |
+| 1..2   | `seq_num`     | uint16 | Numéro de séquence séquentiel (0, 1, 2...)                                                                                                                                                     |
+| 3      | `payload_len` | uint8  | Nombre d'octets de charge utile contenue dans ce paquet                                                                                                                                        |
 
 #### Structure d'un Paquet `DELTA_CHUNK` (`packet_type = 0x04`)
 
 Permet de doubler le débit lors de variations continues.
+
 - `header` (4 octets) : `[0x04, seq_num_hi, seq_num_lo, payload_len]`
 - `total_frames` (1 octet uint8) : Nombre total de trames contenues dans le paquet ($1 + \text{delta\_count}$).
 - `keyframe` (14 octets) : Première trame IMU absolue complète (14 octets standard).
@@ -262,7 +264,7 @@ Taille de charge utile fixe : **16 octets** (soit un paquet BLE de 20 octets) po
 - $a_x, a_y, a_z$ (6 octets int16 big-endian, offset 8..13) : Accélérations constantes (milli-$g$).
 - $g_x, g_y, g_z$ (6 octets int16 big-endian, offset 14..19) : Vitesses angulaires constantes (dixièmes de deg/s).
 
-*Reconstruction côté client* : Pour chaque index $i \in [0, \text{run\_count} - 1]$ :
+_Reconstruction côté client_ : Pour chaque index $i \in [0, \text{run\_count} - 1]$ :
 $$\text{delta\_ms}_i = \text{start\_delta\_ms} + i \times \text{step\_ms}$$
 avec des grandeurs physiques $(a_x, a_y, a_z, g_x, g_y, g_z)$ identiques.
 
@@ -413,6 +415,7 @@ Le service Device Information Service standard Bluetooth SIG permet au client mo
 Afin de maximiser l'autonomie sur batterie en usage quotidien tout en garantissant un débit instantané optimal lors des sessions de calibration Studio, la chaussure implémente une négociation adaptative des paramètres de connexion BLE (`GAP Connection Parameters Update`) :
 
 #### 1. Mode Nominal (Veille Active & Podométrie Continue)
+
 - **Intervalle Min** : 100 ms (`min_conn_interval = 80` unités de 1.25 ms).
 - **Intervalle Max** : 125 ms (`max_conn_interval = 100` unités de 1.25 ms).
 - **Latence Esclave** : 0 événement (`latency = 0`).
@@ -420,6 +423,7 @@ Afin de maximiser l'autonomie sur batterie en usage quotidien tout en garantissa
 - **Bénéfice** : Réduit les réveils radio périodiques, maintenant la consommation de veille active à moins de 15 mA tout en assurant une latence imperceptible pour le comptage de pas (19 Hz) et les alertes d'activité ou de chute.
 
 #### 2. Mode Burst Haute Vitesse (Session Studio Active)
+
 - **Intervalle Min** : 15 ms (`min_conn_interval = 12` unités de 1.25 ms).
 - **Intervalle Max** : 20 ms (`max_conn_interval = 16` unités de 1.25 ms).
 - **Latence Esclave** : 0 événement (`latency = 0`).

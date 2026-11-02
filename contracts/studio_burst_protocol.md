@@ -66,16 +66,16 @@ Le canal de contrôle gère la machine à états de la session. Les messages son
 | :----------- | :------------------------------------------ | :--------------------------------------------------------------------------------------- |
 | **`START`**  | `START <label> <duration_sec> <session_id>` | Initie une session avec étiquette, durée (2.0 à 30.0s) et UUID de session.               |
 | **`CANCEL`** | `CANCEL`                                    | Interrompt immédiatement l'enregistrement ou le déchargement et repasse à l'état `IDLE`. |
-| **`FINISH`** | `FINISH`                                    | Termine l'enregistrement après au moins 2.0s et transmet les échantillons recueillis. |
+| **`FINISH`** | `FINISH`                                    | Termine l'enregistrement après au moins 2.0s et transmet les échantillons recueillis.    |
 
 ### B. Notifications Esclave $\to$ Maître (Chaussure $\to$ Mobile)
 
-| Notification    | Format                                  | Signification                                                              |
-| :-------------- | :-------------------------------------- | :------------------------------------------------------------------------- |
-| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>`         | Décompte haptique préparatoire ($3$, $2$, $1$).                            |
-| **`RECORDING`** | `RECORDING <session_id>`                | Début effectif de l'acquisition des données inertielles.                   |
+| Notification    | Format                                                        | Signification                                                                   |
+| :-------------- | :------------------------------------------------------------ | :------------------------------------------------------------------------------ |
+| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>`                               | Décompte haptique préparatoire ($3$, $2$, $1$).                                 |
+| **`RECORDING`** | `RECORDING <session_id>`                                      | Début effectif de l'acquisition des données inertielles.                        |
 | **`FINISHED`**  | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Fin de la capture ; annonce le nombre et la durée réelle des frames à recevoir. |
-| **`ERROR`**     | `ERROR <message>`                       | Erreur matérielle (IMU déconnectée, débordement mémoire RAM, etc.).        |
+| **`ERROR`**     | `ERROR <message>`                                             | Erreur matérielle (IMU déconnectée, débordement mémoire RAM, etc.).             |
 
 ---
 
@@ -111,15 +111,15 @@ Chaque paquet binaire débute par un en-tête de synchronisation de 4 octets :
 
 Chaque mesure inertielle brute est représentée par 1 valeur temporelle `uint16_t` et 6 valeurs `int16_t` encodées en _Big-Endian_ (ordre réseau `htons`) :
 
-| Offset | Champ      |   Type    |             Échelle & Unité              |     Formule de conversion      |
-| :----: | :--------- | :-------: | :--------------------------------------: | :----------------------------: |
-|  `+0`  | `delta_ms` | `uint16_t`| $1\,\text{LSB} = 1\,\text{ms}$           | Millisecondes depuis début     |
-|  `+2`  | `ax`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{valeur} / 1000.0$ |
-|  `+4`  | `ay`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{valeur} / 1000.0$ |
-|  `+6`  | `az`       | `int16_t` |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{valeur} / 1000.0$ |
-|  `+8`  | `gx`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{valeur} / 10.0$  |
-| `+10`  | `gy`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{valeur} / 10.0$  |
-| `+12`  | `gz`       | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{valeur} / 10.0$  |
+| Offset | Champ      |    Type    |             Échelle & Unité              |     Formule de conversion      |
+| :----: | :--------- | :--------: | :--------------------------------------: | :----------------------------: |
+|  `+0`  | `delta_ms` | `uint16_t` |      $1\,\text{LSB} = 1\,\text{ms}$      |   Millisecondes depuis début   |
+|  `+2`  | `ax`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{valeur} / 1000.0$ |
+|  `+4`  | `ay`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{valeur} / 1000.0$ |
+|  `+6`  | `az`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{valeur} / 1000.0$ |
+|  `+8`  | `gx`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{valeur} / 10.0$  |
+| `+10`  | `gy`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{valeur} / 10.0$  |
+| `+12`  | `gz`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{valeur} / 10.0$  |
 
 _Taille totale par frame brute_ : $2 + (6 \times 2) = 14\,\text{octets}$.
 
@@ -130,6 +130,7 @@ _Taille totale par frame brute_ : $2 + (6 \times 2) = 14\,\text{octets}$.
 Pour maximiser le débit sans perte de fidélité, le protocole supporte l'encodage différentiel (Delta-Encoding) :
 
 #### Charge utile d'un paquet `0x04` :
+
 1. **`frame_count` (1 octet)** : Nombre total de trames incluses dans le paquet ($1 + K$).
 2. **Keyframe de référence (14 octets)** : Trame brute complète encodée selon la table 4.B ci-dessus.
 3. **Trames Delta ($K \times 7$ octets)** : Pour chaque trame suivante ($i = 1 \dots K$), les différences par rapport à la trame précédente ($t_{i-1}$) sont quantifiées sur 1 octet signé :
@@ -144,6 +145,7 @@ Pour maximiser le débit sans perte de fidélité, le protocole supporte l'encod
 _Taille totale par trame delta_ : $7\,\text{octets}$ (gain de **$50\%$** par rapport aux 14 octets bruts).
 
 #### Mécanisme de Repli Dynamique (Fallback) & Sécurité
+
 - Si une variation dynamique ou un choc violent fait déborder un delta hors de $[-127, +127]$ ou $\Delta \text{ms} > 255$, le microcontrôleur coupe le paquet delta ou émet un paquet brut `0x02`.
 - Les opcodes `0x02` et `0x04` sont parfaitement composables au sein d'une même session.
 - **Vérification d'intégrité cryptographique** : Le CRC32 IEEE 802.3 transmis dans `BURST_PACKET_END_OF_BURST` (`0x03`) est systématiquement calculé sur les trames décompressées (14 octets $\times N$). Le client mobile valide ce même CRC32 après décompression, garantissant mathématiquement une intégrité à 100%.
@@ -156,12 +158,12 @@ Le protocole calcule dynamiquement la densité de paquets en fonction de la tail
 
 $$\text{Taille Utile} = \text{MTU} - 3\,(\text{En-tête ATT}) - 4\,(\text{En-tête Burst})$$
 
-| Mode de Transfert | MTU Négocié | En-tête ATT + Burst | Taille Utile | Frames / Paquet | Octets Payload |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Brut (`0x02`)** | **185** (iOS) | 7 octets | 178 octets | **12 frames** | 168 octets |
-| **Brut (`0x02`)** | **256** (HealthKicks) | 7 octets | 249 octets | **17 frames** | 238 octets |
-| **Delta (`0x04`)** | **185** (iOS) | 7 octets | 178 octets | **24 frames** (1 Key + 23 Delta) | 176 octets |
-| **Delta (`0x04`)** | **256** (HealthKicks) | 7 octets | 249 octets | **33 frames** (1 Key + 32 Delta) | 239 octets |
+| Mode de Transfert  |      MTU Négocié      | En-tête ATT + Burst | Taille Utile |         Frames / Paquet          | Octets Payload |
+| :----------------- | :-------------------: | :-----------------: | :----------: | :------------------------------: | :------------: |
+| **Brut (`0x02`)**  |     **185** (iOS)     |      7 octets       |  178 octets  |          **12 frames**           |   168 octets   |
+| **Brut (`0x02`)**  | **256** (HealthKicks) |      7 octets       |  249 octets  |          **17 frames**           |   238 octets   |
+| **Delta (`0x04`)** |     **185** (iOS)     |      7 octets       |  178 octets  | **24 frames** (1 Key + 23 Delta) |   176 octets   |
+| **Delta (`0x04`)** | **256** (HealthKicks) |      7 octets       |  249 octets  | **33 frames** (1 Key + 32 Delta) |   239 octets   |
 
 ### Régulation de Flux & Anti-Saturation
 

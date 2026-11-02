@@ -19,11 +19,11 @@ def create_presentation():
     LIGHT_BG = RGBColor(248, 250, 252)    # Slate 50
     CARD_BG = RGBColor(255, 255, 255)     # White
     DARK_CARD_BG = RGBColor(30, 41, 59)   # Slate 800
-    
+
     PRIMARY_TEAL = RGBColor(13, 148, 136) # Teal 600
     ACCENT_AMBER = RGBColor(217, 119, 6)  # Amber 600
     ACCENT_BLUE = RGBColor(37, 99, 235)   # Blue 600
-    
+
     TEXT_DARK = RGBColor(15, 23, 42)       # Slate 900
     TEXT_MUTED = RGBColor(100, 116, 139)  # Slate 500
     TEXT_LIGHT = RGBColor(248, 250, 252)  # Slate 50
@@ -75,14 +75,14 @@ def create_presentation():
     t_box = s1.shapes.add_textbox(Inches(0.8), Inches(1.35), Inches(11.7), Inches(1.8))
     tf = t_box.text_frame
     tf.word_wrap = True
-    
+
     p = tf.paragraphs[0]
     p.text = "HealthKicks Ecosystem"
     p.font.size = Pt(42)
     p.font.bold = True
     p.font.color.rgb = TEXT_LIGHT
     p.font.name = "Segoe UI"
-    
+
     p2 = tf.add_paragraph()
     p2.text = "Chaussure Intelligente : Podométrie Haute Précision & Détection de Chute Autonome"
     p2.font.size = Pt(19)
@@ -120,13 +120,13 @@ def create_presentation():
         box.fill.fore_color.rgb = DARK_CARD_BG
         box.line.color.rgb = color
         box.line.width = Pt(1.5)
-        
+
         tf_c = box.text_frame
         tf_c.word_wrap = True
         tf_c.margin_left = Inches(0.3)
         tf_c.margin_right = Inches(0.3)
         tf_c.margin_top = Inches(0.35)
-        
+
         p = tf_c.paragraphs[0]
         p.text = title
         p.font.size = Pt(14)
@@ -195,20 +195,20 @@ def create_presentation():
         box.fill.fore_color.rgb = CARD_BG
         box.line.color.rgb = accent
         box.line.width = Pt(1.5)
-        
+
         tf = box.text_frame
         tf.word_wrap = True
         tf.margin_left = Inches(0.2)
         tf.margin_right = Inches(0.2)
         tf.margin_top = Inches(0.3)
-        
+
         p = tf.paragraphs[0]
         p.text = title
         p.font.size = Pt(14)
         p.font.bold = True
         p.font.color.rgb = accent
         p.font.name = "Segoe UI"
-        
+
         p_sub = tf.add_paragraph()
         p_sub.text = subtitle
         p_sub.font.size = Pt(10)
@@ -388,17 +388,17 @@ def create_presentation():
 
     step_w = Inches(11.73)
     step_h = Inches(1.15)
-    
+
     steps_data = [
         ("1. MODE STUDIO HAUTE FRÉQUENCE", PRIMARY_TEAL,
          "Acquisition brute (54 / 100 Hz) déclenchée depuis l'application. Streaming en burst BLE avec contrôle CRC32 vers DynamoDB pour constituer les jeux de données."),
-        
+
         ("2. STRATIFIED 5-FOLD CROSS VALIDATION", ACCENT_BLUE,
          "Cache incrémental local pour minimiser les coûts AWS. 5 plis stratifiés garantissant la même proportion de chutes rares. Optimisation sur le Macro F1-score."),
-        
+
         ("3. TRANSPILATION C PURE SANS RUNTIME (m2cgen)", PRIMARY_TEAL,
          "Conversion automatique du modèle scikit-learn en C standard (activity_model_generated.h). Aucun framework lourd (zéro TFLite). Exécution en ~12 µs."),
-        
+
         ("4. QUALITY GATE & CONTRÔLE DU FIRMWARE", ACCENT_AMBER,
          "Quality Gate bloquant : Macro F1-score ≥ 85% obligatoire. Compilation automatique PlatformIO (pio run) validant les quotas Flash/RAM avant tout déploiement.")
     ]
@@ -553,7 +553,7 @@ def create_presentation():
 
     metric_w = Inches(2.78)
     metric_h = Inches(1.5)
-    
+
     metrics = [
         ("~12 µs", "TEMPS D'INFÉRENCE", "Évaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
         ("< 35 ms", "RÉACTION HAPTIQUE", "Délai impact ➔ vibration locale", ACCENT_BLUE),

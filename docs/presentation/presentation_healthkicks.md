@@ -8,6 +8,7 @@ color: #f8fafc
 ---
 
 # **HealthKicks**
+
 ### Chaussure Intelligente : Podométrie Haute Précision & Détection de Chute Autonome
 
 **IoT Embarqué (ESP32-S3)** | **Edge AI (TinyML)** | **Passerelle Mobile & AWS IoT Core**
@@ -22,15 +23,16 @@ _color: #0f172a
 ![bg right:33% w:260px](qr-code.png)
 
 # **Qui suis-je ? — Mon Parcours**
+
 ### David Serck | Développeur Full-Stack, Cloud & IoT
 
-* **Parcours & Expérience** :
-  - Conception et développement d'architectures logicielles de bout en bout (*Web, Mobile, Cloud*).
+- **Parcours & Expérience** :
+  - Conception et développement d'architectures logicielles de bout en bout (_Web, Mobile, Cloud_).
   - Bachelier en informatique de gestion / Formation IoT et Intelligence Artificielle embarquée.
-* **Compétences Clés mobilisées sur ce projet** :
+- **Compétences Clés mobilisées sur ce projet** :
   - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
   - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
-* **Mon Portfolio en ligne** : Scannez le QR code ci-contre pour découvrir mes réalisations et mon CV complet.
+- **Mon Portfolio en ligne** : Scannez le QR code ci-contre pour découvrir mes réalisations et mon CV complet.
 
 <!-- Notes orateur :
 Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à scanner le QR code vers mon portfolio.
@@ -45,6 +47,7 @@ _color: #f8fafc
 -->
 
 # **Démonstration en Direct**
+
 ### Du Capteur sous la Semelle jusqu'au Cloud en Temps Réel
 
 1. **Chaussure Connectée (ESP32-S3)** — Acquisition IMU 6 axes, détection d'allure & retour haptique.
@@ -64,12 +67,13 @@ _color: #0f172a
 -->
 
 # **1. Architecture Globale : Du Capteur au Cloud**
+
 ### Pipeline Hybride Temps Réel & Ségrégation des Responsabilités
 
-* **Chaussure (ESP32-S3)** : IMU 6-axes MPU-6050, inférence C++ pure (~12 µs), retour haptique PWM, serveur BLE GATT LESC.
-* **Passerelle Mobile (Flutter)** : Client BLE, odométrie différentielle SQLite, sécurité OAuth2 PKCE RFC 7636, MQTT WebSockets SigV4.
-* **Cloud & Backend (FastAPI / AWS)** : Broker AWS IoT Core (QoS 1), STS Token Broker (clés temporaires 15 min), DynamoDB & Aurora PostgreSQL 16.
-* **Dashboard Web (Angular 22)** : Visualisation réactive via Angular Signals, suivi d'activité et mode Studio de capture.
+- **Chaussure (ESP32-S3)** : IMU 6-axes MPU-6050, inférence C++ pure (~12 µs), retour haptique PWM, serveur BLE GATT LESC.
+- **Passerelle Mobile (Flutter)** : Client BLE, odométrie différentielle SQLite, sécurité OAuth2 PKCE RFC 7636, MQTT WebSockets SigV4.
+- **Cloud & Backend (FastAPI / AWS)** : Broker AWS IoT Core (QoS 1), STS Token Broker (clés temporaires 15 min), DynamoDB & Aurora PostgreSQL 16.
+- **Dashboard Web (Angular 22)** : Visualisation réactive via Angular Signals, suivi d'activité et mode Studio de capture.
 
 <!-- Notes orateur :
 Souligner la séparation stricte : le capteur est autonome pour la sécurité critique (chute), le mobile gère l'agrégation et le réseau, le cloud centralise et historise.
@@ -83,12 +87,13 @@ _color: #0f172a
 -->
 
 # **2. Cœur IoT : Chaussure Instrumentée & ESP32-S3**
+
 ### Matériel, Référentiel Biomécanique & Maintenance Sécurisée
 
-* **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (MOSFET AO3400).
-* **Référentiel Biomécanique ISB** : Axe Z vertical (+1g repos), Axe X propulsion/freinage, Axe Y médio-latéral.
-* **Sécurité & Rollback OTA** : Double partition Flash A/B avec digest SHA-256 (32 octets), probation 15s avec rollback automatique en cas d'erreur IMU.
-* **Chiffrement BLE LESC** : Appairage sécurisé Just Works avec échange de clés ECDH.
+- **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (MOSFET AO3400).
+- **Référentiel Biomécanique ISB** : Axe Z vertical (+1g repos), Axe X propulsion/freinage, Axe Y médio-latéral.
+- **Sécurité & Rollback OTA** : Double partition Flash A/B avec digest SHA-256 (32 octets), probation 15s avec rollback automatique en cas d'erreur IMU.
+- **Chiffrement BLE LESC** : Appairage sécurisé Just Works avec échange de clés ECDH.
 
 <!-- Notes orateur :
 L'ESP32-S3 offre les extensions vectorielles DSP idéales pour le calcul de magnitude euclidienne. L'OTA est sécurisé pour éviter tout bricking d'un équipement scellé dans la semelle.
@@ -102,12 +107,13 @@ _color: #0f172a
 -->
 
 # **3. Edge Machine Learning : Classification & Sécurité**
+
 ### 16 Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
 
-* **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
-* **16 Indicateurs Canoniques (19 Hz)** : Magnitudes euclidiennes invariantes en rotation (||a||, ||ω||), dispersions axiales, énergies spectrales moyennes.
-* **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse (marche, course, escaliers, repos, chutes) avec pondération dynamique (`class_weight="balanced"`).
-* **Filtrage Temporel & Cooldown Anti-Rebond** : Inférence ML directe sans verrou d'impact rigide (détection des chutes franches et amorties) + debouncing temporel (5000 ms).
+- **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
+- **16 Indicateurs Canoniques (19 Hz)** : Magnitudes euclidiennes invariantes en rotation (||a||, ||ω||), dispersions axiales, énergies spectrales moyennes.
+- **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse (marche, course, escaliers, repos, chutes) avec pondération dynamique (`class_weight="balanced"`).
+- **Filtrage Temporel & Cooldown Anti-Rebond** : Inférence ML directe sans verrou d'impact rigide (détection des chutes franches et amorties) + debouncing temporel (5000 ms).
 
 <!-- Notes orateur :
 L'invariance par magnitude élimine les biais de placement de la semelle. La suppression du verrou rigide d'impact permet une détection sensible de toutes les typologies de chute (y compris les chutes amorties ou sans choc violent au talon).
@@ -121,6 +127,7 @@ _color: #0f172a
 -->
 
 # **4. Boucle MLOps : Du Terrain au Code C Embarqué**
+
 ### Collecte Studio, Stratified 5-Fold & Transpilation sans Runtime
 
 1. **Mode Studio** : Enregistrement de données IMU brutes (54/100 Hz), transfert burst BLE avec contrôle CRC32 vers DynamoDB.
@@ -140,14 +147,15 @@ _color: #0f172a
 -->
 
 # **5. Réseau & Podométrie Différentielle Nette**
+
 ### Odométrie SQLite, Ventilation Horaire Réelle & AWS IoT Core
 
-* **Podométrie Différentielle Mobile** :
+- **Podométrie Différentielle Mobile** :
   - Odomètre matériel monotone sur ESP32 (sans horloge RTC).
   - Calcul différentiel SQLite local : `delta = current - previous`.
   - Résilience totale aux reboots matériels et bascule nette à minuit sans pertes.
   - Ventilation horaire 100% réelle (`hourly_steps`), aucune extrapolation artificielle.
-* **Passerelle Cloud Sécurisée (AWS IoT Core)** :
+- **Passerelle Cloud Sécurisée (AWS IoT Core)** :
   - Session WebSockets MQTT signée cryptographiquement en SigV4 via jetons STS temporaires.
   - Alertes transmises en QoS 1 vers `healthkicks/v1/{deviceId}/events/detection`.
 
@@ -163,17 +171,18 @@ _color: #0f172a
 -->
 
 # **6. Performances Mesurées & Personnalisation**
+
 ### Métriques Clés d'Exécution & Réglage Dynamique
 
-| Métrique Clé | Valeur Mesurée | Implication Système |
-| :--- | :--- | :--- |
-| **Temps d'inférence C** | **~12 µs** | 0.02% du CPU ESP32-S3 |
+| Métrique Clé                | Valeur Mesurée               | Implication Système           |
+| :-------------------------- | :--------------------------- | :---------------------------- |
+| **Temps d'inférence C**     | **~12 µs**                   | 0.02% du CPU ESP32-S3         |
 | **Précision ML (Macro F1)** | **91.3% (92.2% exactitude)** | Détection multi-allure fiable |
-| **Empreinte RAM Modèle** | **0 Ko dynamique** | Aucune fragmentation mémoire |
-| **Latence Alerte Chute** | **< 100 ms** | Envoi immédiat aux proches |
+| **Empreinte RAM Modèle**    | **0 Ko dynamique**           | Aucune fragmentation mémoire  |
+| **Latence Alerte Chute**    | **< 100 ms**                 | Envoi immédiat aux proches    |
 
-* **Sensibilité & Post-Traitement** : Cooldown anti-rebond et classification en 16 allures avec rééquilibrage des classes rares.
-* **Autonomie Énergétique** : Optimisation continue avec passage en deep sleep en cas d'inactivité prolongée.
+- **Sensibilité & Post-Traitement** : Cooldown anti-rebond et classification en 16 allures avec rééquilibrage des classes rares.
+- **Autonomie Énergétique** : Optimisation continue avec passage en deep sleep en cas d'inactivité prolongée.
 
 <!-- Notes orateur :
 L'exécution en 12 microsecondes démontre la suprématie du code C compilé sur les moteurs d'inférence interprétés. Le réglage du seuil permet d'adapter la chaussure à tous les usages.
@@ -187,12 +196,13 @@ _color: #0f172a
 -->
 
 # **7. Conclusion & Perspectives**
+
 ### Les Piliers d'un Écosystème Connecté et Autonome
 
-* **Edge Computing Décentralisé** : La sécurité critique (alerte chute) ne dépend d'aucun serveur ni d'aucun réseau.
-* **Hybridation Capteur-Réseau** : Répartition optimale des charges entre ESP32-S3, smartphone et AWS IoT Core.
-* **Zero Trust & Clés Éphémères** : Architecture sécurisée de bout en bout (LESC, PKCE, SigV4, STS).
-* **Perspectives** :
+- **Edge Computing Décentralisé** : La sécurité critique (alerte chute) ne dépend d'aucun serveur ni d'aucun réseau.
+- **Hybridation Capteur-Réseau** : Répartition optimale des charges entre ESP32-S3, smartphone et AWS IoT Core.
+- **Zero Trust & Clés Éphémères** : Architecture sécurisée de bout en bout (LESC, PKCE, SigV4, STS).
+- **Perspectives** :
   - Analyse avancée de la biomécanique de foulée (pronation / supination).
   - Apprentissage fédéré et adaptation dynamique au profil de marche de l'utilisateur.
 
@@ -205,6 +215,7 @@ color: #f8fafc
 -->
 
 # **Merci pour votre attention**
+
 ### Questions & Échanges
 
 **Projet HealthKicks** — Architecture IoT, Edge AI & Cloud

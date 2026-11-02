@@ -8,12 +8,12 @@ Bienvenue dans l'environnement de développement de **HealthKicks**. Ce guide d�
 
 Pour développer sur l'écosystème complet, installez les outils suivants sur votre poste :
 
-* **Git** 2.40+
-* **Python** 3.11 avec l'outil de gestion de paquets [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh` ou via winget/brew).
-* **Node.js** 22+ avec [pnpm](https://pnpm.io/) 9+ (`corepack enable && corepack prepare pnpm@latest --activate`).
-* **Flutter SDK** 3.19+ et **Dart SDK** 3.3+.
-* **PlatformIO Core** (`uv tool install platformio` ou via extension VS Code).
-* **Docker & Docker Compose** (pour l'infrastructure de développement locale).
+- **Git** 2.40+
+- **Python** 3.11 avec l'outil de gestion de paquets [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh` ou via winget/brew).
+- **Node.js** 22+ avec [pnpm](https://pnpm.io/) 9+ (`corepack enable && corepack prepare pnpm@latest --activate`).
+- **Flutter SDK** 3.19+ et **Dart SDK** 3.3+.
+- **PlatformIO Core** (`uv tool install platformio` ou via extension VS Code).
+- **Docker & Docker Compose** (pour l'infrastructure de développement locale).
 
 ---
 
@@ -30,6 +30,7 @@ git submodule update --init --recursive
 ```
 
 Installez les hooks pre-commit pour certifier les contrats d'échange avant chaque commit :
+
 ```bash
 uv tool run pre-commit install
 ```
@@ -39,15 +40,17 @@ uv tool run pre-commit install
 ## 3. Lancement de l'Infrastructure Locale (Docker)
 
 Le fichier [`docker-compose.yml`](file:///f:/Programmation/healthkicks-ecosystem/docker-compose.yml) à la racine démarre les services d'infrastructure requis en local :
-* **PostgreSQL 16** (port `5432`)
-* **LocalStack / DynamoDB Local** (port `4566`)
-* **Eclipse Mosquitto MQTT Broker** (port `1883` et WebSocket `9001`)
+
+- **PostgreSQL 16** (port `5432`)
+- **LocalStack / DynamoDB Local** (port `4566`)
+- **Eclipse Mosquitto MQTT Broker** (port `1883` et WebSocket `9001`)
 
 ```bash
 docker compose up -d
 ```
 
 Vérifiez que les conteneurs sont sains :
+
 ```bash
 docker compose ps
 ```
@@ -71,11 +74,12 @@ docker compose ps
    uv run alembic upgrade head
    ```
 4. Lancez le serveur de développement FastAPI :
+
    ```bash
    uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
-   * Documentation Swagger interactive : [http://localhost:8000/docs](http://localhost:8000/docs)
-   * Santé de l'API : [http://localhost:8000/health](http://localhost:8000/health)
+   - Documentation Swagger interactive : [http://localhost:8000/docs](http://localhost:8000/docs)
+   - Santé de l'API : [http://localhost:8000/health](http://localhost:8000/health)
 
 5. Exécutez la suite de tests :
    ```bash
@@ -95,10 +99,11 @@ docker compose ps
    pnpm install
    ```
 3. Lancez le serveur Angular en mode développement :
+
    ```bash
    pnpm start
    ```
-   * Application accessible sur : [http://localhost:4200](http://localhost:4200)
+   - Application accessible sur : [http://localhost:4200](http://localhost:4200)
 
 4. Exécutez les tests unitaires Vitest et le build :
    ```bash
@@ -159,4 +164,3 @@ python scripts/verify_openapi_drift.py
 # Exécution de l'ensemble des hooks pre-commit
 uv tool run pre-commit run --all-files
 ```
-

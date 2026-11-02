@@ -487,11 +487,11 @@ SELECT *, topic(4) as user_id FROM 'healthkicks/v1/users/+/events/fall-alert'
 
 ### Environment Variables
 
-| Variable       | Required | Default                                                           | Description                                                               |
-| :------------- | :------: | :---------------------------------------------------------------- | :------------------------------------------------------------------------ |
+| Variable       | Required | Default                                                            | Description                                                               |
+| :------------- | :------: | :----------------------------------------------------------------- | :------------------------------------------------------------------------ |
 | `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/fall-alerts` | FastAPI internal endpoint for fall alert lifecycle management.            |
-| `INGEST_TOKEN` |   Yes    | `dev-token`                                                       | Secret API authentication token sent via `X-Ingest-Token`.                |
-| `VERIFY_SSL`   |    No    | `true`                                                            | Set to `false` only in development if using self-signed TLS certificates. |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                        | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                             | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
 
@@ -567,14 +567,13 @@ def lambda_handler(event, context):
 
 ## 6. Summary Table
 
-| IoT Rule Name                            | MQTT Topic Filter                             | Destination Service                  | Final Data Sink                                                              |
-| :--------------------------------------- | :-------------------------------------------- | :----------------------------------- | :--------------------------------------------------------------------------- |
-| `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`                     | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
-| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status`       | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                 |
-| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`              | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
-| `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`           | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                |
-| `healthkicks_fall_alert_rule`            | `healthkicks/v1/users/+/events/fall-alert`    | Lambda -> FastAPI REST               | Aurora DB (`fall_alerts`, `fall_alert_notifications`) + SMTP Email Escalation |
-
+| IoT Rule Name                            | MQTT Topic Filter                          | Destination Service                  | Final Data Sink                                                                                              |
+| :--------------------------------------- | :----------------------------------------- | :----------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| `healthkicks_device_presence_rule`       | `healthkicks/v1/+/status`                  | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                                                 |
+| `healthkicks_user_gateway_presence_rule` | `healthkicks/v1/users/+/gateway-status`    | Lambda -> FastAPI REST               | Aurora DB (`devices.status`)                                                                                 |
+| `HealthKicksToDynamoDBLambda`            | `healthkicks/v1/+/telemetry/raw`           | Lambda -> DynamoDB + FastAPI Webhook | DynamoDB (`healthkicks_telemetry`) + Aurora (`studio_sessions.sample_count`, `studio_sessions.duration_sec`) |
+| `HealthKicks_ActivityDetectionIngest`    | `healthkicks/v1/+/events/detection`        | Lambda -> PostgreSQL (IAM Token)     | Aurora DB (`activity_events`)                                                                                |
+| `healthkicks_fall_alert_rule`            | `healthkicks/v1/users/+/events/fall-alert` | Lambda -> FastAPI REST               | Aurora DB (`fall_alerts`, `fall_alert_notifications`) + SMTP Email Escalation                                |
 
 ---
 
@@ -592,17 +591,13 @@ In addition to Aurora connection and STS assume-role capabilities, the EC2 role 
     {
       "Sid": "AllowIoTPublishHapticCommands",
       "Effect": "Allow",
-      "Action": [
-        "iot:Publish"
-      ],
+      "Action": ["iot:Publish"],
       "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/*/commands/*"
     },
     {
       "Sid": "AllowIoTPublishFallAlertDownlink",
       "Effect": "Allow",
-      "Action": [
-        "iot:Publish"
-      ],
+      "Action": ["iot:Publish"],
       "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/users/*/fall-alert/status"
     }
   ]
