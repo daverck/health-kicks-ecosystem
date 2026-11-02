@@ -129,7 +129,55 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 2 : Architecture Système
+    # SLIDE 2 : Parcours Professionnel & Qui suis-je ?
+    # ==========================================
+    c.setFillColor(LIGHT_BG)
+    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
+    draw_header(c, "Qui suis-je ?", "Parcours Professionnel & Presentation")
+
+    col_bio_data = [
+        ("FORMATION & EXPERTISE", PRIMARY_TEAL, [
+            ("Bachelier en Informatique de Gestion", "Formation superieure alliant conception logicielle, gestion de donnees et vision produit."),
+            ("Polyvalence Systemes & Logiciels", "Capacite a concevoir une chaine applicative complete : de l'embarque C/C++ jusqu'au Web moderne."),
+            ("Frugalite & Securite Zero Trust", "Conception orientee performance, zero fuite memoire et securite de bout en bout.")
+        ]),
+        ("PARCOURS (3 ENTREPRISES)", ACCENT_BLUE, [
+            ("Fiduciaire (Gestion & Finance)", "Rigueur de modelisation, manipulation de donnees critiques et automatisation de processus."),
+            ("Operateur Telecom (Reseaux)", "Protocoles de communication, contraintes de connectivite et resilience face aux pannes."),
+            ("Entreprise de Services Numeriques (ESN)", "Developpement agile, industrialisation multi-projets, integration continue et delivery rapide.")
+        ]),
+        ("COMPETENCES SUR HEALTHKICKS", ACCENT_AMBER, [
+            ("Embarque & Edge AI", "ESP32-S3 (Dual-Core), FreeRTOS, BLE GATT LESC, inference C m2cgen (~12 us)."),
+            ("Passerelle Mobile & Persistance", "Flutter/Dart, odometrie differentielle SQLite locale, WebSockets MQTT SigV4."),
+            ("Cloud, Backend & Frontend", "FastAPI, PostgreSQL Aurora, DynamoDB, AWS IoT Core, Angular 22 avec Signals.")
+        ])
+    ]
+
+    for idx, (title, color, items) in enumerate(col_bio_data):
+        x = 50 + idx * 295
+        draw_card(c, x, 45, 270, 390, CARD_BG, color)
+        c.setFont("Helvetica-Bold", 12.5)
+        c.setFillColor(color)
+        c.drawString(x + 18, 405, title)
+
+        cur_y = 370
+        for heading, desc in items:
+            c.setFont("Helvetica-Bold", 10)
+            c.setFillColor(TEXT_DARK)
+            c.drawString(x + 18, cur_y, "> " + heading)
+            cur_y -= 14
+            c.setFont("Helvetica", 8.5)
+            c.setFillColor(TEXT_MUTED)
+            lines = wrap_text(desc, 36)
+            for line in lines:
+                c.drawString(x + 28, cur_y, line)
+                cur_y -= 12
+            cur_y -= 8
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 3 : Architecture Système
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -192,7 +240,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 3 : Cœur IoT & Firmware
+    # SLIDE 4 : Cœur IoT & Firmware
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -202,7 +250,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("ARCHITECTURE MATERIELLE", PRIMARY_TEAL, [
             ("ESP32-S3 (Xtensa 240 MHz)", "Dual-core, 16 MB Flash, 8 MB PSRAM."),
             ("IMU 6-axes MPU-6050", "I2C Fast-Mode (400 kHz) : acc et gyro 3D."),
-            ("Actuateur Haptique", "LEDC PWM 10 kHz (MOSFET AO3400)."),
+            ("Actuateur Haptique", "Vibreur PWM 10 kHz (etage MOSFET & diode roue libre)."),
             ("Interfaces", "Bouton appairage GPIO 14 & LED d'etat.")
         ]),
         ("REFERENTIEL BIOMECANIQUE ISB", ACCENT_BLUE, [
@@ -242,7 +290,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 4 : Edge Machine Learning
+    # SLIDE 5 : Edge Machine Learning
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -290,7 +338,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 5 : MLOps Pipeline
+    # SLIDE 6 : MLOps Pipeline
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -330,7 +378,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 6 : Réseau & Podométrie
+    # SLIDE 7 : Réseau & Podométrie
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -393,7 +441,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 7 : Métriques Clés & Paramétrage
+    # SLIDE 8 : Métriques Clés & Paramétrage
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -401,7 +449,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     metric_data = [
         ("~12 us", "TEMPS D'INFERENCE", "Evaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
-        ("< 35 ms", "REACTION HAPTIQUE", "Delai impact -> vibration locale", ACCENT_BLUE),
+        ("0 Ko", "ALLOCATION RAM DYN.", "C pur m2cgen (zero fuite memoire)", ACCENT_BLUE),
         ("91.3%", "MACRO F1-SCORE", "16 allures motrices classees", PRIMARY_TEAL),
         ("95.5%", "RAPPEL CHUTES", "95.8% F1 sur chute arriere", ACCENT_AMBER)
     ]
@@ -425,7 +473,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     params = [
         ("Seuil d'Impact Ajustable", "Sensibilite de deceleration reglable (seuil haut pour trail/running, fin pour seniors)."),
-        ("Rappel d'Inactivite Configurable", "Intervalle de sedentarite au choix (30, 45, 60 min) avec vibrations plantaires."),
+        ("Rappel d'Inactivite Configurable", "Seuil reglable de 10 a 120 min avec rappel periodique toutes les 5 a 30 min."),
         ("Gestion des Destinataires", "Configuration des contacts prevenus immediatement en cas d'accident.")
     ]
     cur_y = 280
@@ -449,9 +497,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     tests_info = [
         ("Approche Contract-Driven", "Tout echange (BLE, REST, MQTT) est regi par des contrats formels sous contracts/."),
-        ("324 Tests Backend FastAPI", "Suite complete pytest validant authentification, endpoints et persistance."),
-        ("320 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odometrie SQLite et la synchronisation."),
-        ("Validation Memoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.")
+        ("Benchmark Studio en Ligne", "Matrice de confusion & metriques F1 en direct sur healthkicks.duckdns.org/dashboard/studio/classes."),
+        ("324 Tests Backend & 320 Tests Mobile", "Suites completes pytest et Flutter validant odometrie, auth et synchronisation."),
+        ("Validation Memoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique (0 fuite).")
     ]
     cur_y = 280
     for lbl, desc in tests_info:
@@ -470,7 +518,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 8 : Conclusion & Perspectives
+    # SLIDE 9 : Conclusion & Perspectives
     # ==========================================
     c.setFillColor(DARK_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -517,6 +565,66 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.setFont("Helvetica-Bold", 10.5)
         c.setFillColor(TEXT_LIGHT)
         c.drawString(508, cur_y, "-> " + lbl)
+        cur_y -= 14
+        c.setFont("Helvetica", 9)
+        c.setFillColor(TEXT_CARD_SUB)
+        lines = wrap_text(desc, 48)
+        for line in lines:
+            c.drawString(522, cur_y, line)
+            cur_y -= 13
+        cur_y -= 10
+
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 10 : Remerciements & Questions / Réponses
+    # ==========================================
+    c.setFillColor(DARK_BG)
+    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
+    draw_header(c, "Echange & Discussion", "Merci pour votre attention ! Questions & Echanges", dark=True)
+
+    draw_card(c, 50, 45, 420, 390, CARD_DARK, PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 13.5)
+    c.setFillColor(TEXT_TEAL)
+    c.drawString(68, 405, "RESSOURCES DU PROJET & DEMO EN LIGNE")
+
+    demo_items = [
+        ("Plateforme Web Live", "https://healthkicks.duckdns.org"),
+        ("Studio & Benchmark des Modeles", "https://healthkicks.duckdns.org/dashboard/studio/classes"),
+        ("Documentation & Specifications", "Architecture, contrats d'interface BLE/MQTT et guides complets."),
+        ("Depot & Integration Continue", "Code source versionne, pipelines CI/CD et suites de tests automatisees.")
+    ]
+    cur_y = 370
+    for lbl, desc in demo_items:
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColor(TEXT_LIGHT)
+        c.drawString(68, cur_y, "> " + lbl)
+        cur_y -= 14
+        c.setFont("Helvetica", 9)
+        c.setFillColor(TEXT_CARD_SUB)
+        lines = wrap_text(desc, 48)
+        for line in lines:
+            c.drawString(82, cur_y, line)
+            cur_y -= 13
+        cur_y -= 10
+
+    draw_card(c, 490, 45, 420, 390, CARD_DARK, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 13.5)
+    c.setFillColor(HexColor("#fbbf24"))
+    c.drawString(508, 405, "THEMES DE DISCUSSION PROPOSES")
+
+    discussion_items = [
+        ("Optimisation Embarquee & FreeRTOS", "Acquisition I2C, allocation statique et temps d'inference C pur (~12 us)."),
+        ("Algorithmes de Podometrie Nette", "Gestion des bascules temporelles, odometrie SQLite et resilience aux reboots."),
+        ("Securite Zero Trust & Cloud IoT", "Chiffrement LESC, courtage STS de jetons temporaires et MQTT WebSockets SigV4."),
+        ("Demarche MLOps & Reentrainement", "De la qualification sous le pied a la compilation croisee sans runtime lourd.")
+    ]
+    cur_y = 370
+    for lbl, desc in discussion_items:
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColor(TEXT_LIGHT)
+        c.drawString(508, cur_y, "> " + lbl)
         cur_y -= 14
         c.setFont("Helvetica", 9)
         c.setFillColor(TEXT_CARD_SUB)

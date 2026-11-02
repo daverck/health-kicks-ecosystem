@@ -26,9 +26,11 @@ _color: #0f172a
 
 ### David Serck | Développeur Full-Stack, Cloud & IoT
 
-- **Parcours & Expérience** :
-  - Conception et développement d'architectures logicielles de bout en bout (_Web, Mobile, Cloud_).
-  - Bachelier en informatique de gestion / Formation IoT et Intelligence Artificielle embarquée.
+- **Parcours & Expérience Professionnelle (3 Entreprises)** :
+  - **Bachelier en Informatique de Gestion** — Conception logicielle, bases de données relationnelles et vision produit.
+  - **Fiduciaire (Gestion & Finance)** — Rigueur de modélisation, traitement de flux critiques et automatisation métier.
+  - **Opérateur Télécom (Réseaux)** — Protocoles de connectivité, tolérance aux coupures et architectures distribuées.
+  - **ESN (Services Numériques)** — Développement agile full-stack, intégration continue et industrialisation.
 - **Compétences Clés mobilisées sur ce projet** :
   - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
   - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
@@ -90,7 +92,7 @@ _color: #0f172a
 
 ### Matériel, Référentiel Biomécanique & Maintenance Sécurisée
 
-- **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (MOSFET AO3400).
+- **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (étage MOSFET & diode de roue libre).
 - **Référentiel Biomécanique ISB** : Axe Z vertical (+1g repos), Axe X propulsion/freinage, Axe Y médio-latéral.
 - **Sécurité & Rollback OTA** : Double partition Flash A/B avec digest SHA-256 (32 octets), probation 15s avec rollback automatique en cas d'erreur IMU.
 - **Chiffrement BLE LESC** : Appairage sécurisé Just Works avec échange de clés ECDH.
@@ -179,10 +181,12 @@ _color: #0f172a
 | **Temps d'inférence C**     | **~12 µs**                   | 0.02% du CPU ESP32-S3         |
 | **Précision ML (Macro F1)** | **91.3% (92.2% exactitude)** | Détection multi-allure fiable |
 | **Empreinte RAM Modèle**    | **0 Ko dynamique**           | Aucune fragmentation mémoire  |
-| **Latence Alerte Chute**    | **< 100 ms**                 | Envoi immédiat aux proches    |
+| **Allocation RAM Modèle**   | **0 Ko dynamique**           | Aucune fragmentation mémoire  |
+| **Matrice & F1 en Direct**  | **healthkicks.duckdns.org**  | Benchmark Studio temps réel   |
 
-- **Sensibilité & Post-Traitement** : Cooldown anti-rebond et classification en 16 allures avec rééquilibrage des classes rares.
-- **Autonomie Énergétique** : Optimisation continue avec passage en deep sleep en cas d'inactivité prolongée.
+- **Paramétrage & Rappel d'Inactivité** : Seuil réglable de 10 à 120 min avec rappel haptique périodique toutes les 5 à 30 min.
+- **Validation & Benchmark Live** : Matrice de confusion et métriques F1 consultables en direct sur [healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
+- **Rigueur & Tests Automatisés** : 324 tests backend FastAPI et 320 tests mobile Flutter validant l'odométrie SQLite et la synchronisation.
 
 <!-- Notes orateur :
 L'exécution en 12 microsecondes démontre la suprématie du code C compilé sur les moteurs d'inférence interprétés. Le réglage du seuil permet d'adapter la chaussure à tous les usages.
@@ -214,8 +218,10 @@ backgroundColor: #0f172a
 color: #f8fafc
 -->
 
-# **Merci pour votre attention**
+# **Merci pour votre attention !**
 
-### Questions & Échanges
+### Questions & Échanges Techniques
 
-**Projet HealthKicks** — Architecture IoT, Edge AI & Cloud
+- **Démonstrateur Web Live** : [healthkicks.duckdns.org](https://healthkicks.duckdns.org)
+- **Studio & Benchmark des Modèles** : [healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
+- **Code & Spécifications** : Contrats BLE GATT, protocoles MQTT WebSockets SigV4, odométrie SQLite

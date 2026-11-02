@@ -103,7 +103,6 @@ def create_presentation():
         ]),
         ("🛡️  SÉCURITÉ & PROCHES", ACCENT_AMBER, [
             "Détection de chute autonome à la source (sur la chaussure).",
-            "Garde biomécanique anti-fausses alertes (s'asseoir ≠ tomber).",
             "Alerte immédiate envoyée à l'entourage et aux aidants."
         ]),
         ("⚡  EDGE AI & SOBRIÉTÉ", ACCENT_BLUE, [
@@ -150,8 +149,82 @@ def create_presentation():
         "Elle intègre aussi une détection de chute autonome qui alerte instantanément les proches, sans dépendre du cloud pour la décision d'urgence."
     )
 
+        # ==========================================
+    # SLIDE 2 : Parcours Professionnel & Qui suis-je ?
     # ==========================================
-    # SLIDE 2 : Architecture Système
+    s2 = prs.slides.add_slide(blank_layout)
+    set_slide_background(s2, LIGHT_BG)
+    add_header(s2, "Parcours Professionnel & Présentation", "Qui suis-je ?")
+
+    col_bio_w = Inches(3.72)
+    col_bio_h = Inches(5.3)
+    c_top = Inches(1.6)
+
+    cards_bio = [
+        ("FORMATION & EXPERTISE", PRIMARY_TEAL, [
+            ("Bachelier en Informatique de Gestion", "Formation supérieure alliant conception logicielle, gestion de bases de données et vision produit."),
+            ("Polyvalence Systèmes & Logiciels", "Capacité à concevoir une chaîne applicative intégrée : de l'embarqué C/C++ jusqu'au Cloud et au Web moderne."),
+            ("Culture de la Frugalité & Sécurité", "Conception orientée haute performance, zéro fuite mémoire et sécurité Zero Trust de bout en bout.")
+        ]),
+        ("PARCOURS PROFESSIONNEL (3 ENTREPRISES)", ACCENT_BLUE, [
+            ("Fiduciaire (Gestion & Finance)", "Rigueur de modélisation, manipulation de données critiques, automatisation de processus métier exigeants."),
+            ("Opérateur Télécom (Réseaux)", "Protocoles de communication, contraintes de connectivité, résilience face aux coupures et architectures distribuées."),
+            ("Entreprise de Services Numériques (ESN)", "Développement agile, industrialisation multi-projets, intégration continue et delivery client rapide.")
+        ]),
+        ("COMPÉTENCES CLÉS SUR HEALTHKICKS", ACCENT_AMBER, [
+            ("Embarqué & Edge AI", "ESP32-S3 (Xtensa Dual-Core), FreeRTOS, BLE GATT LESC, inférence C compilée m2cgen (~12 µs)."),
+            ("Passerelle Mobile & Persistance", "Flutter/Dart, calcul différentiel SQLite local, WebSockets MQTT signés SigV4 via STS."),
+            ("Cloud, Backend & Frontend", "FastAPI, PostgreSQL Aurora, DynamoDB, AWS IoT Core, Angular 22 avec Signals.")
+        ])
+    ]
+
+    for idx, (title, color, items) in enumerate(cards_bio):
+        left = Inches(0.8 + idx * 4.0)
+        box = s2.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, left, c_top, col_bio_w, col_bio_h)
+        box.fill.solid()
+        box.fill.fore_color.rgb = CARD_BG
+        box.line.color.rgb = color
+        box.line.width = Pt(1.5)
+
+        tf = box.text_frame
+        tf.word_wrap = True
+        tf.margin_left = Inches(0.25)
+        tf.margin_right = Inches(0.25)
+        tf.margin_top = Inches(0.3)
+
+        p = tf.paragraphs[0]
+        p.text = title
+        p.font.size = Pt(13)
+        p.font.bold = True
+        p.font.color.rgb = color
+        p.font.name = "Segoe UI"
+        p.space_after = Pt(12)
+
+        for heading, desc in items:
+            ph = tf.add_paragraph()
+            ph.text = "▸ " + heading
+            ph.font.size = Pt(11)
+            ph.font.bold = True
+            ph.font.color.rgb = TEXT_DARK
+            ph.font.name = "Segoe UI"
+            ph.space_before = Pt(8)
+
+            pd = tf.add_paragraph()
+            pd.text = desc
+            pd.font.size = Pt(10)
+            pd.font.color.rgb = TEXT_MUTED
+            pd.font.name = "Segoe UI"
+            pd.space_before = Pt(2)
+
+    s2.notes_slide.notes_text_frame.text = (
+        "[01:00 - 02:00]\n"
+        "Pour me présenter brièvement : je suis diplômé d'un bachelier en informatique de gestion.\n"
+        "Mon parcours s'appuie sur une expérience diversifiée au sein de trois structures complémentaires : en fiduciaire pour la rigueur des flux financiers et des données critiques, chez un opérateur télécom pour la culture réseau et la résilience, et en ESN pour la réactivité du développement applicatif.\n"
+        "Cette triple expérience m'a permis d'aborder le projet HealthKicks de manière transverse, en maîtrisant aussi bien le C/C++ sur microcontrôleur que le cloud AWS et le web moderne."
+    )
+
+    # ==========================================
+    # SLIDE 3 : Architecture Système
     # ==========================================
     s2 = prs.slides.add_slide(blank_layout)
     set_slide_background(s2, LIGHT_BG)
@@ -234,7 +307,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 3 : Cœur IoT & Firmware
+    # SLIDE 4 : Cœur IoT & Firmware
     # ==========================================
     s3 = prs.slides.add_slide(blank_layout)
     set_slide_background(s3, LIGHT_BG)
@@ -247,7 +320,7 @@ def create_presentation():
         ("ARCHITECTURE MATÉRIELLE", PRIMARY_TEAL, [
             ("ESP32-S3 (Xtensa 240 MHz)", "Dual-core, 16 MB Flash, 8 MB PSRAM."),
             ("IMU 6-axes MPU-6050", "I2C Fast-Mode (400 kHz) : accélération et gyro 3D."),
-            ("Actuateur Haptique", "LEDC PWM 10 kHz (MOSFET AO3400 + diode de roue libre)."),
+            ("Actuateur Haptique", "Vibreur PWM 10 kHz (étage de commutation MOSFET & diode de roue libre)."),
             ("Interfaces", "Bouton d'appairage GPIO 14 & LED de statut d'état.")
         ]),
         ("RÉFÉRENTIEL BIOMÉCANIQUE ISB", ACCENT_BLUE, [
@@ -309,7 +382,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 4 : Edge AI & Machine Learning
+    # SLIDE 5 : Edge AI & Machine Learning
     # ==========================================
     s4 = prs.slides.add_slide(blank_layout)
     set_slide_background(s4, LIGHT_BG)
@@ -380,7 +453,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 5 : MLOps Pipeline
+    # SLIDE 6 : MLOps Pipeline
     # ==========================================
     s5 = prs.slides.add_slide(blank_layout)
     set_slide_background(s5, LIGHT_BG)
@@ -441,7 +514,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 6 : Réseau & Podométrie
+    # SLIDE 7 : Réseau & Podométrie
     # ==========================================
     s6 = prs.slides.add_slide(blank_layout)
     set_slide_background(s6, LIGHT_BG)
@@ -545,7 +618,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 7 : Métriques Clés & Paramétrage
+    # SLIDE 8 : Métriques Clés & Paramétrage
     # ==========================================
     s7 = prs.slides.add_slide(blank_layout)
     set_slide_background(s7, LIGHT_BG)
@@ -556,7 +629,7 @@ def create_presentation():
 
     metrics = [
         ("~12 µs", "TEMPS D'INFÉRENCE", "Évaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
-        ("< 35 ms", "RÉACTION HAPTIQUE", "Délai impact ➔ vibration locale", ACCENT_BLUE),
+        ("0 Ko", "ALLOCATION RAM DYN.", "C pur m2cgen (zéro fuite mémoire)", ACCENT_BLUE),
         ("91.3%", "MACRO F1-SCORE", "Séparation des 16 allures motrices", PRIMARY_TEAL),
         ("95.5%", "RAPPEL CHUTES", "95.8% F1 sur chute arrière", ACCENT_AMBER)
     ]
@@ -626,7 +699,7 @@ def create_presentation():
 
     param_items = [
         ("Seuil d'Impact Ajustable", "Sensibilité de décélération réglable selon le profil (seuil élevé pour le trail/running, fin pour seniors)."),
-        ("Rappel d'Inactivité Personnalisable", "Intervalle de sédentarité au choix (30, 45, 60 minutes) avec vibrations plantaires."),
+        ("Rappel d'Inactivité Personnalisable", "Seuil réglable de 10 à 120 min avec rappel périodique toutes les 5 à 30 min."),
         ("Gestion des Destinataires", "Configuration des contacts prévenus immédiatement en cas d'accident.")
     ]
     for lbl, desc in param_items:
@@ -668,9 +741,9 @@ def create_presentation():
 
     qual_items = [
         ("Approche Contract-Driven", "Tout échange (BLE, REST, MQTT) est régi par des contrats formels sous contracts/."),
-        ("324 Tests Backend FastAPI", "Suite complète pytest validant l'authentification, les endpoints et la persistance."),
-        ("320 Tests Application Mobile", "Tests unitaires et de widgets Flutter validant l'odométrie SQLite et la synchronisation."),
-        ("Validation Mémoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique.")
+        ("Benchmark Studio en Ligne", "Matrice de confusion & métriques F1 en direct sur healthkicks.duckdns.org/dashboard/studio/classes."),
+        ("324 Tests Backend & 320 Tests Mobile", "Suites complètes pytest et Flutter validant l'odométrie SQLite, l'auth et la synchronisation."),
+        ("Validation Mémoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique (0 fuite).")
     ]
     for lbl, desc in qual_items:
         pl = tf_q.add_paragraph()
@@ -697,7 +770,7 @@ def create_presentation():
     )
 
     # ==========================================
-    # SLIDE 8 : Conclusion & Perspectives
+    # SLIDE 9 : Conclusion & Perspectives
     # ==========================================
     s8 = prs.slides.add_slide(blank_layout)
     set_slide_background(s8, DARK_BG)
@@ -812,6 +885,133 @@ def create_presentation():
         "En conclusion, HealthKicks prouve qu'on peut concilier l'Intelligence Artificielle et la frugalité IoT dans un objet du quotidien.\n\n"
         "Nous qualifions le mouvement à la source pour encourager le sport, prévenir la sédentarité et alerter l'entourage en cas d'accident.\n\n"
         "Je vous remercie pour votre attention et je réponds avec grand plaisir à vos questions."
+    )
+
+
+    # ==========================================
+    # SLIDE 10 : Remerciements & Questions / Réponses
+    # ==========================================
+    s10 = prs.slides.add_slide(blank_layout)
+    set_slide_background(s10, DARK_BG)
+
+    cat_10 = s10.shapes.add_textbox(Inches(0.8), Inches(0.5), Inches(11.7), Inches(0.4))
+    p = cat_10.text_frame.paragraphs[0]
+    p.text = "ÉCHANGE & DISCUSSION".upper()
+    p.font.size = Pt(12)
+    p.font.bold = True
+    p.font.color.rgb = TEXT_TEAL
+    p.font.name = "Segoe UI"
+
+    t_box10 = s10.shapes.add_textbox(Inches(0.8), Inches(0.9), Inches(11.7), Inches(1.2))
+    tf10 = t_box10.text_frame
+    tf10.word_wrap = True
+    p = tf10.paragraphs[0]
+    p.text = "Merci pour votre attention !"
+    p.font.size = Pt(36)
+    p.font.bold = True
+    p.font.color.rgb = TEXT_LIGHT
+    p.font.name = "Segoe UI"
+
+    p2 = tf10.add_paragraph()
+    p2.text = "Place aux questions et aux échanges techniques"
+    p2.font.size = Pt(18)
+    p2.font.color.rgb = TEXT_TEAL
+    p2.font.name = "Segoe UI"
+    p2.space_before = Pt(6)
+
+    card_w10 = Inches(5.7)
+    card_h10 = Inches(4.7)
+
+    # Left: Liens & Démonstrateur en direct
+    c_l10 = s10.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.8), Inches(2.3), card_w10, card_h10)
+    c_l10.fill.solid()
+    c_l10.fill.fore_color.rgb = DARK_CARD_BG
+    c_l10.line.color.rgb = PRIMARY_TEAL
+    c_l10.line.width = Pt(1.5)
+
+    tf_l10 = c_l10.text_frame
+    tf_l10.word_wrap = True
+    tf_l10.margin_left = Inches(0.3)
+    tf_l10.margin_right = Inches(0.3)
+    tf_l10.margin_top = Inches(0.3)
+
+    p = tf_l10.paragraphs[0]
+    p.text = "RESSOURCES DU PROJET & DÉMO EN LIGNE"
+    p.font.size = Pt(13.5)
+    p.font.bold = True
+    p.font.color.rgb = TEXT_TEAL
+    p.font.name = "Segoe UI"
+    p.space_after = Pt(12)
+
+    demo_items = [
+        ("Plateforme Web Live", "https://healthkicks.duckdns.org"),
+        ("Studio & Benchmark des Modèles", "https://healthkicks.duckdns.org/dashboard/studio/classes"),
+        ("Documentation & Spécifications", "Architecture, contrats d'interface BLE/MQTT et guides de reproduction."),
+        ("Dépôt & Intégration Continue", "Code source versionné, pipelines CI/CD et suites de tests automatisées.")
+    ]
+    for lbl, desc in demo_items:
+        pl = tf_l10.add_paragraph()
+        pl.text = "▸ " + lbl
+        pl.font.size = Pt(11.5)
+        pl.font.bold = True
+        pl.font.color.rgb = TEXT_LIGHT
+        pl.font.name = "Segoe UI"
+        pl.space_before = Pt(8)
+
+        pd = tf_l10.add_paragraph()
+        pd.text = desc
+        pd.font.size = Pt(10.5)
+        pd.font.color.rgb = RGBColor(148, 163, 184)
+        pd.font.name = "Segoe UI"
+        pd.space_before = Pt(2)
+
+    # Right: Sujets d'approfondissement
+    c_r10 = s10.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.83), Inches(2.3), card_w10, card_h10)
+    c_r10.fill.solid()
+    c_r10.fill.fore_color.rgb = DARK_CARD_BG
+    c_r10.line.color.rgb = ACCENT_AMBER
+    c_r10.line.width = Pt(1.5)
+
+    tf_r10 = c_r10.text_frame
+    tf_r10.word_wrap = True
+    tf_r10.margin_left = Inches(0.3)
+    tf_r10.margin_right = Inches(0.3)
+    tf_r10.margin_top = Inches(0.3)
+
+    p = tf_r10.paragraphs[0]
+    p.text = "THÈMES DE DISCUSSION PROPOSÉS"
+    p.font.size = Pt(13.5)
+    p.font.bold = True
+    p.font.color.rgb = RGBColor(251, 191, 36)
+    p.font.name = "Segoe UI"
+    p.space_after = Pt(12)
+
+    discussion_items = [
+        ("Optimisation Embarquée & FreeRTOS", "Acquisition I2C, allocation statique et performances d'inférence en C pur."),
+        ("Algorithmes de Podométrie Différentielle", "Gestion des bascules temporelles, odométrie SQLite et résilience aux reboots."),
+        ("Sécurité Zero Trust & Cloud IoT", "Chiffrement LESC, courtage de jetons temporaires STS et MQTT WebSockets SigV4."),
+        ("Démarche MLOps & Boucle de Réentraînement", "De la qualification sous le pied à la compilation croisée sans runtime externe.")
+    ]
+    for lbl, desc in discussion_items:
+        pl = tf_r10.add_paragraph()
+        pl.text = "▸ " + lbl
+        pl.font.size = Pt(11.5)
+        pl.font.bold = True
+        pl.font.color.rgb = TEXT_LIGHT
+        pl.font.name = "Segoe UI"
+        pl.space_before = Pt(8)
+
+        pd = tf_r10.add_paragraph()
+        pd.text = desc
+        pd.font.size = Pt(10.5)
+        pd.font.color.rgb = RGBColor(148, 163, 184)
+        pd.font.name = "Segoe UI"
+        pd.space_before = Pt(2)
+
+    s10.notes_slide.notes_text_frame.text = (
+        "[15:00 - Fin]\n"
+        "Je vous remercie chaleureusement pour votre écoute et votre attention.\n"
+        "Je suis maintenant à votre entière disposition pour répondre à toutes vos questions, approfondir les aspects techniques du projet ou vous faire une démonstration en direct."
     )
 
     output_path = "docs/presentation/presentation_healthkicks.pptx"
