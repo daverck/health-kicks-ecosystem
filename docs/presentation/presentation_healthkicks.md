@@ -13,6 +13,10 @@ color: #f8fafc
 
 **IoT Embarqué (ESP32-S3)** | **Edge AI (TinyML)** | **Passerelle Mobile & AWS IoT Core**
 
+- **ACTIVITÉ & SPORT** : Podomètre | Rappel d'inactivité haptique | Centré sur le mouvement des pieds
+- **SÉCURITÉ & PROCHES** : Détection de chute | Alerte par SMS et email
+- **EDGE AI & SOBRIÉTÉ** : Composants standard grand public (coût relativement faible) | Edge AI
+
 ---
 
 <!--
@@ -34,31 +38,10 @@ _color: #0f172a
 - **Compétences Clés mobilisées sur ce projet** :
   - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
   - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
-- **Mon Portfolio en ligne** : Scannez le QR code ci-contre pour découvrir mes réalisations et mon CV complet.
+- **Portfolio & CV en ligne** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) *(ou scannez le QR code ci-contre)*.
 
 <!-- Notes orateur :
-Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à scanner le QR code vers mon portfolio.
--->
-
----
-
-<!--
-_class: lead
-_backgroundColor: #0f172a
-_color: #f8fafc
--->
-
-# **Démonstration en Direct**
-
-### Du Capteur sous la Semelle jusqu'au Cloud en Temps Réel
-
-1. **Chaussure Connectée (ESP32-S3)** — Acquisition IMU 6 axes, détection d'allure & retour haptique.
-2. **Application Mobile (Flutter)** — Appairage BLE LESC, podométrie temps réel & détection de chute.
-3. **Supervision Cloud & Web (FastAPI / Angular)** — Remontée d'alerte MQTT QoS 1 et suivi clinique en direct.
-
-<!-- Notes orateur :
-Enchaîner directement sur la démonstration concrète avant de détailler l'architecture technique sous le capot.
-Montrer d'abord la chaussure et l'application mobile connectée en BLE, puis la réactivité du système en temps réel.
+Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à consulter mon portfolio en ligne via le lien ou le QR code.
 -->
 
 ---
@@ -71,6 +54,14 @@ _color: #0f172a
 # **1. Architecture Globale : Du Capteur au Cloud**
 
 ### Pipeline Hybride Temps Réel & Ségrégation des Responsabilités
+
+```mermaid
+flowchart LR
+    A["Chaussure (ESP32-S3)<br/>• IMU MPU-6050 6 axes<br/>• Edge AI C++ (~12 µs)<br/>• Haptique PWM & BLE"] -->|BLE GATT LESC<br/>Chiffré / Fast Burst| B["Mobile (Flutter)<br/>• Passerelle BLE / MQTT<br/>• Odométrie SQLite<br/>• Auth OAuth2 PKCE"]
+    B -->|MQTT WebSockets SigV4<br/>REST OpenAPI| C["Cloud (FastAPI / AWS)<br/>• AWS IoT Core QoS 1<br/>• STS Token Broker<br/>• DynamoDB & Aurora PG"]
+    B -.->|REST / WebSockets| D["Dashboard (Angular 22)<br/>• Angular Signals<br/>• Suivi & Studio Classes"]
+    C -->|REST / WebSockets| D
+```
 
 - **Chaussure (ESP32-S3)** : IMU 6-axes MPU-6050, inférence C++ pure (~12 µs), retour haptique PWM, serveur BLE GATT LESC.
 - **Passerelle Mobile (Flutter)** : Client BLE, odométrie différentielle SQLite, sécurité OAuth2 PKCE RFC 7636, MQTT WebSockets SigV4.
@@ -110,16 +101,16 @@ _color: #0f172a
 
 # **3. Edge Machine Learning : Classification & Sécurité**
 
-### 16 Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
+### Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
 
 - **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
-- **16 Indicateurs Canoniques (19 Hz)** : Magnitudes euclidiennes invariantes en rotation (||a||, ||ω||), dispersions axiales, énergies spectrales moyennes.
-- **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse (marche, course, escaliers, repos, chutes) avec pondération dynamique (`class_weight="balanced"`).
-- **Filtrage Temporel & Cooldown Anti-Rebond** : Inférence ML directe sans verrou d'impact rigide (détection des chutes franches et amorties) + debouncing temporel (5000 ms).
-
-<!-- Notes orateur :
-L'invariance par magnitude élimine les biais de placement de la semelle. La suppression du verrou rigide d'impact permet une détection sensible de toutes les typologies de chute (y compris les chutes amorties ou sans choc violent au talon).
--->
+- **Features Biomécaniques & Temporelles (19 Hz)** :
+  - *Magnitudes spatiales invariantes en rotation* : $\Vert a \Vert$, $\Vert \omega \Vert$, min, max, moyenne, écart-type, pic-à-pic (P2P), énergies cinétiques.
+  - *Dispersions axiales & posture* : moyennes et écarts-types $a_x, a_y, a_z, g_x, g_y, g_z$ (distinction immobile assis vs couché).
+  - *Directionnalité temporelle* : différentiel $\Delta a_y$ (fin - début), asymétrie d'énergie 1ère/2nde moitié de fenêtre (distinction assis $\leftrightarrow$ debout).
+  - *Dynamique de transition & Jerk* : jerk maximal d'accélération (choc violent de chute vs allongement calme) et profil de queue de fenêtre.
+- **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse avec pondération dynamique (`class_weight="balanced"` : pénalise proportionnellement les erreurs sur les classes rares comme les chutes).
+- **Filtrage Temporel Anti-Rebond** : Inférence ML directe sans verrou rigide d'impact physique + debouncing temporel (5000 ms).
 
 ---
 
@@ -172,25 +163,20 @@ _backgroundColor: #f8fafc
 _color: #0f172a
 -->
 
-# **6. Performances Mesurées & Personnalisation**
+# **6. Performances Mesurées & Validation**
 
-### Métriques Clés d'Exécution & Réglage Dynamique
+### Métriques Clés d'Exécution & Suivi Studio en Direct
 
 | Métrique Clé                | Valeur Mesurée               | Implication Système           |
 | :-------------------------- | :--------------------------- | :---------------------------- |
 | **Temps d'inférence C**     | **~12 µs**                   | 0.02% du CPU ESP32-S3         |
-| **Précision ML (Macro F1)** | **91.3% (92.2% exactitude)** | Détection multi-allure fiable |
-| **Empreinte RAM Modèle**    | **0 Ko dynamique**           | Aucune fragmentation mémoire  |
-| **Allocation RAM Modèle**   | **0 Ko dynamique**           | Aucune fragmentation mémoire  |
-| **Matrice & F1 en Direct**  | **healthkicks.duckdns.org**  | Benchmark Studio temps réel   |
+| **Précision ML (Macro F1)** | **91.3%**                    | Détection multi-allure fiable |
+| **Exactitude Globale**      | **92.2%**                    | Robustesse toutes allures     |
+| **Rappel des Chutes**       | **95.5%**                    | 95.8% F1 sur chute arrière    |
 
-- **Paramétrage & Rappel d'Inactivité** : Seuil réglable de 10 à 120 min avec rappel haptique périodique toutes les 5 à 30 min.
-- **Validation & Benchmark Live** : Matrice de confusion et métriques F1 consultables en direct sur [healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
-- **Rigueur & Tests Automatisés** : 324 tests backend FastAPI et 320 tests mobile Flutter validant l'odométrie SQLite et la synchronisation.
-
-<!-- Notes orateur :
-L'exécution en 12 microsecondes démontre la suprématie du code C compilé sur les moteurs d'inférence interprétés. Le réglage du seuil permet d'adapter la chaussure à tous les usages.
--->
+- **Validation & Benchmark Live** : Matrice de confusion et métriques détaillées consultables en direct sur [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
+- **Rappel d'Inactivité Paramétrable** : Seuil configurable de 10 à 120 min avec impulsion haptique périodique.
+- **Rigueur & Tests Automatisés** : 324 tests backend FastAPI et 312 tests mobile Flutter validant l'odométrie SQLite, l'auth et la synchronisation.
 
 ---
 
@@ -203,12 +189,15 @@ _color: #0f172a
 
 ### Les Piliers d'un Écosystème Connecté et Autonome
 
-- **Edge Computing Décentralisé** : La sécurité critique (alerte chute) ne dépend d'aucun serveur ni d'aucun réseau.
-- **Hybridation Capteur-Réseau** : Répartition optimale des charges entre ESP32-S3, smartphone et AWS IoT Core.
-- **Zero Trust & Clés Éphémères** : Architecture sécurisée de bout en bout (LESC, PKCE, SigV4, STS).
-- **Perspectives** :
-  - Analyse avancée de la biomécanique de foulée (pronation / supination).
-  - Apprentissage fédéré et adaptation dynamique au profil de marche de l'utilisateur.
+- **Ce que nous avons démontré** :
+  - TinyML frugal & performant : inférence en code C pur sans runtime lourd, 0 Ko d'allocation RAM dynamique.
+  - Chaîne IoT sécurisée : chiffrement BLE LESC, mise à jour OTA avec rollback, auth OAuth2 PKCE et STS temporaire.
+  - Podométrie nette & vérifiable : élimination des faux pas et restitution fidèle heure par heure.
+  - Sérénité pour les proches : alerte fiable lors d'un accident par SMS et email.
+- **Feuille de Route Technologique & Améliorations** :
+  - **Amélioration MLOps** : Versioning systématique des modèles entraînés, registre d'artefacts et traçabilité des hyperparamètres.
+  - **Adaptation continue** : Ajustement fin des prédictions à la foulée propre de l'utilisateur.
+  - **Connectivité cellulaire** : Module NB-IoT optionnel pour une autonomie totale en extérieur sans smartphone.
 
 ---
 
@@ -222,6 +211,10 @@ color: #f8fafc
 
 ### Questions & Échanges Techniques
 
-- **Démonstrateur Web Live** : [healthkicks.duckdns.org](https://healthkicks.duckdns.org)
-- **Studio & Benchmark des Modèles** : [healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
-- **Code & Spécifications** : Contrats BLE GATT, protocoles MQTT WebSockets SigV4, odométrie SQLite
+- **Portfolio & Profil** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio)
+- **Démonstrateur Web Live** : [https://healthkicks.duckdns.org](https://healthkicks.duckdns.org)
+- **Studio & Benchmark des Modèles** : [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
+- **Thèmes d'échange** :
+  - Algorithmes de podométrie nette & odométrie différentielle SQLite.
+  - Sécurité Zero Trust, courtage STS et MQTT WebSockets SigV4.
+  - Démarche MLOps, transpilation C et réentraînement de modèles.

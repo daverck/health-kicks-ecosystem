@@ -1,7 +1,8 @@
 """Generates a simplified, high-impact 16:9 landscape PDF presentation for HealthKicks Ecosystem
-using ReportLab (pure Python, vector graphics, standalone).
+using ReportLab (pure Python, vector graphics, standalone, clickable links).
 """
 
+import os
 from reportlab.lib.colors import HexColor
 from reportlab.pdfgen import canvas
 
@@ -69,7 +70,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c = canvas.Canvas(filename, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
     # ==========================================
-    # SLIDE 1 : Titre & Vision
+    # SLIDE 1 : Titre & Vision Simplifiée
     # ==========================================
     c.setFillColor(DARK_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -91,19 +92,17 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     cards_s1 = [
         ("ACTIVITE & SPORT", PRIMARY_TEAL, [
-            "Podometrie podologique multi-allures (marche, course, escaliers).",
-            "Rappel d'inactivite haptique anti-sedentarite sous la semelle.",
-            "Zero faux pas : insensibilite aux mouvements parasites des bras."
+            "Podometre.",
+            "Rappel d'inactivite haptique.",
+            "Centre sur le mouvement des pieds."
         ]),
         ("SECURITE & PROCHES", ACCENT_AMBER, [
-            "Detection de chute autonome a la source (sur la chaussure).",
-            "Garde biomecanique anti-fausses alertes (s'asseoir != tomber).",
-            "Alerte immediate envoyee a l'entourage et aux aidants."
+            "Detection de chute.",
+            "Alerte par SMS et email."
         ]),
         ("EDGE AI & SOBRIETE", ACCENT_BLUE, [
-            "Intelligence 100% locale sur microcontroleur ESP32-S3.",
-            "Zero dependance reseau pour la securite critique.",
-            "Inference instantanee en quelques microsecondes (< 15 us)."
+            "Composants standard grand public (cout relativement faible).",
+            "Edge AI."
         ])
     ]
 
@@ -116,24 +115,27 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
         cur_y = 295
         for b in items:
-            lines = wrap_text(b, 32)
-            c.setFont("Helvetica-Bold", 10)
+            lines = wrap_text(b, 30)
+            c.setFont("Helvetica-Bold", 11)
             c.setFillColor(TEXT_LIGHT)
             c.drawString(x + 18, cur_y, "-")
-            c.setFont("Helvetica", 9.5)
+            c.setFont("Helvetica", 10.5)
             for line in lines:
                 c.drawString(x + 30, cur_y, line)
-                cur_y -= 14
-            cur_y -= 10
+                cur_y -= 16
+            cur_y -= 12
 
     c.showPage()
 
     # ==========================================
-    # SLIDE 2 : Parcours Professionnel & Qui suis-je ?
+    # SLIDE 2 : Parcours Professionnel & Portfolio QR Code
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
     draw_header(c, "Qui suis-je ?", "Parcours Professionnel & Presentation")
+
+    qr_path = "docs/presentation/qr-code.png"
+    portfolio_url = "https://daverck.github.io/serck-david-portfolio"
 
     col_bio_data = [
         ("FORMATION & EXPERTISE", PRIMARY_TEAL, [
@@ -145,17 +147,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             ("Fiduciaire (Gestion & Finance)", "Rigueur de modelisation, manipulation de donnees critiques et automatisation de processus."),
             ("Operateur Telecom (Reseaux)", "Protocoles de communication, contraintes de connectivite et resilience face aux pannes."),
             ("Entreprise de Services Numeriques (ESN)", "Developpement agile, industrialisation multi-projets, integration continue et delivery rapide.")
-        ]),
-        ("COMPETENCES SUR HEALTHKICKS", ACCENT_AMBER, [
-            ("Embarque & Edge AI", "ESP32-S3 (Dual-Core), FreeRTOS, BLE GATT LESC, inference C m2cgen (~12 us)."),
-            ("Passerelle Mobile & Persistance", "Flutter/Dart, odometrie differentielle SQLite locale, WebSockets MQTT SigV4."),
-            ("Cloud, Backend & Frontend", "FastAPI, PostgreSQL Aurora, DynamoDB, AWS IoT Core, Angular 22 avec Signals.")
         ])
     ]
 
+    # Draw 2 text columns
     for idx, (title, color, items) in enumerate(col_bio_data):
-        x = 50 + idx * 295
-        draw_card(c, x, 45, 270, 390, CARD_BG, color)
+        x = 50 + idx * 290
+        draw_card(c, x, 45, 275, 390, CARD_BG, color)
         c.setFont("Helvetica-Bold", 12.5)
         c.setFillColor(color)
         c.drawString(x + 18, 405, title)
@@ -174,23 +172,112 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
                 cur_y -= 12
             cur_y -= 8
 
+    # 3rd Column: Competences + QR code & Portfolio Link
+    x_qr = 50 + 2 * 290
+    draw_card(c, x_qr, 45, 280, 390, CARD_BG, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 12.5)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(x_qr + 18, 405, "PORTFOLIO & COMPETENCES")
+
+    c.setFont("Helvetica-Bold", 9.5)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_qr + 18, 375, "> Embarque, Mobile, Cloud & Web")
+    c.setFont("Helvetica", 8.5)
+    c.setFillColor(TEXT_MUTED)
+    comp_lines = wrap_text("ESP32-S3, C/C++, TinyML, Flutter/Dart, FastAPI, AWS IoT, PostgreSQL, Angular 22.", 36)
+    cur_y = 360
+    for line in comp_lines:
+        c.drawString(x_qr + 28, cur_y, line)
+        cur_y -= 11
+
+    # Draw QR code image
+    if os.path.exists(qr_path):
+        qr_size = 170
+        qr_x = x_qr + (280 - qr_size) / 2
+        qr_y = 125
+        c.drawImage(qr_path, qr_x, qr_y, width=qr_size, height=qr_size, preserveAspectRatio=True)
+        # Clickable link over the QR code
+        c.linkURL(portfolio_url, (qr_x, qr_y, qr_x + qr_size, qr_y + qr_size), thickness=0)
+
+    # Clickable text link
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawCentredString(x_qr + 140, 95, "Site Portfolio & CV en ligne :")
+    c.setFont("Helvetica", 8)
+    c.setFillColor(ACCENT_BLUE)
+    link_rect = (x_qr + 15, 65, x_qr + 265, 88)
+    c.drawCentredString(x_qr + 140, 75, "daverck.github.io/serck-david-portfolio")
+    c.linkURL(portfolio_url, link_rect, thickness=0)
+
     c.showPage()
 
     # ==========================================
-    # SLIDE 3 : Architecture Système
+    # SLIDE 3 : Architecture Système & Schéma
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
     draw_header(c, "Vue d'Ensemble", "Architecture Globale : Du Capteur au Cloud")
 
+    # Schéma d'Architecture visuel interactif
+    # Ligne 1: 4 Boîtes interconnectées (Flux de données)
+    diag_y = 350
+    diag_h = 75
+    box_w = 175
+    gap_x = 45
+
+    diag_boxes = [
+        ("CHAUSSURE (Edge)", "ESP32-S3 & MPU-6050", "Inference ML ~12 us\nHaptique PWM 10 kHz", PRIMARY_TEAL),
+        ("MOBILE (Gateway)", "Flutter & SQLite", "Odometrie locale\nAuth OAuth2 PKCE", ACCENT_BLUE),
+        ("CLOUD (Backend)", "FastAPI & AWS IoT", "Broker STS temporaire\nDynamoDB & Aurora", PRIMARY_TEAL),
+        ("DASHBOARD (Web)", "Angular 22 Signals", "Suivi temps reel\nStudio Requalification", ACCENT_AMBER)
+    ]
+
+    for i, (title, sub, detail, color) in enumerate(diag_boxes):
+        bx = 50 + i * (box_w + gap_x)
+        draw_card(c, bx, diag_y, box_w, diag_h, CARD_BG, color, border_width=2)
+        c.setFont("Helvetica-Bold", 10.5)
+        c.setFillColor(color)
+        c.drawCentredString(bx + box_w / 2, diag_y + diag_h - 18, title)
+        c.setFont("Helvetica-Bold", 8.5)
+        c.setFillColor(TEXT_DARK)
+        c.drawCentredString(bx + box_w / 2, diag_y + diag_h - 32, sub)
+        c.setFont("Helvetica", 7.5)
+        c.setFillColor(TEXT_MUTED)
+        det_lines = detail.split("\n")
+        c.drawCentredString(bx + box_w / 2, diag_y + diag_h - 48, det_lines[0])
+        c.drawCentredString(bx + box_w / 2, diag_y + diag_h - 60, det_lines[1])
+
+        # Arrow to next box
+        if i < len(diag_boxes) - 1:
+            ax = bx + box_w + 5
+            ay = diag_y + diag_h / 2
+            c.setStrokeColor(TEXT_MUTED)
+            c.setLineWidth(1.5)
+            c.line(ax, ay, ax + gap_x - 10, ay)
+            # Arrow head
+            p = c.beginPath()
+            p.moveTo(ax + gap_x - 10, ay)
+            p.lineTo(ax + gap_x - 16, ay + 4)
+            p.lineTo(ax + gap_x - 16, ay - 4)
+            p.close()
+            c.setFillColor(TEXT_MUTED)
+            c.drawPath(p, fill=1, stroke=0)
+
+            # Protocol label above arrow
+            proto_labels = ["BLE LESC", "MQTT SigV4", "REST / WS"]
+            c.setFont("Helvetica-Bold", 7.5)
+            c.setFillColor(PRIMARY_TEAL if i == 0 else ACCENT_BLUE)
+            c.drawCentredString(ax + (gap_x - 10) / 2, ay + 7, proto_labels[i])
+
+    # 4 Cartes détaillées en dessous
     col_w = 200
-    col_h = 390
+    col_h = 280
     col_y = 45
 
     layers = [
         ("1. CHAUSSURE", "ESP32-S3 & Capteurs", PRIMARY_TEAL, [
-            "Centrale IMU 6-axes MPU-6050.",
-            "Inference Edge AI C++ (< 15 us).",
+            "Centrale IMU 6-axes MPU-6050 (19 Hz).",
+            "Inference Edge AI C++ (~12 us).",
             "Vibreur haptique PWM (10 kHz).",
             "Serveur BLE GATT securise (LESC)."
         ]),
@@ -202,7 +289,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ]),
         ("3. CLOUD", "FastAPI & AWS IoT", PRIMARY_TEAL, [
             "Broker AWS IoT Core (QoS 1).",
-            "STS Token Broker : cles ephemeres (15 min).",
+            "STS Token Broker : cles 15 min.",
             "Amazon DynamoDB & PostgreSQL 16.",
             "Pipeline d'entrainement MLOps."
         ]),
@@ -210,32 +297,32 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             "Interface reactive Angular Signals.",
             "Visualisation des pas et alertes.",
             "Mode Studio : capture de datasets.",
-            "Reglage distant des seuils."
+            "Requalification des modeles."
         ])
     ]
 
     for idx, (title, sub, accent, items) in enumerate(layers):
         x = 50 + idx * 220
         draw_card(c, x, col_y, col_w, col_h, CARD_BG, accent)
-        c.setFont("Helvetica-Bold", 12)
+        c.setFont("Helvetica-Bold", 11.5)
         c.setFillColor(accent)
-        c.drawString(x + 14, col_y + col_h - 26, title)
+        c.drawString(x + 14, col_y + col_h - 24, title)
 
-        c.setFont("Helvetica", 9)
+        c.setFont("Helvetica", 8.5)
         c.setFillColor(TEXT_MUTED)
-        c.drawString(x + 14, col_y + col_h - 42, sub)
+        c.drawString(x + 14, col_y + col_h - 38, sub)
 
-        cur_y = col_y + col_h - 70
+        cur_y = col_y + col_h - 60
         for it in items:
             lines = wrap_text(it, 25)
-            c.setFont("Helvetica-Bold", 9)
+            c.setFont("Helvetica-Bold", 8.5)
             c.setFillColor(TEXT_DARK)
             c.drawString(x + 14, cur_y, "-")
-            c.setFont("Helvetica", 9)
+            c.setFont("Helvetica", 8.5)
             for line in lines:
                 c.drawString(x + 24, cur_y, line)
-                cur_y -= 14
-            cur_y -= 8
+                cur_y -= 13
+            cur_y -= 6
 
     c.showPage()
 
@@ -268,12 +355,12 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     for idx, (title, accent, items) in enumerate(s3_cards):
         x = 50 + idx * 295
-        draw_card(c, x, col_y, 275, col_h, CARD_BG, accent)
+        draw_card(c, x, col_y, 275, 390, CARD_BG, accent)
         c.setFont("Helvetica-Bold", 12)
         c.setFillColor(accent)
-        c.drawString(x + 15, col_y + col_h - 28, title)
+        c.drawString(x + 15, col_y + 390 - 28, title)
 
-        cur_y = col_y + col_h - 60
+        cur_y = col_y + 390 - 60
         for lbl, desc in items:
             c.setFont("Helvetica-Bold", 10)
             c.setFillColor(TEXT_DARK)
@@ -290,7 +377,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 5 : Edge Machine Learning
+    # SLIDE 5 : Edge Machine Learning & Détail des Features
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -298,42 +385,43 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     s4_cards = [
         ("POURQUOI L'EDGE AI ?", PRIMARY_TEAL, [
-            ("Zero Latence Critique", "Reaction immediate lors du choc sans delai reseau."),
-            ("Autonomie Hors-Reseau", "Fonctionne en zone blanche ou sans smartphone."),
-            ("Confidentialite Totale", "Les donnees cinematiques brutes restent en local.")
+            ("Zero Latence Critique", "Reaction immediate lors du choc (< 1 ms) sans delai reseau."),
+            ("Autonomie Hors-Reseau", "Fonctionne en zone blanche, sans cloud ni smartphone."),
+            ("Confidentialite Totale", "Les signaux cinematiques bruts restent strictement en local.")
         ]),
-        ("16 INDICATEURS CANONIQUES", ACCENT_BLUE, [
-            ("Invariance en Rotation", "Magnitudes euclidiennes ||a|| et ||w|| insensibles a l'orientation."),
-            ("Statistiques de Forme", "Min, Max, Moyenne, Ecart-type (Std), Pic-a-pic (P2P)."),
-            ("Dispersion & Energie", "Ecarts-types axiaux et puissances moyennes.")
+        ("INDICATEURS BIOMECANIQUES (19 Hz)", ACCENT_BLUE, [
+            ("Invariance par Magnitude", "Normes ||a|| et ||w|| : insensibles a l'orientation de la semelle."),
+            ("Dispersion & Posture", "Ecarts-types et moyennes axiales (distinction assis vs couche)."),
+            ("Directionnalite Temporelle", "Delta ay (fin - debut) et asymetrie d'energie (assis <-> debout)."),
+            ("Dynamique & Jerk", "Jerk max d'acceleration (choc de chute vs mouvement amorti).")
         ]),
-        ("CLASSIFIEUR & GARDES HYBRIDES", ACCENT_AMBER, [
-            ("Random Forest Equilibre", "40 arbres de decision avec ponderation dynamique des classes."),
-            ("Detection Chute Sensible", "Inference ML directe sans verrou d'impact rigide (chutes amorties)."),
-            ("Cooldown Anti-Rebond", "Debouncing temporel de 5000 ms pour eviter les faux declenchements.")
+        ("CLASSIFIEUR & PONDERATION", ACCENT_AMBER, [
+            ("Random Forest (40 arbres)", "Ensemble decisionnel rapide converti en code C pur (~12 us)."),
+            ("Ponderation Dynamique", "class_weight='balanced' penalise fortement les erreurs sur les chutes rares."),
+            ("Cooldown Anti-Rebond", "Debouncing temporel de 5000 ms sans verrou rigide d'impact physique.")
         ])
     ]
 
     for idx, (title, accent, items) in enumerate(s4_cards):
         x = 50 + idx * 295
-        draw_card(c, x, col_y, 275, col_h, CARD_BG, accent)
-        c.setFont("Helvetica-Bold", 12)
+        draw_card(c, x, col_y, 275, 390, CARD_BG, accent)
+        c.setFont("Helvetica-Bold", 11.5)
         c.setFillColor(accent)
-        c.drawString(x + 15, col_y + col_h - 28, title)
+        c.drawString(x + 15, col_y + 390 - 28, title)
 
-        cur_y = col_y + col_h - 60
+        cur_y = col_y + 390 - 58
         for lbl, desc in items:
-            c.setFont("Helvetica-Bold", 10)
+            c.setFont("Helvetica-Bold", 9.5)
             c.setFillColor(TEXT_DARK)
             c.drawString(x + 15, cur_y, "> " + lbl)
-            cur_y -= 14
-            c.setFont("Helvetica", 9)
+            cur_y -= 13
+            c.setFont("Helvetica", 8.5)
             c.setFillColor(TEXT_MUTED)
-            lines = wrap_text(desc, 34)
+            lines = wrap_text(desc, 36)
             for line in lines:
                 c.drawString(x + 23, cur_y, line)
-                cur_y -= 13
-            cur_y -= 10
+                cur_y -= 12
+            cur_y -= 8
 
     c.showPage()
 
@@ -385,10 +473,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_header(c, "Gestion des Donnees", "Reseau & Podometrie Differentielle Nette")
 
     # Left: Podométrie
-    draw_card(c, 50, col_y, 420, col_h, CARD_BG, PRIMARY_TEAL)
+    draw_card(c, 50, col_y, 420, 390, CARD_BG, PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 13)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(68, col_y + col_h - 28, "PODOMETRIE DIFFERENTIELLE (SQLite)")
+    c.drawString(68, col_y + 390 - 28, "PODOMETRIE DIFFERENTIELLE (SQLite)")
 
     podo_items = [
         ("Compteur Materiel Monotone", "L'ESP32 incremente ses pas continuellement sans date ni heure."),
@@ -397,7 +485,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Bascule Propre a Minuit", "Le compteur materiel continue mais le delta est isole pour le nouveau jour."),
         ("Ventilation Horaire Reelle", "Envoi par tranche horaire reelle (hourly_steps) sans heuristique artificielle.")
     ]
-    cur_y = col_y + col_h - 55
+    cur_y = col_y + 390 - 55
     for lbl, desc in podo_items:
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(TEXT_DARK)
@@ -412,10 +500,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         cur_y -= 8
 
     # Right: MQTT & Cloud
-    draw_card(c, 490, col_y, 420, col_h, CARD_BG, ACCENT_BLUE)
+    draw_card(c, 490, col_y, 420, 390, CARD_BG, ACCENT_BLUE)
     c.setFont("Helvetica-Bold", 13)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(508, col_y + col_h - 28, "PASSERELLE TEMPS REEL (AWS IoT Core)")
+    c.drawString(508, col_y + 390 - 28, "PASSERELLE TEMPS REEL (AWS IoT Core)")
 
     mqtt_items = [
         ("WebSockets MQTT Persistant", "Session maintenue ouverte en tache de fond pour latence minimale."),
@@ -424,7 +512,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Supervision de Liaison", "Notification de l'etat de connexion Bluetooth et reseau."),
         ("Commandes Haptiques", "Declenchement distant d'une vibration via topic commands/haptic.")
     ]
-    cur_y = col_y + col_h - 55
+    cur_y = col_y + 390 - 55
     for lbl, desc in mqtt_items:
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(TEXT_DARK)
@@ -441,16 +529,19 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 8 : Métriques Clés & Paramétrage
+    # SLIDE 8 : Performances Mesurées & Validation
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
-    draw_header(c, "Validation & Controle", "Performances Mesurees & Personnalisation")
+    draw_header(c, "Validation & Controle", "Performances Mesurees")
 
+    studio_url = "https://healthkicks.duckdns.org/dashboard/studio/classes"
+
+    # Top KPI cards: temps d'inférence, macro F1, exactitude, rappel chutes
     metric_data = [
         ("~12 us", "TEMPS D'INFERENCE", "Evaluation C sur ESP32 (240 MHz)", PRIMARY_TEAL),
-        ("0 Ko", "ALLOCATION RAM DYN.", "C pur m2cgen (zero fuite memoire)", ACCENT_BLUE),
         ("91.3%", "MACRO F1-SCORE", "16 allures motrices classees", PRIMARY_TEAL),
+        ("92.2%", "EXACTITUDE GLOBALE", "Robustesse sur tout le dataset", ACCENT_BLUE),
         ("95.5%", "RAPPEL CHUTES", "95.8% F1 sur chute arriere", ACCENT_AMBER)
     ]
     for idx, (val, lbl, sub, accent) in enumerate(metric_data):
@@ -466,18 +557,36 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.setFillColor(TEXT_MUTED)
         c.drawCentredString(x + 100, 375, sub)
 
-    draw_card(c, 50, 45, 420, 295, CARD_BG, ACCENT_AMBER)
+    # Left card: Suivi Studio & Benchmark en direct avec lien cliquable
+    draw_card(c, 50, 45, 420, 295, CARD_BG, PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(68, 310, "PARAMETRAGE SUR L'APPLICATION MOBILE")
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(68, 310, "SUIVI DES STATISTIQUES ML EN DIRECT")
 
-    params = [
-        ("Seuil d'Impact Ajustable", "Sensibilite de deceleration reglable (seuil haut pour trail/running, fin pour seniors)."),
-        ("Rappel d'Inactivite Configurable", "Seuil reglable de 10 a 120 min avec rappel periodique toutes les 5 a 30 min."),
-        ("Gestion des Destinataires", "Configuration des contacts prevenus immediatement en cas d'accident.")
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(68, 280, "> Benchmark & Matrice de Confusion Live")
+    c.setFont("Helvetica", 9)
+    c.setFillColor(TEXT_MUTED)
+    intro_lines = wrap_text("Toutes les metriques par classe, precisions, rappels et scores F1 sont consultables en direct sur le Studio Web :", 50)
+    cur_y = 265
+    for l in intro_lines:
+        c.drawString(78, cur_y, l)
+        cur_y -= 13
+
+    # Clickable link box
+    c.setFont("Helvetica-Bold", 9.5)
+    c.setFillColor(ACCENT_BLUE)
+    link_y = cur_y - 10
+    c.drawString(78, link_y, "healthkicks.duckdns.org/dashboard/studio/classes")
+    c.linkURL(studio_url, (78, link_y - 2, 78 + 330, link_y + 12), thickness=0)
+
+    cur_y = link_y - 30
+    sub_items = [
+        ("Transparence & Auditabilite", "Verification immediate des taux de classification pour chaque classe."),
+        ("Requalification Studio", "Visualisation chronologique des echantillons et analyse des derives.")
     ]
-    cur_y = 280
-    for lbl, desc in params:
+    for lbl, desc in sub_items:
         c.setFont("Helvetica-Bold", 10)
         c.setFillColor(TEXT_DARK)
         c.drawString(68, cur_y, "> " + lbl)
@@ -490,16 +599,17 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             cur_y -= 13
         cur_y -= 8
 
-    draw_card(c, 490, 45, 420, 295, CARD_BG, PRIMARY_TEAL)
+    # Right card: Rigueur logicielle & tests automatisés
+    draw_card(c, 490, 45, 420, 295, CARD_BG, ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(PRIMARY_TEAL)
+    c.setFillColor(ACCENT_AMBER)
     c.drawString(508, 310, "RIGUEUR LOGICIELLE & TESTS AUTOMATISES")
 
     tests_info = [
         ("Approche Contract-Driven", "Tout echange (BLE, REST, MQTT) est regi par des contrats formels sous contracts/."),
-        ("Benchmark Studio en Ligne", "Matrice de confusion & metriques F1 en direct sur healthkicks.duckdns.org/dashboard/studio/classes."),
-        ("324 Tests Backend & 320 Tests Mobile", "Suites completes pytest et Flutter validant odometrie, auth et synchronisation."),
-        ("Validation Memoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique (0 fuite).")
+        ("324 Tests Backend & 312 Tests Mobile", "Suites completes pytest et Flutter validant odometrie, auth et synchronisation."),
+        ("Validation Memoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique (0 fuite)."),
+        ("Rappel d'Inactivite Haptique", "Seuil reglable de 10 a 120 min avec alerte periodique autonome.")
     ]
     cur_y = 280
     for lbl, desc in tests_info:
@@ -530,10 +640,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawString(68, 405, "CE QUE NOUS AVONS DEMONTRE")
 
     achievements = [
-        ("TinyML Frugal & Performant", "Un microcontroleur low-cost peut classifier la demarche en temps reel sans runtime IA lourd."),
+        ("TinyML Frugal & Performant", "Un microcontroleur standard low-cost classifie la demarche en temps reel (~12 us) sans runtime IA lourd."),
         ("Chaine IoT Securisee", "Chiffrement BLE LESC, mise a jour OTA avec rollback, auth OAuth2 PKCE et courtage STS temporaire."),
         ("Podometrie Nette & Verifiable", "Elimination des faux pas et restitution fidele heure par heure pour l'utilisateur."),
-        ("Serenite pour les Proches", "Alerte rapide et fiable lors d'un accident sans fausses alarmes repetitives.")
+        ("Serenite pour les Proches", "Alerte rapide et fiable lors d'un accident par SMS et email sans fausses alarmes repetitives.")
     ]
     cur_y = 370
     for lbl, desc in achievements:
@@ -555,10 +665,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawString(508, 405, "FEUILLE DE ROUTE TECHNOLOGIQUE")
 
     roadmap = [
-        ("Capteurs Piezoresistifs (FSR)", "Mesure de la repartition des pressions plantaires talon / plante."),
+        ("Amelioration de la Demarche MLOps", "Versionning systematique des modeles entraines, registre d'artefacts et tracabilite continue des jeux de donnees."),
         ("Adaptation Continue On-Device", "Ajustement fin des seuils a la foulee propre a chaque personne."),
-        ("Connectivite Cellulaire NB-IoT", "Option d'autonomie totale en exterieur sans necessiter de smartphone."),
-        ("Integration en Semelle Amovible", "Format glissable dans n'importe quelle chaussure de sport ou de ville.")
+        ("Connectivite Cellulaire NB-IoT", "Option d'autonomie totale en exterieur sans necessiter de smartphone.")
     ]
     cur_y = 370
     for lbl, desc in roadmap:
@@ -574,11 +683,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             cur_y -= 13
         cur_y -= 10
 
-
     c.showPage()
 
     # ==========================================
-    # SLIDE 10 : Remerciements & Questions / Réponses
+    # SLIDE 10 : Remerciements & Questions / Réponses (Liens Cliquables)
     # ==========================================
     c.setFillColor(DARK_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
@@ -589,50 +697,58 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(TEXT_TEAL)
     c.drawString(68, 405, "RESSOURCES DU PROJET & DEMO EN LIGNE")
 
-    demo_items = [
-        ("Plateforme Web Live", "https://healthkicks.duckdns.org"),
-        ("Studio & Benchmark des Modeles", "https://healthkicks.duckdns.org/dashboard/studio/classes"),
-        ("Documentation & Specifications", "Architecture, contrats d'interface BLE/MQTT et guides complets."),
-        ("Depot & Integration Continue", "Code source versionne, pipelines CI/CD et suites de tests automatisees.")
+    demo_links = [
+        ("Site Portfolio & CV", "https://daverck.github.io/serck-david-portfolio", "daverck.github.io/serck-david-portfolio"),
+        ("Plateforme Web Live", "https://healthkicks.duckdns.org", "healthkicks.duckdns.org"),
+        ("Studio & Stats du Modele ML", "https://healthkicks.duckdns.org/dashboard/studio/classes", "healthkicks.duckdns.org/dashboard/studio/classes")
     ]
-    cur_y = 370
-    for lbl, desc in demo_items:
+
+    cur_y = 365
+    for lbl, target_url, display_txt in demo_links:
         c.setFont("Helvetica-Bold", 10.5)
         c.setFillColor(TEXT_LIGHT)
         c.drawString(68, cur_y, "> " + lbl)
-        cur_y -= 14
-        c.setFont("Helvetica", 9)
-        c.setFillColor(TEXT_CARD_SUB)
-        lines = wrap_text(desc, 48)
-        for line in lines:
-            c.drawString(82, cur_y, line)
-            cur_y -= 13
-        cur_y -= 10
+        cur_y -= 16
 
+        c.setFont("Helvetica", 9)
+        c.setFillColor(TEXT_TEAL)
+        c.drawString(82, cur_y, display_txt)
+        # Clickable hotspot
+        c.linkURL(target_url, (82, cur_y - 2, 82 + 320, cur_y + 12), thickness=0)
+        cur_y -= 22
+
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(TEXT_LIGHT)
+    c.drawString(68, cur_y, "> Specifications & Code Source")
+    cur_y -= 14
+    c.setFont("Helvetica", 8.5)
+    c.setFillColor(TEXT_CARD_SUB)
+    c.drawString(82, cur_y, "Contrats BLE GATT, protocoles MQTT WebSockets SigV4, CI/CD.")
+
+    # Right Card: Thèmes de discussion proposés (sans Optimisation Embarquée & FreeRTOS)
     draw_card(c, 490, 45, 420, 390, CARD_DARK, ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(HexColor("#fbbf24"))
     c.drawString(508, 405, "THEMES DE DISCUSSION PROPOSES")
 
     discussion_items = [
-        ("Optimisation Embarquee & FreeRTOS", "Acquisition I2C, allocation statique et temps d'inference C pur (~12 us)."),
-        ("Algorithmes de Podometrie Nette", "Gestion des bascules temporelles, odometrie SQLite et resilience aux reboots."),
-        ("Securite Zero Trust & Cloud IoT", "Chiffrement LESC, courtage STS de jetons temporaires et MQTT WebSockets SigV4."),
-        ("Demarche MLOps & Reentrainement", "De la qualification sous le pied a la compilation croisee sans runtime lourd.")
+        ("Algorithmes de Podometrie Nette", "Gestion des bascules temporelles, odometrie differentielle SQLite et resilience aux reboots materiels."),
+        ("Securite Zero Trust & Cloud IoT", "Chiffrement BLE LESC, courtage STS de jetons temporaires et MQTT WebSockets SigV4."),
+        ("Demarche MLOps & Reentrainement", "De la qualification sous le pied au versioning des modeles et a la transpilation C sans runtime lourd.")
     ]
-    cur_y = 370
+    cur_y = 365
     for lbl, desc in discussion_items:
         c.setFont("Helvetica-Bold", 10.5)
         c.setFillColor(TEXT_LIGHT)
         c.drawString(508, cur_y, "> " + lbl)
-        cur_y -= 14
+        cur_y -= 15
         c.setFont("Helvetica", 9)
         c.setFillColor(TEXT_CARD_SUB)
         lines = wrap_text(desc, 48)
         for line in lines:
             c.drawString(522, cur_y, line)
             cur_y -= 13
-        cur_y -= 10
+        cur_y -= 12
 
     c.save()
     print(f"Simplified PDF saved to: {filename}")

@@ -698,7 +698,7 @@ def create_presentation():
     p.space_after = Pt(8)
 
     param_items = [
-        ("Seuil d'Impact Ajustable", "Sensibilité de décélération réglable selon le profil (seuil élevé pour le trail/running, fin pour seniors)."),
+        ("Benchmark Studio Live", "Sensibilité de décélération réglable selon le profil (seuil élevé pour le trail/running, fin pour seniors)."),
         ("Rappel d'Inactivité Personnalisable", "Seuil réglable de 10 à 120 min avec rappel périodique toutes les 5 à 30 min."),
         ("Gestion des Destinataires", "Configuration des contacts prévenus immédiatement en cas d'accident.")
     ]
