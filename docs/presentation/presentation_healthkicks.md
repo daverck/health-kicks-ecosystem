@@ -38,7 +38,7 @@ _color: #0f172a
 - **Compétences Clés mobilisées sur ce projet** :
   - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
   - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
-- **Portfolio & CV en ligne** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) *(ou scannez le QR code ci-contre)*.
+- **Portfolio & CV en ligne** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) _(ou scannez le QR code ci-contre)_.
 
 <!-- Notes orateur :
 Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à consulter mon portfolio en ligne via le lien ou le QR code.
@@ -105,10 +105,10 @@ _color: #0f172a
 
 - **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
 - **Features Biomécaniques & Temporelles (19 Hz)** :
-  - *Magnitudes spatiales invariantes en rotation* : $\Vert a \Vert$, $\Vert \omega \Vert$, min, max, moyenne, écart-type, pic-à-pic (P2P), énergies cinétiques.
-  - *Dispersions axiales & posture* : moyennes et écarts-types $a_x, a_y, a_z, g_x, g_y, g_z$ (distinction immobile assis vs couché).
-  - *Directionnalité temporelle* : différentiel $\Delta a_y$ (fin - début), asymétrie d'énergie 1ère/2nde moitié de fenêtre (distinction assis $\leftrightarrow$ debout).
-  - *Dynamique de transition & Jerk* : jerk maximal d'accélération (choc violent de chute vs allongement calme) et profil de queue de fenêtre.
+  - _Magnitudes spatiales invariantes en rotation_ : $\Vert a \Vert$, $\Vert \omega \Vert$, min, max, moyenne, écart-type, pic-à-pic (P2P), énergies cinétiques.
+  - _Dispersions axiales & posture_ : moyennes et écarts-types $a_x, a_y, a_z, g_x, g_y, g_z$ (distinction immobile assis vs couché).
+  - _Directionnalité temporelle_ : différentiel $\Delta a_y$ (fin - début), asymétrie d'énergie 1ère/2nde moitié de fenêtre (distinction assis $\leftrightarrow$ debout).
+  - _Dynamique de transition & Jerk_ : jerk maximal d'accélération (choc violent de chute vs allongement calme) et profil de queue de fenêtre.
 - **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse avec pondération dynamique (`class_weight="balanced"` : pénalise proportionnellement les erreurs sur les classes rares comme les chutes).
 - **Filtrage Temporel Anti-Rebond** : Inférence ML directe sans verrou rigide d'impact physique + debouncing temporel (5000 ms).
 
@@ -167,12 +167,12 @@ _color: #0f172a
 
 ### Métriques Clés d'Exécution & Suivi Studio en Direct
 
-| Métrique Clé                | Valeur Mesurée               | Implication Système           |
-| :-------------------------- | :--------------------------- | :---------------------------- |
-| **Temps d'inférence C**     | **~12 µs**                   | 0.02% du CPU ESP32-S3         |
-| **Précision ML (Macro F1)** | **91.3%**                    | Détection multi-allure fiable |
-| **Exactitude Globale**      | **92.2%**                    | Robustesse toutes allures     |
-| **Rappel des Chutes**       | **95.5%**                    | 95.8% F1 sur chute arrière    |
+| Métrique Clé                | Valeur Mesurée | Implication Système           |
+| :-------------------------- | :------------- | :---------------------------- |
+| **Temps d'inférence C**     | **~12 µs**     | 0.02% du CPU ESP32-S3         |
+| **Précision ML (Macro F1)** | **91.3%**      | Détection multi-allure fiable |
+| **Exactitude Globale**      | **92.2%**      | Robustesse toutes allures     |
+| **Rappel des Chutes**       | **95.5%**      | 95.8% F1 sur chute arrière    |
 
 - **Validation & Benchmark Live** : Matrice de confusion et métriques détaillées consultables en direct sur [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
 - **Rappel d'Inactivité Paramétrable** : Seuil configurable de 10 à 120 min avec impulsion haptique périodique.
