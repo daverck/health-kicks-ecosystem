@@ -204,11 +204,119 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 3 : Architecture Globale Logicielle & Système
+    # SLIDE 3 : Cœur IoT & Biomécanique (Système Embarqué)
     # ==========================================
     c.setFillColor(LIGHT_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
-    draw_header(c, "Architecture Global")
+    draw_header(c, "SYSTEME EMBARQUE")
+
+    # Schéma Électronique Global en ASCII Art
+    schema_y = 205
+    schema_h = 245
+    draw_card(c, 50, schema_y, 860, schema_h, CARD_DARK, PRIMARY_TEAL, border_width=1.5, radius=8)
+
+    # Titre du Schéma Électronique
+    c.setFont("Helvetica-Bold", 10)
+    c.setFillColor(TEXT_TEAL)
+    c.drawString(68, schema_y + schema_h - 16, "SCHEMA ELECTRONIQUE GLOBAL D'INTERCONNEXION MATERIELLE (ESP32-S3)")
+
+    ascii_circuit = [
+        "+-------------------+       +----------------+   +---------------------------------------+   +-----------------------+",
+        "|  Batterie LiPo 1S |       | DC/DC Boost 5V |   |           ESP32-S3 WROOM-1            |   |  Module IMU MPU-6050  |",
+        "|  (3.7V / 500mAh)  |       |                |   |                                       |   |                       |",
+        "|       [VBAT 3.7V] |--[/]->| [VIN]    [VOUT]|==>| [VIN 5V]                   [3.3V OUT] |---+--> [VCC 3.3V]         |",
+        "|                   |  SW1  |                |   |                                       |   |                       |",
+        "|             [GND] |------>| [GND]    [GND] |-->| [GND]                           [GND] |---+--> [GND & AD0] (0x68) |",
+        "+-------------------+       +----------------+   |                                       |   |                       |",
+        "                                                 | [GPIO 4]  (I2C SDA Donnees) ----------|---+--> [SDA]              |",
+        "                                                 | [GPIO 5]  (I2C SCL Horloge) ----------|---+--> [SCL]              |",
+        "                                                 | [GPIO 6] <----------------------------|---+--- [INT] (WOM Reveil) |",
+        "                                                 |                                       |   +-----------------------+",
+        "                                                 |                                       |                            ",
+        "                                                 |                                       |   +-----------------------+",
+        "                                                 |                                       |   | Module Vibreur        |",
+        "                                                 | [3.3V OUT] ---------------------------|---+--> [VCC +3.3V]        |",
+        "                                                 | [GPIO 7]   (PWM LEDC) ----------------|---+--> [IN / SIG] (Gate)  |",
+        "                                                 | [GND] --------------------------------|---+--> [GND Masse]        |",
+        "                                                 |                                       |   +-----------------------+",
+        "                                                 |                                       |                            ",
+        "                                                 | [GPIO 13] (Statut & Bouton) ----------|--> [R:100R]--[>|]--[/]--+  ",
+        "                                                 |                                       |    LED Bleue   Bouton   |  ",
+        "                                                 | [GND] <-------------------------------|-------------------------+  ",
+        "                                                 +---------------------------------------+                            "
+    ]
+
+    c.setFont("Courier-Bold", 6.8)
+    c.setFillColor(TEXT_LIGHT)
+    line_y = schema_y + schema_h - 30
+    for line in ascii_circuit:
+        c.drawString(60, line_y, line)
+        line_y -= 9.0
+
+    # 2 Cartes en dessous : Biomécanique ISB & Traitement du Signal
+    card_b_y = 35
+    card_b_h = 160
+    card_b_w = 420
+
+    # Carte Gauche : Référentiel ISB
+    draw_card(c, 50, card_b_y, card_b_w, card_b_h, CARD_BG, ACCENT_BLUE, border_width=1.5, radius=8)
+    c.setFont("Helvetica-Bold", 12)
+    c.setFillColor(ACCENT_BLUE)
+    c.drawString(68, card_b_y + card_b_h - 24, "REFERENTIEL BIOMECANIQUE ISB")
+
+    isb_items = [
+        ("Axe Z (Vertical)", "+1.0 g au repos"),
+        ("Axe X (Antero-posterieur)", ""),
+        ("Axe Y (Medio-lateral)", "")
+    ]
+    cur_y = card_b_y + card_b_h - 48
+    for lbl, desc in isb_items:
+        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColor(TEXT_DARK)
+        c.drawString(68, cur_y, "> " + lbl)
+        cur_y -= 13
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(TEXT_MUTED)
+        lines = wrap_text(desc, 50)
+        for line in lines:
+            c.drawString(78, cur_y, line)
+            cur_y -= 12
+        cur_y -= 5
+
+    # Carte Droite : Traitement du Signal Embarqué
+    draw_card(c, 490, card_b_y, card_b_w, card_b_h, CARD_BG, ACCENT_AMBER, border_width=1.5, radius=8)
+    c.setFont("Helvetica-Bold", 12)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(508, card_b_y + card_b_h - 24, "TRAITEMENT DU SIGNAL")
+
+    dsp_items = [
+        ("Fenetrage Glissant (3.0s)", ""),
+        ("Invariance par Rotation", ""),
+        ("Calibration du Zero-G (Biais)", ""),
+        ("Filtrage Anti-Rebond Chute", "")
+    ]
+    cur_y = card_b_y + card_b_h - 48
+    for lbl, desc in dsp_items:
+        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColor(TEXT_DARK)
+        c.drawString(508, cur_y, "> " + lbl)
+        cur_y -= 13
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(TEXT_MUTED)
+        lines = wrap_text(desc, 50)
+        for line in lines:
+            c.drawString(518, cur_y, line)
+            cur_y -= 12
+        cur_y -= 5
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 4 : Architecture Globale Logicielle & Système
+    # ==========================================
+    c.setFillColor(LIGHT_BG)
+    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
+    draw_header(c, "Architecture Globale")
 
     diag_y = 45
     diag_h = 395
@@ -450,114 +558,6 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 4 : Cœur IoT & Biomécanique
-    # ==========================================
-    c.setFillColor(LIGHT_BG)
-    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
-    draw_header(c, "SYSTEME EMBARQUE")
-
-    # Schéma Électronique Global en ASCII Art
-    schema_y = 205
-    schema_h = 245
-    draw_card(c, 50, schema_y, 860, schema_h, CARD_DARK, PRIMARY_TEAL, border_width=1.5, radius=8)
-
-    # Titre du Schéma Électronique
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(TEXT_TEAL)
-    c.drawString(68, schema_y + schema_h - 16, "SCHEMA ELECTRONIQUE GLOBAL D'INTERCONNEXION MATERIELLE (ESP32-S3)")
-
-    ascii_circuit = [
-        "+-------------------+       +----------------+   +---------------------------------------+   +-----------------------+",
-        "|  Batterie LiPo 1S |       | DC/DC Boost 5V |   |           ESP32-S3 WROOM-1            |   |  Module IMU MPU-6050  |",
-        "|  (3.7V / 500mAh)  |       |                |   |                                       |   |                       |",
-        "|       [VBAT 3.7V] |--[/]->| [VIN]    [VOUT]|==>| [VIN 5V]                   [3.3V OUT] |---+--> [VCC 3.3V]         |",
-        "|                   |  SW1  |                |   |                                       |   |                       |",
-        "|             [GND] |------>| [GND]    [GND] |-->| [GND]                           [GND] |---+--> [GND & AD0] (0x68) |",
-        "+-------------------+       +----------------+   |                                       |   |                       |",
-        "                                                 | [GPIO 4]  (I2C SDA Donnees) ----------|---+--> [SDA]              |",
-        "                                                 | [GPIO 5]  (I2C SCL Horloge) ----------|---+--> [SCL]              |",
-        "                                                 | [GPIO 6] <----------------------------|---+--- [INT] (WOM Reveil) |",
-        "                                                 |                                       |   +-----------------------+",
-        "                                                 |                                       |                            ",
-        "                                                 |                                       |   +-----------------------+",
-        "                                                 |                                       |   | Module Vibreur        |",
-        "                                                 | [3.3V OUT] ---------------------------|---+--> [VCC +3.3V]        |",
-        "                                                 | [GPIO 7]   (PWM LEDC) ----------------|---+--> [IN / SIG] (Gate)  |",
-        "                                                 | [GND] --------------------------------|---+--> [GND Masse]        |",
-        "                                                 |                                       |   +-----------------------+",
-        "                                                 |                                       |                            ",
-        "                                                 | [GPIO 13] (Statut & Bouton) ----------|--> [R:100R]--[>|]--[/]--+  ",
-        "                                                 |                                       |    LED Bleue   Bouton   |  ",
-        "                                                 | [GND] <-------------------------------|-------------------------+  ",
-        "                                                 +---------------------------------------+                            "
-    ]
-
-    c.setFont("Courier-Bold", 6.8)
-    c.setFillColor(TEXT_LIGHT)
-    line_y = schema_y + schema_h - 30
-    for line in ascii_circuit:
-        c.drawString(60, line_y, line)
-        line_y -= 9.0
-
-    # 2 Cartes en dessous : Biomécanique ISB & Traitement du Signal
-    card_b_y = 35
-    card_b_h = 160
-    card_b_w = 420
-
-    # Carte Gauche : Référentiel ISB
-    draw_card(c, 50, card_b_y, card_b_w, card_b_h, CARD_BG, ACCENT_BLUE, border_width=1.5, radius=8)
-    c.setFont("Helvetica-Bold", 12)
-    c.setFillColor(ACCENT_BLUE)
-    c.drawString(68, card_b_y + card_b_h - 24, "REFERENTIEL BIOMECANIQUE ISB")
-
-    isb_items = [
-        ("Axe Z (Vertical)", "+1.0 g au repos"),
-        ("Axe X (Antero-posterieur)", ""),
-        ("Axe Y (Medio-lateral)", "")
-    ]
-    cur_y = card_b_y + card_b_h - 48
-    for lbl, desc in isb_items:
-        c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(68, cur_y, "> " + lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(78, cur_y, line)
-            cur_y -= 12
-        cur_y -= 5
-
-    # Carte Droite : Traitement du Signal Embarqué
-    draw_card(c, 490, card_b_y, card_b_w, card_b_h, CARD_BG, ACCENT_AMBER, border_width=1.5, radius=8)
-    c.setFont("Helvetica-Bold", 12)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(508, card_b_y + card_b_h - 24, "TRAITEMENT DU SIGNAL")
-
-    dsp_items = [
-        ("Fenetrage Glissant (3.0s)", ""),
-        ("Invariance par Rotation", ""),
-        ("Calibration du Zero-G (Biais)", ""),
-        ("Filtrage Anti-Rebond Chute", "")
-    ]
-    cur_y = card_b_y + card_b_h - 48
-    for lbl, desc in dsp_items:
-        c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(508, cur_y, "> " + lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(518, cur_y, line)
-            cur_y -= 12
-        cur_y -= 5
-
-    c.showPage()
-
-    # ==========================================
     # SLIDE 5 : Edge Machine Learning & Détail des Features
     # ==========================================
     c.setFillColor(LIGHT_BG)
@@ -633,7 +633,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, 520, 470, 390, 26, ACCENT_AMBER, ACCENT_AMBER, border_width=1, radius=4)
     c.setFont("Helvetica-Bold", 8.5)
     c.setFillColor(TEXT_LIGHT)
-    c.drawCentredString(715, 478, "DEMONSTRATION 1 : DETECTION DE CHUTE EN DIRECT")
+    c.drawCentredString(715, 478, "DEMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT")
 
     # Gauche : Graphique des performances ML réel (capture web Studio cliquable)
     ml_img_path = "health-kicks-frontend/public/images/screenshots/ml_stats.png"
@@ -763,7 +763,99 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 8 : Conclusion & Perspectives
+    # SLIDE 8 : Détection de Chute & Chaîne d'Urgence
+    # ==========================================
+    c.setFillColor(LIGHT_BG)
+    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
+    draw_header(c, "DETECTION DE CHUTE & ALERTE D'URGENCE")
+
+    # Badge Démonstration en Direct
+    draw_card(c, 520, 470, 390, 26, ACCENT_AMBER, ACCENT_AMBER, border_width=1, radius=4)
+    c.setFont("Helvetica-Bold", 8.5)
+    c.setFillColor(TEXT_LIGHT)
+    c.drawCentredString(715, 478, "DEMONSTRATION 3 : SIMULATION D'UNE CHUTE EN DIRECT")
+
+    # Gauche : Points Clés (Annulation Automatique & Cooldown)
+    draw_card(c, 50, col_y, 420, 390, CARD_BG, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(68, col_y + 390 - 28, "SECURITE & GESTION DES FAUX-POSITIFS")
+
+    fall_key_points = [
+        ("Annulation Automatique par Relevement (0x13)", "Si le porteur se releve aussitot (detection du code BLE 'fall_recovery'), l'alerte locale et l'escalade Cloud sont immediatement interrompues sans deranger les proches."),
+        ("Periode de Cooldown Anti-Rebond (5.0s)", "Apres la detection d'un impact critique, un verrou temporel de 5000 ms bloque les declenchements repetitifs en rafale causes par des oscillations ou des secousses consecutives."),
+        ("Delai de Retractation Utilisateur (60s)", "Fenetre de grace sur le smartphone avec compte a rebours et bouton 'Je vais bien' avant tout envoi de SMS ou d'email."),
+        ("Orchestration Centralisee Backend", "Le smartphone ne decide pas seul : le backend ordonnance l'escalade selon la priorite des proches et verifie l'acquittement."),
+        ("Repli d'Urgence Appel 112", "Si aucun proche n'acquitte l'alerte apres escalade complete (etat EXHAUSTED), l'application propose l'appel direct au 112.")
+    ]
+
+    cur_y = col_y + 390 - 58
+    for lbl, desc in fall_key_points:
+        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColor(TEXT_DARK)
+        c.drawString(68, cur_y, "> " + lbl)
+        cur_y -= 13
+        c.setFont("Helvetica", 8.5)
+        c.setFillColor(TEXT_MUTED)
+        lines = wrap_text(desc, 48)
+        for line in lines:
+            c.drawString(78, cur_y, line)
+            cur_y -= 12
+        cur_y -= 6
+
+    # Droite : Schéma ASCII de la Chaîne d'Escalade et Ordre SMS Backend
+    draw_card(c, 490, col_y, 420, 390, CARD_DARK, PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(TEXT_TEAL)
+    c.drawString(508, col_y + 390 - 28, "CHAINE D'ESCALADE & SECOURS")
+
+    fall_ascii_schema = [
+        "+-------------------------------------------------------+",
+        "|                 CHOC & IMMOBILITE DETECTEE             |",
+        "+-------------------------------------------------------+",
+        "                           |                             ",
+        "                           v                             ",
+        "+-------------------------------------------------------+",
+        "|  1. ALERTE LOCALE IMMEDIATE (CAPTEUR ESP32-S3)        |",
+        "|  - Vibreur plantaire actif (PWM) & Cooldown 5s        |",
+        "|  - Emission trame BLE GATT prioritaire (0x02)         |",
+        "+-------------------------------------------------------+",
+        "                           |                             ",
+        "                           v                             ",
+        "+-------------------------------------------------------+",
+        "|  2. PASSERELLE MOBILE (FLUTTER)                       |",
+        "|  - Alerte sonore & ecran rouge (60s) + GPS            |",
+        "|  - Si Relevement (0x13) ou clic 'Je vais bien'        |",
+        "|    ==> ANNULATION IMMEDIATE (Aucun message emis)      |",
+        "+-------------------------------------------------------+",
+        "                           | (60s ecoulees sans annulation)",
+        "                           v                             ",
+        "+-------------------------------------------------------+",
+        "|  3. BACKEND FASTAPI (ORCHESTRATEUR DE SECOURS)        |",
+        "|  - Recuperation des contacts d'urgence (Priorite 1..5)|",
+        "|  - Envoi direct de l'email d'urgence avec lien ACK    |",
+        "|  - Ordre MQTT Downlink 'SEND_SMS' envoye au mobile    |",
+        "+-------------------------------------------------------+",
+        "                           |                             ",
+        "                           v                             ",
+        "+-------------------------------------------------------+",
+        "|  4. RELAIS GSM MOBILE (SmsManager Android)            |",
+        "|  - Emission du SMS natif vers le numero du proche     |",
+        "|  - Escalade vers proche suivant si pas d'ACK (3 min)  |",
+        "+-------------------------------------------------------+"
+    ]
+
+    c.setFont("Courier-Bold", 6.6)
+    c.setFillColor(TEXT_LIGHT)
+    line_y = col_y + 390 - 52
+    for line in fall_ascii_schema:
+        c.drawString(504, line_y, line)
+        line_y -= 10.8
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 9 : Conclusion & Perspectives
     # ==========================================
     c.setFillColor(DARK_BG)
     c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, stroke=0, fill=1)
