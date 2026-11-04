@@ -46,10 +46,11 @@ jobs:
             --exclude="tests/" || true
 
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
+          category: semgrep
         continue-on-error: true
 
       - name: Enforce Zero High/Critical Security Vulnerabilities
