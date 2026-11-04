@@ -204,6 +204,16 @@ Format textuel ASCII encodé en UTF-8 :
      - À chaque notification d'activité sur `0002` (changement d'état d'activité ou détection de chute) à l'instant $T$, la chaussure continue d'enregistrer pendant 1,5 seconde (28 trames post-événement).
      - À $T + 1.5\,\text{s}$, la chaussure notifie `FINISHED 76 hitl-<timestamp> 4.0` sur `0004` puis transmet la salve de 76 trames IMU (~2,5 s avant et ~1,5 s après la détection) sur la caractéristique Studio Data Burst `0005`.
 
+7. **Configuration du Seuil de Confiance de Chute** :
+
+   ```text
+   SET_FALL_CONFIDENCE <threshold:0.30..0.90>
+   ```
+   - _Paramètre_ : Seuil de confiance probabiliste du modèle ML pour les détections de chute (float).
+   - _Plage valide_ : `0.30` (ultra-permissif) à `0.90` (ultra-robuste).
+   - _Valeur par défaut_ : `0.65`.
+   - _Exemple_ : `SET_FALL_CONFIDENCE 0.75`
+   - _Notification retour_ : `FALL_CONFIDENCE_OK <valeur>` ou `FALL_CONFIDENCE_ERROR <raison>`.
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 
 Format textuel ASCII encodé en UTF-8 :
@@ -218,6 +228,8 @@ Format textuel ASCII encodé en UTF-8 :
 | `CALIBRATION_ERROR <reason>`                          | Mouvement / instabilité              | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)             |
 | `HITL_OK <0                                           | 1>`                                  | Commande `SET_HITL`                                                        | Mode HITL activé (1) ou désactivé (0) avec succès |
 | `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
+| `FALL_CONFIDENCE_OK <valeur>`                          | Commande `SET_FALL_CONFIDENCE`        | Seuil de confiance de chute mis à jour avec succès                      |
+| `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`        | Rejet de la commande (ex: `out_of_range`, `invalid_params`)              |
 | `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
 | `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
