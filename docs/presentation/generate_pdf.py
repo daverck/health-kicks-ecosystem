@@ -866,11 +866,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         x = 50 + idx * 440
         draw_modern_panel(c, x, card_y, card_w, card_h, dark=False, accent_color=color)
 
-        # Subtle watermark runner silhouette for GENÈSE
+        # Illustration du coureur connecté avec onde télémétrique pour GENÈSE
         if icon_name == "bulb":
-            runner_img = "docs/presentation/runner_tabler.png"
+            runner_img = "docs/presentation/connected_runner.png"
             if os.path.exists(runner_img):
-                c.drawImage(runner_img, x + card_w - 110, card_y + 18, width=92, height=92, preserveAspectRatio=True, mask='auto')
+                c.drawImage(runner_img, x + 16, card_y + 8, width=388, height=142, preserveAspectRatio=True, anchor='c')
 
         draw_vector_icon(c, icon_name, x + 22, card_y + card_h - 36, 22, color=color)
 
@@ -892,17 +892,12 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # SLIDE 4 : Cœur IoT & Biomécanique (Système Embarqué)
     # ==========================================
     draw_slide_background(c, dark=False)
-    draw_header(c, "SYSTÈME EMBARQUÉ")
+    draw_header(c, "SCHÉMA ÉLECTRONIQUE")
 
     # Schéma Électronique Global (Plein écran centré)
     schema_y = 40
     schema_h = 405
     draw_modern_panel(c, 50, schema_y, 860, schema_h, dark=False, accent_color=PRIMARY_TEAL)
-
-    # Titre du Schéma Électronique (préservé tel que modifié par l'utilisateur)
-    c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(68, schema_y + schema_h - 26, "SCHÉMA ÉLECTRONIQUE")
 
     schematic_path = "docs/presentation/circuit_esp32.png"
     if os.path.exists(schematic_path):
@@ -1434,10 +1429,8 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawString(532, col_y + 390 - 28, "MODE HITL (Human-in-the-Loop)")
 
     hitl_items = [
-        ("Buffer Circulaire Haute Fréquence", ""),
-        ("Capture Pré & Post Événement", ""),
-        ("Transfert Fast Burst BLE", ""),
-        ("Requalification Web Studio", "")
+        ("Buffer Circulaire", ""),
+        ("Requalification/Confirmation", "")
     ]
 
     cur_y = col_y + 390 - 65
@@ -1447,6 +1440,160 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.setFillColor(TEXT_DARK)
         c.drawString(522, cur_y, lbl)
         cur_y -= 32
+
+    # Schéma Visuel de la Fenêtre Temporelle du Buffer Circulaire (Moitié inférieure de la carte HITL)
+    c.saveState()
+    # Conteneur interne doux
+    draw_card(c, 506, 60, 388, 255, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=1.0, radius=8)
+    c.setFont("Helvetica-Bold", 9.8)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawCentredString(700, 297, "FENÊTRE TEMPORELLE DU BUFFER CIRCULAIRE (3.0 s)")
+
+    # 1. Anneau du Buffer Circulaire RAM (Gauche)
+    ring_cx = 595
+    ring_cy = 205
+    ring_r_out = 54
+    ring_r_in = 34
+
+    # Fond de l'anneau (segments mémoire en rotation continue)
+    c.setStrokeColor(HexColor("#cbd5e1"))
+    c.setLineWidth(16)
+    c.circle(ring_cx, ring_cy, (ring_r_out + ring_r_in) / 2, stroke=1, fill=0)
+
+    # Arc Pré-Événement (Bleu : T - 1.5s à T)
+    p_pre = c.beginPath()
+    p_pre.arc(ring_cx - 44, ring_cy - 44, ring_cx + 44, ring_cy + 44, startAng=100, extent=110)
+    c.setStrokeColor(ACCENT_BLUE)
+    c.setLineWidth(16)
+    c.drawPath(p_pre, stroke=1, fill=0)
+
+    # Arc Instant T / Impact (Ambre/Rouge : Pic d'événement)
+    p_imp = c.beginPath()
+    p_imp.arc(ring_cx - 44, ring_cy - 44, ring_cx + 44, ring_cy + 44, startAng=55, extent=45)
+    c.setStrokeColor(ACCENT_AMBER)
+    c.setLineWidth(18)
+    c.drawPath(p_imp, stroke=1, fill=0)
+
+    # Arc Post-Événement (Teal : T à T + 1.5s)
+    p_post = c.beginPath()
+    p_post.arc(ring_cx - 44, ring_cy - 44, ring_cx + 44, ring_cy + 44, startAng=-55, extent=110)
+    c.setStrokeColor(PRIMARY_TEAL)
+    c.setLineWidth(16)
+    c.drawPath(p_post, stroke=1, fill=0)
+
+    # Séparateurs de cellules mémoire sur l'anneau
+    c.setStrokeColor(HexColor("#ffffff"))
+    c.setLineWidth(1.2)
+    for deg in range(0, 360, 20):
+        rad = math.radians(deg)
+        x1 = ring_cx + ring_r_in * math.cos(rad)
+        y1 = ring_cy + ring_r_in * math.sin(rad)
+        x2 = ring_cx + ring_r_out * math.cos(rad)
+        y2 = ring_cy + ring_r_out * math.sin(rad)
+        c.line(x1, y1, x2, y2)
+
+    # Centre de l'anneau
+    c.setFillColor(HexColor("#ffffff"))
+    c.setStrokeColor(HexColor("#cbd5e1"))
+    c.setLineWidth(1.0)
+    c.circle(ring_cx, ring_cy, ring_r_in - 1, stroke=1, fill=1)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(TEXT_DARK)
+    c.drawCentredString(ring_cx, ring_cy + 6, "RAM PSRAM")
+    c.setFont("Helvetica-Bold", 7.8)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawCentredString(ring_cx, ring_cy - 6, "FIFO 19 Hz")
+    c.setFont("Helvetica", 7.2)
+    c.setFillColor(TEXT_MUTED)
+    c.drawCentredString(ring_cx, ring_cy - 17, "57 échant.")
+
+    # Légende sous l'anneau (Pré / Instant T / Post)
+    leg_y = 132
+    # Pré-événement
+    c.setFillColor(ACCENT_BLUE)
+    c.roundRect(516, leg_y, 8, 8, 2, stroke=0, fill=1)
+    c.setFont("Helvetica-Bold", 7.8)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(528, leg_y + 1, "Pré-événement (-1.5s)")
+
+    # Instant T
+    c.setFillColor(ACCENT_AMBER)
+    c.roundRect(516, leg_y - 15, 8, 8, 2, stroke=0, fill=1)
+    c.drawString(528, leg_y - 14, "Instant T (Mouvement / Choc)")
+
+    # Post-événement
+    c.setFillColor(PRIMARY_TEAL)
+    c.roundRect(516, leg_y - 30, 8, 8, 2, stroke=0, fill=1)
+    c.drawString(528, leg_y - 29, "Post-événement (+1.5s)")
+
+    # 2. Flèche Fast Burst BLE vers Smartphone / Studio (Droite)
+    draw_arrow(c, 656, 205, 62, PRIMARY_TEAL, "Fast Burst", "BLE GATT")
+
+    # 3. Carte Réception Smartphone & Studio (Droite)
+    rx_x = 724
+    rx_y = 152
+    rx_w = 156
+    rx_h = 106
+    draw_card(c, rx_x, rx_y, rx_w, rx_h, HexColor("#ffffff"), HexColor("#99f6e4"), border_width=1.2, radius=6)
+    draw_card(c, rx_x + 10, rx_y + rx_h - 36, 26, 26, HexColor("#f0fdfa"), HexColor("#99f6e4"), border_width=1.0, radius=5)
+    draw_vector_icon(c, "smartphone", rx_x + 15, rx_y + rx_h - 31, 16, color=PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 9.0)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(rx_x + 42, rx_y + rx_h - 21, "Mobile & Studio")
+    c.setFont("Helvetica", 7.8)
+    c.setFillColor(TEXT_MUTED)
+    c.drawString(rx_x + 42, rx_y + rx_h - 32, "Trame 6 axes complète")
+
+    # Mini-graphe d'onde capturée dans la carte Mobile & Studio
+    wave_box_x = rx_x + 10
+    wave_box_y = rx_y + 10
+    wave_box_w = rx_w - 20
+    wave_box_h = 54
+    draw_card(c, wave_box_x, wave_box_y, wave_box_w, wave_box_h, HexColor("#f8fafc"), HexColor("#e2e8f0"), border_width=0.8, radius=4)
+
+    # Zones colorées Pré / Choc / Post dans le mini-graphe
+    w_third = wave_box_w / 3.0
+    # Zone T (Choc au milieu)
+    c.setFillColor(HexColor("#fef3c7"))
+    c.rect(wave_box_x + w_third, wave_box_y + 2, w_third, wave_box_h - 4, stroke=0, fill=1)
+
+    # Courbe de signal IMU synthétique (Pré calme -> Pic T -> Post stabilisation)
+    pts_wave = [
+        (wave_box_x + 6, wave_box_y + 24),
+        (wave_box_x + 18, wave_box_y + 27),
+        (wave_box_x + 30, wave_box_y + 22),
+        (wave_box_x + 44, wave_box_y + 25),
+        (wave_box_x + 54, wave_box_y + 12),
+        (wave_box_x + 64, wave_box_y + 48),
+        (wave_box_x + 74, wave_box_y + 8),
+        (wave_box_x + 84, wave_box_y + 38),
+        (wave_box_x + 94, wave_box_y + 20),
+        (wave_box_x + 108, wave_box_y + 22),
+        (wave_box_x + 120, wave_box_y + 21),
+        (wave_box_x + 130, wave_box_y + 22),
+    ]
+    p_w = c.beginPath()
+    p_w.moveTo(pts_wave[0][0], pts_wave[0][1])
+    for px, py in pts_wave[1:]:
+        p_w.lineTo(px, py)
+    c.setStrokeColor(PRIMARY_TEAL)
+    c.setLineWidth(1.6)
+    c.drawPath(p_w, stroke=1, fill=0)
+
+    c.setFont("Helvetica-Bold", 6.8)
+    c.setFillColor(ACCENT_BLUE)
+    c.drawCentredString(wave_box_x + w_third / 2, wave_box_y + 4, "Pré")
+    c.setFillColor(ACCENT_AMBER)
+    c.drawCentredString(wave_box_x + w_third * 1.5, wave_box_y + 4, "Instant T")
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawCentredString(wave_box_x + w_third * 2.5, wave_box_y + 4, "Post")
+
+    # Bandeau bas : Action de requalification
+    draw_card(c, 668, 72, 212, 24, HexColor("#f0fdfa"), HexColor("#99f6e4"), border_width=0.9, radius=5)
+    c.setFont("Helvetica-Bold", 8.2)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawCentredString(774, 81, "✓ Validation ou Requalification 1-clic")
+    c.restoreState()
 
     c.showPage()
 
@@ -1658,7 +1805,6 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     demo_links = [
         ("Site Portfolio & CV", "https://daverck.github.io/serck-david-portfolio", "daverck.github.io/serck-david-portfolio", "docs/presentation/globe_lucide.png"),
         ("Plateforme Web Live", "https://healthkicks.duckdns.org", "healthkicks.duckdns.org", "docs/presentation/globe_lucide.png"),
-        ("Studio & Stats du Modèle ML", "https://healthkicks.duckdns.org/dashboard/studio/classes", "healthkicks.duckdns.org/dashboard/studio/classes", "docs/presentation/globe_lucide.png"),
         ("Code Source & Spécifications", "https://github.com/daverck/health-kicks-ecosystem", "github.com/daverck/health-kicks-ecosystem", "docs/presentation/github_official.png")
     ]
 
@@ -1689,7 +1835,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     discussion_items = [
         ("Podométrie Nette & Gestion des Reboots", ""),
         ("Sécurité Zero Trust & Données de Marche", ""),
-        ("Optimisation FreeRTOS Dual-Core", ""),
+        ("Coûts du projet", ""),
     ]
     cur_y = 370
     for lbl, desc in discussion_items:
@@ -1698,6 +1844,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.setFillColor(TEXT_DARK)
         c.drawString(522, cur_y, lbl)
         cur_y -= 32
+
+    # Illustration vectorielle Échange & Questions-Réponses Tech (Bas de la carte de droite)
+    qa_img = "docs/presentation/qa_discussion.png"
+    if os.path.exists(qa_img):
+        c.drawImage(qa_img, 502, 52, width=396, height=235, preserveAspectRatio=True, anchor='c')
 
     c.showPage()
 
