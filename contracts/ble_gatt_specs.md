@@ -74,7 +74,7 @@ Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-
 
 - **Propriétés** : `READ`, `NOTIFY`
 - **Rôle** : Transmettre au smartphone les changements d'état d'activité et les alertes critiques de chute calculées par le moteur ML embarqué.
-- **Règle d'anti-rebond (Debounce)** : Une fois une chute détectée (`fall_*`), un délai de cooldown de **5.0 secondes** est imposé avant toute nouvelle notification de chute.
+- **Règle d'anti-rebond (Debounce)** : Une fois une chute détectée (`fall_*`), un délai de cooldown configurable (par défaut **5.0 secondes** / `5000 ms`, ajustable de `1000` à `60000 ms` via `SET_FALL_COOLDOWN`) est imposé avant toute nouvelle notification de chute.
 
 #### Format Binaire Compact (7 octets)
 
@@ -216,6 +216,30 @@ Format textuel ASCII encodé en UTF-8 :
    - _Exemple_ : `SET_FALL_CONFIDENCE 0.75`
    - _Notification retour_ : `FALL_CONFIDENCE_OK <valeur>` ou `FALL_CONFIDENCE_ERROR <raison>`.
 
+8. **Configuration du Cooldown de Détection de Chute** :
+
+   `	ext
+   SET_FALL_COOLDOWN <cooldown_ms:1000..60000>
+   `
+   - _Paramètre_ : Délai d'anti-rebond minimal en millisecondes (uint32) entre deux alertes de chute consécutives (_fallCooldownMs).
+   - _Plage valide_ : 1000 (1 s) à 60000 (60 s).
+   - _Valeur par défaut_ : 5000 (5 s).
+   - _Exemple_ : SET_FALL_COOLDOWN 5000
+   - _Notification retour_ : FALL_COOLDOWN_OK <cooldown_ms> ou FALL_COOLDOWN_ERROR <raison>.
+
+9. **Synchronisation d'Horloge (Time Sync & Clock Calibration)** :
+
+   ```text
+   SYNC_TIME <unix_epoch_sec>
+   ```
+   - _Paramètre_ : Timestamp Unix UTC actuel du smartphone en secondes (`uint32`).
+   - _Exemple_ : `SYNC_TIME 1762354800`
+   - _Comportement_ :
+     - L'ESP32 calcule l'heure exacte de son boot : $\text{boot\_epoch\_sec} = \text{unix\_epoch\_sec} - \text{uptime\_sec}$.
+     - Cette heure de référence est persistée en `RTC_DATA_ATTR` et conservée à travers les réveils de Deep Sleep.
+     - L'ESP32 notifie `TIME_SYNC_OK <boot_count> <uptime_sec>`.
+     - Si des tranches horaires de pas ont été enregistrées hors-ligne, l'ESP32 transmet chaque tranche résolue via une ou plusieurs notifications `STEP_HIST <boot_count> <bucket_epoch_sec> <walk> <run> <stairs> <unclassified>`.
+
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 
 Format textuel ASCII encodé en UTF-8 :
@@ -232,6 +256,10 @@ Format textuel ASCII encodé en UTF-8 :
 | `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
 | `FALL_CONFIDENCE_OK <valeur>`                         | Commande `SET_FALL_CONFIDENCE`       | Seuil de confiance de chute mis à jour avec succès                         |
 | `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`       | Rejet de la commande (ex: `out_of_range`, `invalid_params`)                |
+| FALL_COOLDOWN_OK <cooldown_ms>                      | Commande SET_FALL_COOLDOWN         | Cooldown de détection de chute mis à jour avec succès (en ms)              |
+| FALL_COOLDOWN_ERROR <raison>                        | Commande SET_FALL_COOLDOWN         | Rejet de la commande (ex: out_of_range, invalid_params)                |
+| `TIME_SYNC_OK <boot_count> <uptime_sec>`              | Commande `SYNC_TIME`                 | Horloge calibrée, renvoie cycle de boot matériel et uptime courant         |
+| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>`  | Post `SYNC_TIME` (si pas hors-ligne) | Restitution d'une tranche horaire de pas enregistrée hors-ligne             |
 | `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
 | `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
@@ -332,6 +360,8 @@ Endianness : **Big-Endian** (réseau standard).
 | `10..11` | `unclassified_steps` | uint16 | `0` – `65 535`        | Pas validés sous d'autres activités non-exclues                                 |
 | `12`     | `cadence_spm`        | uint8  | `0` – `255`           | Cadence instantanée en pas/minute (calculée sur fenêtre glissante de 5 s)       |
 | `13..14` | `current_gct_ms`     | uint16 | `0` – `65 535`        | Temps de contact au sol moyen récent (GCT) en ms (moyenne lissée EMA sur 5 pas) |
+| `15..16` | `boot_count`         | uint16 | `0` – `65 535`        | Identifiant incrémental du cycle de boot matériel (persistance NVS)             |
+| `17..20` | `uptime_sec`         | uint32 | `0` – `4 294 967 295` | Temps écoulé en secondes depuis le démarrage matériel (uptime cumulé)           |
 
 #### Règle d'Émission des Notifications
 
