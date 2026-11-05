@@ -894,59 +894,19 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_slide_background(c, dark=False)
     draw_header(c, "SYSTÈME EMBARQUÉ")
 
-    # Schéma Électronique Global
-    schema_y = 205
-    schema_h = 245
+    # Schéma Électronique Global (Plein écran centré)
+    schema_y = 40
+    schema_h = 405
     draw_modern_panel(c, 50, schema_y, 860, schema_h, dark=False, accent_color=PRIMARY_TEAL)
 
     # Titre du Schéma Électronique (préservé tel que modifié par l'utilisateur)
     c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(68, schema_y + schema_h - 24, "SCHÉMA ÉLECTRONIQUE")
+    c.drawString(68, schema_y + schema_h - 26, "SCHÉMA ÉLECTRONIQUE")
 
     schematic_path = "docs/presentation/circuit_esp32.png"
     if os.path.exists(schematic_path):
-        c.drawImage(schematic_path, 60, schema_y + 8, width=840, height=210, preserveAspectRatio=True, anchor='c')
-
-    # 2 Cartes en dessous : Biomécanique ISB & Traitement du Signal
-    card_b_y = 35
-    card_b_h = 160
-    card_b_w = 420
-
-    # Carte Gauche : Référentiel ISB
-    draw_modern_panel(c, 50, card_b_y, card_b_w, card_b_h, dark=False, accent_color=ACCENT_BLUE)
-    ruler_img = "docs/presentation/ruler_tabler.png"
-    if os.path.exists(ruler_img):
-        c.drawImage(ruler_img, 66, card_b_y + card_b_h - 29, width=18, height=18, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(ACCENT_BLUE)
-    c.drawString(88, card_b_y + card_b_h - 24, "RÉFÉRENTIEL BIOMÉCANIQUE ISB")
-
-    # Illustration 3D réaliste des axes ISB de la chaussure
-    axes_img_path = "docs/presentation/shoe_isb_axes.png"
-    if os.path.exists(axes_img_path):
-        c.drawImage(axes_img_path, 56, card_b_y + 4, width=408, height=126, preserveAspectRatio=True, anchor='c')
-
-    # Carte Droite : Traitement du Signal Embarqué
-    draw_modern_panel(c, 490, card_b_y, card_b_w, card_b_h, dark=False, accent_color=ACCENT_AMBER)
-    draw_vector_icon(c, "features", 506, card_b_y + card_b_h - 29, 18, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(528, card_b_y + card_b_h - 24, "TRAITEMENT DU SIGNAL")
-
-    dsp_items = [
-        ("Fenêtrage Glissant (3.0s)", ""),
-        ("Invariance par Rotation", ""),
-        ("Calibration du Zéro-G", ""),
-        ("Filtrage Anti-Rebond", "")
-    ]
-    cur_y = card_b_y + card_b_h - 54
-    for lbl, desc in dsp_items:
-        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_AMBER)
-        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(522, cur_y, lbl)
-        cur_y -= 28
+        c.drawImage(schematic_path, 60, schema_y + 12, width=840, height=350, preserveAspectRatio=True, anchor='c')
 
     c.showPage()
 
@@ -1260,71 +1220,96 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 6 : Edge Machine Learning & Détail des Features (Ordre inversé : 28 FEATURES à gauche, CHOIX DU MODÈLE à droite)
+    # SLIDE 6 : Edge Machine Learning & Détail des Features (Grille 2x2)
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "INTELLIGENCE ARTIFICIELLE EMBARQUÉE")
 
-    col_y = 45
-    # Gauche : 28 FEATURES
-    draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
-    draw_vector_icon(c, "features", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
+    card_w = 420
+    row_top_y = 248
+    row_top_h = 194
+    row_bot_y = 40
+    row_bot_h = 194
+
+    # 1. Haut-Gauche : RÉFÉRENTIEL BIOMÉCANIQUE ISB
+    draw_modern_panel(c, 50, row_top_y, card_w, row_top_h, dark=False, accent_color=ACCENT_BLUE)
+    ruler_img = "docs/presentation/ruler_tabler.png"
+    if os.path.exists(ruler_img):
+        c.drawImage(ruler_img, 66, row_top_y + row_top_h - 29, width=18, height=18, preserveAspectRatio=True, mask='auto')
     c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(92, col_y + 390 - 28, "28 FEATURES")
+    c.drawString(88, row_top_y + row_top_h - 24, "RÉFÉRENTIEL BIOMÉCANIQUE ISB")
 
-    feat_points = [
-        ("1. Intensité Globale (Invariante 3D)", "Normes ||a|| et ||w|| : min, max, moyenne, énergie cinétique."),
-        ("2. Rupture & Amplitude Dynamique", "Peak-to-Peak (max - min) et Jerk maximal (choc violent vs allure stable)."),
-        ("3. Dispersion & Posture (6 Axes)", "Écarts-types axiaux (ax, ay, az, gx, gy, gz) et moyennes (assis vs couché)."),
-        ("4. Directionnalité & Asymétrie", "Delta ay (fin - début) et asymétrie 1ère/2nde moitié (assis <-> debout)."),
-        ("5. Stabilité Post-Impact", "Écart-type de queue de fenêtre (détection de l'immobilité au sol).")
-    ]
+    axes_img_path = "docs/presentation/shoe_isb_axes.png"
+    if os.path.exists(axes_img_path):
+        c.drawImage(axes_img_path, 56, row_top_y + 6, width=408, height=154, preserveAspectRatio=True, anchor='c')
 
-    cur_y = col_y + 390 - 60
-    for lbl, desc in feat_points:
-        draw_icon_bullet(c, 66, cur_y + 1, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", BULLET_DETAIL_TITLE)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(82, cur_y, lbl)
-        cur_y -= 16
-        c.setFont("Helvetica", BULLET_DETAIL_SUB)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 44)
-        for line in lines:
-            c.drawString(82, cur_y, line)
-            cur_y -= 14
-        cur_y -= 10
-
-    # Droite : CHOIX DU MODÈLE D'INFÉRENCE
-    draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
-    draw_vector_icon(c, "forest", 508, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
+    # 2. Haut-Droite : TRAITEMENT DU SIGNAL
+    draw_modern_panel(c, 490, row_top_y, card_w, row_top_h, dark=False, accent_color=ACCENT_AMBER)
+    draw_vector_icon(c, "features", 506, row_top_y + row_top_h - 29, 18, color=ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(532, col_y + 390 - 28, "CHOIX DU MODÈLE D'INFÉRENCE")
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(528, row_top_y + row_top_h - 24, "TRAITEMENT DU SIGNAL")
 
-    model_points = [
-        ("vs Deep Learning (TFLite Micro)", "100x plus rapide (~12 us vs 15-50 ms)."),
-        ("vs Modèles Linéaires & SVM", "Capture nativement les frontières non-linéaires complexes."),
-        ("vs Arbre de Décision Unique (CART)", "L'agrégation de 80 arbres (bagging) réduit drastiquement la variance et immunise contre le bruit."),
-        ("vs Gradient Boosting (XGBoost)", "Vote probabiliste direct sans interpréteur lourd. class_weight='balanced' préserve un rappel chute >95% sur les classes rares."),
-        ("Sélection parmi les modèles m2cgen", "Retenu parmi les algorithmes compatibles pour sa conversion en C pur (arbres if/else), sans runtime ni dépendance.")
+    dsp_items = [
+        "Fenêtrage Glissant (3.0s)",
+        "Invariance par Rotation",
+        "Calibration du Zéro-G",
+        "Filtrage Anti-Rebond"
     ]
-
-    cur_y = col_y + 390 - 60
-    for lbl, desc in model_points:
-        draw_icon_bullet(c, 506, cur_y + 1, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", BULLET_DETAIL_TITLE)
+    cur_y = row_top_y + row_top_h - 58
+    for lbl in dsp_items:
+        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_AMBER)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
         c.drawString(522, cur_y, lbl)
-        cur_y -= 16
-        c.setFont("Helvetica", BULLET_DETAIL_SUB)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 44)
-        for line in lines:
-            c.drawString(522, cur_y, line)
-            cur_y -= 14
-        cur_y -= 8
+        cur_y -= 32
+
+    # 3. Bas-Gauche : 28 FEATURES
+    draw_modern_panel(c, 50, row_bot_y, card_w, row_bot_h, dark=False, accent_color=ACCENT_BLUE)
+    draw_vector_icon(c, "features", 66, row_bot_y + row_bot_h - 29, 18, color=ACCENT_BLUE)
+    c.setFont("Helvetica-Bold", 13.5)
+    c.setFillColor(ACCENT_BLUE)
+    c.drawString(88, row_bot_y + row_bot_h - 24, "28 FEATURES")
+
+    feat_points = [
+        "1. Intensité Globale (Invariante 3D)",
+        "2. Rupture & Amplitude Dynamique",
+        "3. Dispersion & Posture (6 Axes)",
+        "4. Directionnalité & Asymétrie",
+        "5. Stabilité Post-Impact"
+    ]
+
+    cur_y = row_bot_y + row_bot_h - 56
+    for lbl in feat_points:
+        draw_icon_bullet(c, 66, cur_y + 1, ACCENT_BLUE)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
+        c.setFillColor(TEXT_DARK)
+        c.drawString(82, cur_y, lbl)
+        cur_y -= 28
+
+    # 4. Bas-Droite : CHOIX DU MODÈLE D'INFÉRENCE
+    draw_modern_panel(c, 490, row_bot_y, card_w, row_bot_h, dark=False, accent_color=PRIMARY_TEAL)
+    draw_vector_icon(c, "forest", 506, row_bot_y + row_bot_h - 29, 18, color=PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 13.5)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(528, row_bot_y + row_bot_h - 24, "CHOIX DU MODÈLE D'INFÉRENCE")
+
+    model_points = [
+        "vs Deep Learning (TFLite Micro)",
+        "vs Modèles Linéaires & SVM",
+        "vs Arbre de Décision Unique (CART)",
+        "Sélection parmi les modèles m2cgen",
+        "Random Forest (80 arbres) : Modèle retenu"
+    ]
+
+    cur_y = row_bot_y + row_bot_h - 56
+    for lbl in model_points:
+        draw_icon_bullet(c, 506, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
+        c.setFillColor(TEXT_DARK)
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 28
 
     c.showPage()
 
@@ -1338,6 +1323,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_demo_badge(c, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT", accent_color=ACCENT_AMBER)
 
     # Gauche : Graphique des performances ML réel (capture web Studio cliquable)
+    col_y = 45
     ml_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_ml_confusion_matrix.webp"
     card_l_w = 460
     card_h = 390
