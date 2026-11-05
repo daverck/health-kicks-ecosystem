@@ -705,6 +705,49 @@ def draw_down_arrow(c, x, y_top, y_bottom, color, label=""):
     c.restoreState()
 
 
+def draw_demo_badge(c, text, accent_color=ACCENT_AMBER):
+    """Draws an appealing, high-visibility demonstration pill badge in the slide header."""
+    c.saveState()
+    bx = 490
+    by = 468
+    bw = 420
+    bh = 30
+    radius = 15
+
+    # Soft outer glow halo
+    c.setFillColor(accent_color)
+    c.setFillAlpha(0.18)
+    c.roundRect(bx - 3, by - 3, bw + 6, bh + 6, radius + 3, fill=1, stroke=0)
+
+    # Rich dark-slate pill body with vibrant colored border
+    c.setFillAlpha(1.0)
+    c.setFillColor(HexColor("#0f172a"))
+    c.setStrokeColor(accent_color)
+    c.setLineWidth(2.0)
+    c.roundRect(bx, by, bw, bh, radius, fill=1, stroke=1)
+
+    # Solid vibrant play circle on the left
+    cx = bx + 18
+    cy = by + bh / 2
+    c.setFillColor(accent_color)
+    c.circle(cx, cy, 10, fill=1, stroke=0)
+
+    # Crisp white play triangle inside circle
+    p = c.beginPath()
+    p.moveTo(cx - 3.0, cy + 4.8)
+    p.lineTo(cx - 3.0, cy - 4.8)
+    p.lineTo(cx + 5.2, cy)
+    p.close()
+    c.setFillColor(HexColor("#ffffff"))
+    c.drawPath(p, fill=1, stroke=0)
+
+    # High-contrast bold label
+    c.setFont("Helvetica-Bold", 9.5)
+    c.setFillColor(HexColor("#ffffff"))
+    c.drawCentredString(bx + 15 + bw / 2, by + 10.5, text)
+    c.restoreState()
+
+
 def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     target_filename = filename
     if os.path.exists(filename):
@@ -718,7 +761,34 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c = canvas.Canvas(target_filename, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
     # ==========================================
-    # SLIDE 1 : Parcours Professionnel & Portfolio QR Code
+    # SLIDE 1 (COUVERTURE) : Logo & Nom du Projet
+    # ==========================================
+    draw_slide_background(c, dark=True)
+
+    logo_svg_path = "health-kicks-frontend/public/images/logos/concept_a_vector.svg"
+    logo_w = 380
+    logo_h = 440.0 * (logo_w / 660.0)  # ~253.3 pt
+    logo_x = (PAGE_WIDTH - logo_w) / 2
+    logo_y = 205
+    draw_svg_paths(c, logo_svg_path, logo_x, logo_y, logo_w)
+
+    title_font_size = 56
+    c.setFont("Helvetica-Bold", title_font_size)
+    w_health = c.stringWidth("Health", "Helvetica-Bold", title_font_size)
+    w_kicks = c.stringWidth("Kicks", "Helvetica-Bold", title_font_size)
+    total_title_w = w_health + w_kicks
+    title_x = (PAGE_WIDTH - total_title_w) / 2
+    title_y = 140
+
+    c.setFillColor(TEXT_LIGHT)
+    c.drawString(title_x, title_y, "Health")
+    c.setFillColor(PRIMARY_BLUE)
+    c.drawString(title_x + w_health, title_y, "Kicks")
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 2 : Parcours Professionnel & Portfolio QR Code
     # ==========================================
     draw_slide_background(c, dark=False)
 
@@ -762,36 +832,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 2 : Titre & Vision Simplifiée
+    # SLIDE 3 : Genèse & Fonctionnalités (Sans Logo ni Header, Cartes remontées sur fond clair)
     # ==========================================
-    draw_slide_background(c, dark=True)
+    draw_slide_background(c, dark=False)
 
-    # Big vector logo, enlarged and centered horizontally on the slide
-    logo_svg_path = "health-kicks-frontend/public/images/logos/concept_a_vector.svg"
-    logo_w = 320
-    logo_h = 440.0 * (logo_w / 660.0)  # ~213.3 pt
-    logo_x = (PAGE_WIDTH - logo_w) / 2  # 320.0
-    logo_y = 280
-    draw_svg_paths(c, logo_svg_path, logo_x, logo_y, logo_w)
-
-    # Large Styled Title matching the web app: Health (white) + Kicks (primary-600 / #1d5cf5)
-    title_font_size = 46
-    c.setFont("Helvetica-Bold", title_font_size)
-    w_health = c.stringWidth("Health", "Helvetica-Bold", title_font_size)
-    w_kicks = c.stringWidth("Kicks", "Helvetica-Bold", title_font_size)
-    total_title_w = w_health + w_kicks
-    title_x = (PAGE_WIDTH - total_title_w) / 2
-    title_y = 236
-
-    c.setFillColor(TEXT_LIGHT)
-    c.drawString(title_x, title_y, "Health")
-    c.setFillColor(PRIMARY_BLUE)
-    c.drawString(title_x + w_health, title_y, "Kicks")
-
-    # 2 Centered Modern Panels (Activité & Sécurité), positioned below the title
-    card_w = 410
-    card_h = 165
-    card_y = 42
+    card_w = 420
+    card_h = 260
+    card_y = 140
 
     cards_s1 = [
         ("GENÈSE", ACCENT_AMBER, "bulb", [
@@ -808,36 +855,36 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     ]
 
     for idx, (title, color, icon_name, items) in enumerate(cards_s1):
-        x = 50 + idx * 450
-        draw_modern_panel(c, x, card_y, card_w, card_h, dark=True, accent_color=color)
+        x = 50 + idx * 440
+        draw_modern_panel(c, x, card_y, card_w, card_h, dark=False, accent_color=color)
 
         # Subtle watermark runner silhouette for GENÈSE
         if icon_name == "bulb":
             runner_img = "docs/presentation/runner_tabler.png"
             if os.path.exists(runner_img):
-                c.drawImage(runner_img, x + card_w - 95, card_y + 14, width=80, height=80, preserveAspectRatio=True, mask='auto')
+                c.drawImage(runner_img, x + card_w - 110, card_y + 18, width=92, height=92, preserveAspectRatio=True, mask='auto')
 
-        draw_vector_icon(c, icon_name, x + 20, card_y + card_h - 32, 20, color=color)
+        draw_vector_icon(c, icon_name, x + 22, card_y + card_h - 36, 22, color=color)
 
-        c.setFont("Helvetica-Bold", 13.5)
+        c.setFont("Helvetica-Bold", 14.5)
         c.setFillColor(color)
-        c.drawString(x + 46, card_y + card_h - 26, title)
+        c.drawString(x + 50, card_y + card_h - 30, title)
 
-        cur_y = card_y + card_h - 52
+        cur_y = card_y + card_h - 68
         for b in items:
             lines = wrap_text(b, 46)
-            draw_icon_bullet(c, x + 20, cur_y, color)
-            c.setFont("Helvetica", 9.5)
-            c.setFillColor(TEXT_LIGHT)
+            draw_icon_bullet(c, x + 22, cur_y, color)
+            c.setFont("Helvetica-Bold", 11)
+            c.setFillColor(TEXT_DARK)
             for line in lines:
-                c.drawString(x + 36, cur_y, line)
-                cur_y -= 14
-            cur_y -= 6
+                c.drawString(x + 38, cur_y, line)
+                cur_y -= 18
+            cur_y -= 10
 
     c.showPage()
 
     # ==========================================
-    # SLIDE 3 : Cœur IoT & Biomécanique (Système Embarqué)
+    # SLIDE 4 : Cœur IoT & Biomécanique (Système Embarqué)
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "SYSTÈME EMBARQUÉ")
@@ -870,10 +917,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(ACCENT_BLUE)
     c.drawString(88, card_b_y + card_b_h - 24, "RÉFÉRENTIEL BIOMÉCANIQUE ISB")
 
-    # Illustration 3D des axes ISB de la chaussure (agrandie et centrée dans la carte, sans texte redondant)
+    # Illustration 3D réaliste des axes ISB de la chaussure
     axes_img_path = "docs/presentation/shoe_isb_axes.png"
     if os.path.exists(axes_img_path):
-        c.drawImage(axes_img_path, 58, card_b_y + 4, width=404, height=126, preserveAspectRatio=True, anchor='c', mask='auto')
+        c.drawImage(axes_img_path, 56, card_b_y + 4, width=408, height=126, preserveAspectRatio=True, anchor='c')
 
     # Carte Droite : Traitement du Signal Embarqué
     draw_modern_panel(c, 490, card_b_y, card_b_w, card_b_h, dark=False, accent_color=ACCENT_AMBER)
@@ -885,8 +932,8 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     dsp_items = [
         ("Fenêtrage Glissant (3.0s)", ""),
         ("Invariance par Rotation", ""),
-        ("Calibration du Zéro-G (Biais)", ""),
-        ("Filtrage Anti-Rebond Chute", "")
+        ("Calibration du Zéro-G", ""),
+        ("Filtrage Anti-Rebond", "")
     ]
     cur_y = card_b_y + card_b_h - 48
     for lbl, desc in dsp_items:
@@ -906,7 +953,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 4 : Architecture Globale Logicielle & Système
+    # SLIDE 5 : Architecture Globale Logicielle & Système
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "Architecture Globale")
@@ -1176,9 +1223,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(TEXT_DARK)
     c.drawString(x_cloud + 150, y_row1_db + h_sub_db - 30, "Séries NoSQL")
 
-    # Amazon S3 (Stockage Firmware OTA)
+    # Amazon S3 (Stockage Firmware OTA - half width 118 matching other sub-cards)
     y_row2_db = y_db + 5
-    draw_card(c, x_cloud + 13, y_row2_db, 240, h_sub_db, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=4)
+    draw_card(c, x_cloud + 13, y_row2_db, 118, h_sub_db, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=4)
     draw_vector_icon(c, "s3_bucket", x_cloud + 18, y_row2_db + h_sub_db - 16, 12, color=CLOUD_AWS)
     c.setFont("Helvetica-Bold", 7.2)
     c.setFillColor(CLOUD_AWS)
@@ -1186,7 +1233,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_icon_bullet(c, x_cloud + 18, y_row2_db + h_sub_db - 30, CLOUD_AWS)
     c.setFont("Helvetica-Bold", 6.5)
     c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_row2_db + h_sub_db - 30, "Stockage des Firmwares OTA (.bin)")
+    c.drawString(x_cloud + 28, y_row2_db + h_sub_db - 30, "Firmwares OTA (.bin)")
 
     # FLECHE 3 : Cloud AWS -> Cloud OVH
     draw_arrow(c, 792, 260, 28, ACCENT_AMBER, "SMTP", "TLS 587")
@@ -1219,29 +1266,30 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 5 : Edge Machine Learning & Détail des Features
+    # SLIDE 6 : Edge Machine Learning & Détail des Features (Ordre inversé : 28 FEATURES à gauche, CHOIX DU MODÈLE à droite)
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "INTELLIGENCE ARTIFICIELLE EMBARQUÉE")
 
     col_y = 45
-    draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
-    draw_vector_icon(c, "forest", 68, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
+    # Gauche : 28 FEATURES
+    draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
+    draw_vector_icon(c, "features", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
     c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(92, col_y + 390 - 28, "POURQUOI UN RANDOM FOREST PLUTÔT QU'UN AUTRE ?")
+    c.setFillColor(ACCENT_BLUE)
+    c.drawString(92, col_y + 390 - 28, "28 FEATURES")
 
-    model_points = [
-        ("vs Deep Learning (TFLite Micro)", "100x plus rapide (~12 us vs 15-50 ms)."),
-        ("vs Modèles Linéaires & SVM", "Capture nativement les frontières non-linéaires complexes."),
-        ("vs Arbre de Décision Unique (CART)", "L'agrégation de 80 arbres (bagging) réduit drastiquement la variance et immunise contre le bruit."),
-        ("vs Gradient Boosting (XGBoost)", "Vote probabiliste direct sans interpréteur lourd. class_weight='balanced' préserve un rappel chute >95% sur les classes rares."),
-        ("Sélection parmi les modèles m2cgen", "Retenu parmi les algorithmes compatibles pour sa conversion en C pur (arbres if/else), sans runtime ni dépendance.")
+    feat_points = [
+        ("1. Intensité Globale (Invariante 3D)", "Normes ||a|| et ||w|| : min, max, moyenne, énergie cinétique."),
+        ("2. Rupture & Amplitude Dynamique", "Peak-to-Peak (max - min) et Jerk maximal (choc violent vs allure stable)."),
+        ("3. Dispersion & Posture (6 Axes)", "Écarts-types axiaux (ax, ay, az, gx, gy, gz) et moyennes (assis vs couché)."),
+        ("4. Directionnalité & Asymétrie", "Delta ay (fin - début) et asymétrie 1ère/2nde moitié (assis <-> debout)."),
+        ("5. Stabilité Post-Impact", "Écart-type de queue de fenêtre (détection de l'immobilité au sol).")
     ]
 
     cur_y = col_y + 390 - 55
-    for lbl, desc in model_points:
-        draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
+    for lbl, desc in feat_points:
+        draw_icon_bullet(c, 66, cur_y, ACCENT_BLUE)
         c.setFont("Helvetica-Bold", 9.5)
         c.setFillColor(TEXT_DARK)
         c.drawString(80, cur_y, lbl)
@@ -1254,23 +1302,24 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             cur_y -= 12
         cur_y -= 6
 
-    draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
-    draw_vector_icon(c, "features", 508, col_y + 390 - 32, 18, color=ACCENT_BLUE)
+    # Droite : CHOIX DU MODÈLE D'INFÉRENCE
+    draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
+    draw_vector_icon(c, "forest", 508, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(ACCENT_BLUE)
-    c.drawString(532, col_y + 390 - 28, "28 FEATURES")
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(532, col_y + 390 - 28, "CHOIX DU MODÈLE D'INFÉRENCE")
 
-    feat_points = [
-        ("1. Intensité Globale (Invariante 3D)", "Normes ||a|| et ||w|| : min, max, moyenne, énergie cinétique."),
-        ("2. Rupture & Amplitude Dynamique", "Peak-to-Peak (max - min) et Jerk maximal (choc violent vs allure stable)."),
-        ("3. Dispersion & Posture (6 Axes)", "Écarts-types axiaux (ax, ay, az, gx, gy, gz) et moyennes (assis vs couché)."),
-        ("4. Directionnalité & Asymétrie", "Delta ay (fin - début) et asymétrie 1ère/2nde moitié (assis <-> debout)."),
-        ("5. Stabilité Post-Impact", "Écart-type de queue de fenêtre (détection de l'immobilité au sol).")
+    model_points = [
+        ("vs Deep Learning (TFLite Micro)", "100x plus rapide (~12 us vs 15-50 ms)."),
+        ("vs Modèles Linéaires & SVM", "Capture nativement les frontières non-linéaires complexes."),
+        ("vs Arbre de Décision Unique (CART)", "L'agrégation de 80 arbres (bagging) réduit drastiquement la variance et immunise contre le bruit."),
+        ("vs Gradient Boosting (XGBoost)", "Vote probabiliste direct sans interpréteur lourd. class_weight='balanced' préserve un rappel chute >95% sur les classes rares."),
+        ("Sélection parmi les modèles m2cgen", "Retenu parmi les algorithmes compatibles pour sa conversion en C pur (arbres if/else), sans runtime ni dépendance.")
     ]
 
     cur_y = col_y + 390 - 55
-    for lbl, desc in feat_points:
-        draw_icon_bullet(c, 506, cur_y, ACCENT_BLUE)
+    for lbl, desc in model_points:
+        draw_icon_bullet(c, 506, cur_y, PRIMARY_TEAL)
         c.setFont("Helvetica-Bold", 9.5)
         c.setFillColor(TEXT_DARK)
         c.drawString(520, cur_y, lbl)
@@ -1286,17 +1335,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 6 : Performances Mesurées & Graphique ML
+    # SLIDE 7 : Performances Mesurées & Graphique ML
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "VALIDATION & CONTRÔLE")
 
-    # Badge Démonstration en Direct
-    draw_modern_panel(c, 520, 470, 390, 26, dark=False, accent_color=ACCENT_AMBER, top_accent=False)
-    draw_vector_icon(c, "play", 528, 474, 16, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawCentredString(720, 478, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT")
+    # Badge Démonstration en Direct (Haute Visibilité)
+    draw_demo_badge(c, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT", accent_color=ACCENT_AMBER)
 
     # Gauche : Graphique des performances ML réel (capture web Studio cliquable)
     ml_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_ml_confusion_matrix.webp"
@@ -1352,17 +1397,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 7 : MLOps Pipeline & Mode HITL
+    # SLIDE 8 : MLOps Pipeline (Schéma) & Mode HITL
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "ENTRAÎNEMENT")
 
-    # Badge Démonstration en Direct
-    draw_modern_panel(c, 520, 470, 390, 26, dark=False, accent_color=PRIMARY_TEAL, top_accent=False)
-    draw_vector_icon(c, "play", 528, 474, 16, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawCentredString(720, 478, "DÉMONSTRATION 2 : STUDIO WEB & REQUALIFICATION HITL")
+    # Badge Démonstration en Direct (Haute Visibilité)
+    draw_demo_badge(c, "DÉMONSTRATION 2 : STUDIO WEB & REQUALIFICATION HITL", accent_color=PRIMARY_TEAL)
 
     draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
     draw_vector_icon(c, "pipeline", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
@@ -1370,28 +1411,41 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(ACCENT_BLUE)
     c.drawString(92, col_y + 390 - 28, "MLOps Pipeline")
 
-    steps_mlops = [
-        ("1. Capture", ""),
-        ("2. Qualification Studio Mobile & Web", ""),
-        ("3. Pipeline Python d'Entraînement", ""),
-        ("4. Transpilation m2cgen Pure C", ""),
-        ("5. Injection Firmware Sans Recompilation", "")
+    # Schéma Visuel du Pipeline MLOps (5 étapes connectées)
+    mlops_schema_steps = [
+        ("1. Capture Inertielle (ESP32-S3)", "Flux IMU 6 axes (50 Hz) transmis via BLE GATT", "mcu", PRIMARY_TEAL, HexColor("#f0fdfa"), HexColor("#99f6e4")),
+        ("2. Qualification Studio (Mobile & Web)", "Labellisation terrain & validation visuelle des séries", "smartphone", ACCENT_BLUE, HexColor("#eff6ff"), HexColor("#bfdbfe")),
+        ("3. Pipeline Python d'Entraînement", "Extraction des 28 features & Random Forest (Scikit-Learn)", "forest", HexColor("#7c3aed"), HexColor("#f5f3ff"), HexColor("#ddd6fe")),
+        ("4. Transpilation C Pur (m2cgen)", "Génération d'arbres statiques C++ sans runtime", "chip", ACCENT_AMBER, HexColor("#fffbeb"), HexColor("#fde68a")),
+        ("5. Injection Firmware Sans Recompilation", "Déploiement OTA du modèle sur le capteur", "cloud_aws", HexColor("#0284c7"), HexColor("#f0f9ff"), HexColor("#bae6fd")),
     ]
 
-    cur_y = col_y + 390 - 58
-    for lbl, desc in steps_mlops:
-        draw_icon_bullet(c, 66, cur_y, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 10)
+    step_x = 68
+    step_w = 384
+    step_h = 48
+    step_gap = 18
+    cur_step_y = col_y + 390 - 52 - step_h
+
+    for idx, (st_title, st_sub, st_icon, st_col, st_bg, st_border) in enumerate(mlops_schema_steps):
+        draw_card(c, step_x, cur_step_y, step_w, step_h, st_bg, st_border, border_width=1.2, radius=6)
+        # Icon badge on the left
+        draw_card(c, step_x + 10, cur_step_y + 9, 30, 30, HexColor("#ffffff"), st_border, border_width=1.0, radius=6)
+        draw_vector_icon(c, st_icon, step_x + 17, cur_step_y + 16, 16, color=st_col)
+
+        c.setFont("Helvetica-Bold", 9.5)
+        c.setFillColor(st_col)
+        c.drawString(step_x + 48, cur_step_y + 28, st_title)
+
+        c.setFont("Helvetica", 8.2)
         c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, lbl)
-        cur_y -= 14
-        c.setFont("Helvetica", 9)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 13
-        cur_y -= 8
+        c.drawString(step_x + 48, cur_step_y + 13, st_sub)
+
+        if idx < len(mlops_schema_steps) - 1:
+            arrow_top = cur_step_y
+            arrow_bot = cur_step_y - step_gap
+            draw_down_arrow(c, step_x + step_w / 2, arrow_top, arrow_bot, st_col)
+
+        cur_step_y -= (step_h + step_gap)
 
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     draw_vector_icon(c, "hitl", 508, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
@@ -1424,55 +1478,29 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 8 : Détection de Chute & Chaîne d'Urgence
+    # SLIDE 9 : Détection de Chute & Chaîne d'Urgence
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "DÉTECTION DE CHUTE")
 
-    # Badge Démonstration en Direct
-    draw_modern_panel(c, 520, 470, 390, 26, dark=False, accent_color=ACCENT_AMBER, top_accent=False)
-    draw_vector_icon(c, "play", 528, 474, 16, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawCentredString(720, 478, "DÉMONSTRATION 3 : SIMULATION D'UNE CHUTE EN DIRECT")
+    # Badge Démonstration en Direct (Haute Visibilité)
+    draw_demo_badge(c, "DÉMONSTRATION 3 : SIMULATION D'UNE CHUTE EN DIRECT", accent_color=ACCENT_AMBER)
 
-    # Gauche : Points Clés & Illustration Chute
     card_l_x = 45
     card_l_w = 345
-    draw_modern_panel(c, card_l_x, col_y, card_l_w, 390, dark=False, accent_color=ACCENT_AMBER)
-    draw_vector_icon(c, "shield", card_l_x + 18, col_y + 390 - 32, 16, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(card_l_x + 40, col_y + 390 - 28, "SÉCURITÉ & GESTION DES FAUX-POSITIFS")
 
-    fall_key_points = [
-        ("Annulation Automatique par Relèvement", ""),
-        ("Période de Cooldown Anti-Rebond (5.0s)", ""),
-        ("Délai de Rétractation Utilisateur (60s)", ""),
-        ("Orchestration Centralisée Backend", ""),
-        ("Repli d'Urgence Appel 112", "")
-    ]
-
-    cur_y = col_y + 390 - 54
-    for lbl, desc in fall_key_points:
-        draw_icon_bullet(c, card_l_x + 16, cur_y, ACCENT_AMBER)
-        c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(card_l_x + 30, cur_y, lbl)
-        cur_y -= 22
-
-    # Illustration de chute (glissade sur peau de banane avec chaussure connectée)
+    # Illustration de chute centrée verticalement avec la carte de droite (centre Y = 240)
     fall_img_path = "docs/presentation/fall_illustration.png"
     if os.path.exists(fall_img_path):
-        c.drawImage(fall_img_path, card_l_x + 15, col_y + 10, width=315, height=205, preserveAspectRatio=True, anchor='c', mask='auto')
+        c.drawImage(fall_img_path, card_l_x + 5, 130, width=335, height=220, preserveAspectRatio=True, anchor='c', mask='auto')
 
-    # Droite : Schéma Graphique Vectoriel de la Chaîne d'Escalade et de Secours
+    # Droite : Schéma Graphique Vectoriel de la Chaîne d'Escalade et de Secours (Thème Clair)
     x_chain = 405
     w_chain = 510
     h_chain = 390
-    draw_modern_panel(c, x_chain, col_y, w_chain, h_chain, dark=True, accent_color=PRIMARY_TEAL)
+    draw_modern_panel(c, x_chain, col_y, w_chain, h_chain, dark=False, accent_color=PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 13)
-    c.setFillColor(TEXT_TEAL)
+    c.setFillColor(PRIMARY_TEAL)
     c.drawString(x_chain + 18, col_y + h_chain - 26, "CHAÎNE D'ESCALADE & SECOURS")
 
     bx_x = x_chain + 16
@@ -1484,11 +1512,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     b0_h = 24
     b0_x = x_chain + (w_chain - b0_w) / 2
     b0_y = 356
-    draw_card(c, b0_x, b0_y, b0_w, b0_h, HexColor("#450a0a"), HexColor("#ef4444"), border_width=1.2, radius=5)
-    draw_vector_icon(c, "impact", b0_x + 10, b0_y + 4, 16, color=HexColor("#ef4444"))
+    draw_card(c, b0_x, b0_y, b0_w, b0_h, HexColor("#fef2f2"), HexColor("#ef4444"), border_width=1.2, radius=5)
+    draw_vector_icon(c, "impact", b0_x + 10, b0_y + 4, 16, color=HexColor("#dc2626"))
     c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#fca5a5"))
-    c.drawCentredString(b0_x + b0_w / 2 + 10, b0_y + 7.5, "CHUTE DÉTECTÉ")
+    c.setFillColor(HexColor("#b91c1c"))
+    c.drawCentredString(b0_x + b0_w / 2 + 10, b0_y + 7.5, "CHUTE DÉTECTÉE")
 
     # Flèche 0 -> 1
     draw_down_arrow(c, x_center, 356, 338, HexColor("#ef4444"))
@@ -1496,82 +1524,82 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # 1. Alerte Locale Immédiate (Capteur ESP32-S3)
     b1_y = 286
     b1_h = 52
-    draw_card(c, bx_x, b1_y, bx_w, b1_h, HexColor("#0f172a"), HexColor("#14b8a6"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "alert", bx_x + 12, b1_y + b1_h - 18, 14, color=HexColor("#14b8a6"))
+    draw_card(c, bx_x, b1_y, bx_w, b1_h, HexColor("#f0fdfa"), HexColor("#14b8a6"), border_width=1.2, radius=6)
+    draw_vector_icon(c, "alert", bx_x + 12, b1_y + b1_h - 18, 14, color=PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#14b8a6"))
+    c.setFillColor(PRIMARY_TEAL)
     c.drawString(bx_x + 32, b1_y + b1_h - 14, "1. ALERTE LOCALE IMMÉDIATE (CAPTEUR ESP32-S3)")
     c.setFont("Helvetica", 7.8)
-    c.setFillColor(HexColor("#cbd5e1"))
-    c.drawString(bx_x + 16, b1_y + 24, "• Vibreur actif & Cooldown 5s anti-rebond")
+    c.setFillColor(TEXT_DARK)
+    c.drawString(bx_x + 16, b1_y + 24, "• Vibreur actif & Cooldown anti-rebond")
     c.drawString(bx_x + 16, b1_y + 10, "• Émission trame BLE GATT prioritaire")
 
     # Flèche 1 -> 2
-    draw_down_arrow(c, x_center, 286, 268, HexColor("#38bdf8"), "BLE GATT")
+    draw_down_arrow(c, x_center, 286, 268, HexColor("#0284c7"), "BLE GATT")
 
     # 2. Passerelle Mobile (Flutter)
     b2_y = 202
     b2_h = 66
-    draw_card(c, bx_x, b2_y, bx_w, b2_h, HexColor("#0f172a"), HexColor("#38bdf8"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "phone_alert", bx_x + 12, b2_y + b2_h - 18, 14, color=HexColor("#38bdf8"))
+    draw_card(c, bx_x, b2_y, bx_w, b2_h, HexColor("#f0f9ff"), HexColor("#38bdf8"), border_width=1.2, radius=6)
+    draw_vector_icon(c, "phone_alert", bx_x + 12, b2_y + b2_h - 18, 14, color=HexColor("#0284c7"))
     c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#38bdf8"))
+    c.setFillColor(HexColor("#0284c7"))
     c.drawString(bx_x + 32, b2_y + b2_h - 14, "2. PASSERELLE MOBILE (FLUTTER / DART)")
     c.setFont("Helvetica-Bold", 7.8)
-    c.setFillColor(HexColor("#34d399"))
+    c.setFillColor(HexColor("#047857"))
     c.drawString(bx_x + 16, b2_y + 37, "• Si Relèvement ou clic 'Je vais bien' :")
     c.drawString(bx_x + 26, b2_y + 25, "==> ANNULATION IMMÉDIATE (Aucun message émis au Cloud)")
     c.setFont("Helvetica", 7.8)
-    c.setFillColor(HexColor("#cbd5e1"))
+    c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 16, b2_y + 10, "• Alerte sonore stridente & écran rouge (délai 60s) + Coordonnées GPS")
 
     # Flèche 2 -> 3
-    draw_down_arrow(c, x_center, 202, 184, HexColor("#c084fc"), "60s écoulées sans annulation")
+    draw_down_arrow(c, x_center, 202, 184, HexColor("#7c3aed"), "60s écoulées sans annulation")
 
     # 3. Backend FastAPI (Orchestrateur de Secours)
     b3_y = 118
     b3_h = 66
-    draw_card(c, bx_x, b3_y, bx_w, b3_h, HexColor("#0f172a"), HexColor("#c084fc"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "server", bx_x + 12, b3_y + b3_h - 18, 14, color=HexColor("#c084fc"))
+    draw_card(c, bx_x, b3_y, bx_w, b3_h, HexColor("#faf5ff"), HexColor("#a855f7"), border_width=1.2, radius=6)
+    draw_vector_icon(c, "server", bx_x + 12, b3_y + b3_h - 18, 14, color=HexColor("#7c3aed"))
     c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#c084fc"))
+    c.setFillColor(HexColor("#7c3aed"))
     c.drawString(bx_x + 32, b3_y + b3_h - 14, "3. BACKEND FASTAPI (ORCHESTRATEUR DE SECOURS)")
     c.setFont("Helvetica", 7.8)
-    c.setFillColor(HexColor("#cbd5e1"))
+    c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 16, b3_y + 36, "• Récupération ordonnée des contacts d'urgence (Priorités 1 à 5)")
     c.drawString(bx_x + 16, b3_y + 22, "• Envoi direct de l'email d'urgence avec lien d'acquittement (ACK)")
     c.drawString(bx_x + 16, b3_y + 9, "• Ordre MQTT Downlink 'SEND_SMS' envoyé au mobile")
 
     # Flèche 3 -> 4
-    draw_down_arrow(c, x_center, 118, 100, HexColor("#f59e0b"), "MQTT Downlink")
+    draw_down_arrow(c, x_center, 118, 100, HexColor("#d97706"), "MQTT Downlink")
 
     # 4. Relais GSM Mobile (SmsManager Android)
     b4_y = 52
     b4_h = 48
-    draw_card(c, bx_x, b4_y, bx_w, b4_h, HexColor("#0f172a"), HexColor("#f59e0b"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "phone_sms", bx_x + 12, b4_y + b4_h - 18, 14, color=HexColor("#f59e0b"))
+    draw_card(c, bx_x, b4_y, bx_w, b4_h, HexColor("#fffbeb"), HexColor("#f59e0b"), border_width=1.2, radius=6)
+    draw_vector_icon(c, "phone_sms", bx_x + 12, b4_y + b4_h - 18, 14, color=HexColor("#d97706"))
     c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#f59e0b"))
+    c.setFillColor(HexColor("#d97706"))
     c.drawString(bx_x + 32, b4_y + b4_h - 14, "4. RELAIS GSM MOBILE (SmsManager Android)")
     c.setFont("Helvetica", 7.8)
-    c.setFillColor(HexColor("#cbd5e1"))
+    c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 16, b4_y + 21, "• Émission du SMS natif vers le numéro du proche prioritaire")
     c.drawString(bx_x + 16, b4_y + 8, "• Escalade automatique vers proche suivant si pas d'ACK (3 min)")
 
     c.showPage()
 
     # ==========================================
-    # SLIDE 9 : Conclusion & Perspectives
+    # SLIDE 10 : Conclusion & Perspectives (Fond Clair)
     # ==========================================
-    draw_slide_background(c, dark=True)
-    draw_header(c, "SYNTHÈSE & PERSPECTIVES D'AVENIR", dark=True)
+    draw_slide_background(c, dark=False)
+    draw_header(c, "SYNTHÈSE & PERSPECTIVES D'AVENIR", dark=False)
 
-    draw_modern_panel(c, 50, 45, 420, 390, dark=True, accent_color=PRIMARY_TEAL)
+    draw_modern_panel(c, 50, 45, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     flag_img = "docs/presentation/flag_finish_fa.png"
     if os.path.exists(flag_img):
         c.drawImage(flag_img, 68, 403, width=18, height=18, preserveAspectRatio=True, mask='auto')
     c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(TEXT_TEAL)
+    c.setFillColor(PRIMARY_TEAL)
     c.drawString(92, 405, "CE QUE NOUS AVONS DÉMONTRÉ")
 
     achievements = [
@@ -1581,23 +1609,23 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     ]
     cur_y = 370
     for lbl, desc in achievements:
-        draw_icon_bullet(c, 66, cur_y, TEXT_TEAL)
+        draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
         c.setFont("Helvetica-Bold", 10.5)
-        c.setFillColor(TEXT_LIGHT)
+        c.setFillColor(TEXT_DARK)
         c.drawString(80, cur_y, lbl)
         cur_y -= 14
         c.setFont("Helvetica", 9)
-        c.setFillColor(TEXT_CARD_SUB)
+        c.setFillColor(TEXT_MUTED)
         lines = wrap_text(desc, 48)
         for line in lines:
             c.drawString(80, cur_y, line)
             cur_y -= 13
         cur_y -= 10
 
-    draw_modern_panel(c, 490, 45, 420, 390, dark=True, accent_color=ACCENT_AMBER)
-    draw_vector_icon(c, "compass", 508, 403, 18, color=HexColor("#fbbf24"))
+    draw_modern_panel(c, 490, 45, 420, 390, dark=False, accent_color=ACCENT_AMBER)
+    draw_vector_icon(c, "compass", 508, 403, 18, color=ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(HexColor("#fbbf24"))
+    c.setFillColor(ACCENT_AMBER)
     c.drawString(532, 405, "PERSPECTIVES")
 
     roadmap = [
@@ -1611,13 +1639,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     ]
     cur_y = 375
     for lbl, desc in roadmap:
-        draw_icon_bullet(c, 506, cur_y, HexColor("#fbbf24"))
+        draw_icon_bullet(c, 506, cur_y, ACCENT_AMBER)
         c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_LIGHT)
+        c.setFillColor(TEXT_DARK)
         c.drawString(520, cur_y, lbl)
         cur_y -= 12
         c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_CARD_SUB)
+        c.setFillColor(TEXT_MUTED)
         lines = wrap_text(desc, 54)
         for line in lines:
             c.drawString(520, cur_y, line)
@@ -1627,17 +1655,17 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 9 : Remerciements & Questions / Réponses (Liens Cliquables & Échanges)
+    # SLIDE 11 : Remerciements & Questions / Réponses (Fond Clair)
     # ==========================================
-    draw_slide_background(c, dark=True)
-    draw_header(c, "ÉCHANGE & DISCUSSION", dark=True)
+    draw_slide_background(c, dark=False)
+    draw_header(c, "ÉCHANGE & DISCUSSION", dark=False)
 
-    draw_modern_panel(c, 50, 45, 420, 390, dark=True, accent_color=PRIMARY_TEAL)
+    draw_modern_panel(c, 50, 45, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     link_img = "docs/presentation/link_lucide.png"
     if os.path.exists(link_img):
         c.drawImage(link_img, 68, 403, width=18, height=18, preserveAspectRatio=True, mask='auto')
     c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(TEXT_TEAL)
+    c.setFillColor(PRIMARY_TEAL)
     c.drawString(92, 405, "RESSOURCES DU PROJET & DÉMO EN LIGNE")
 
     demo_links = [
@@ -1652,40 +1680,39 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         if os.path.exists(icon_path):
             c.drawImage(icon_path, 64, cur_y - 2, width=12, height=12, preserveAspectRatio=True, mask='auto')
         else:
-            draw_icon_bullet(c, 66, cur_y, TEXT_TEAL)
+            draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
         c.setFont("Helvetica-Bold", 10.5)
-        c.setFillColor(TEXT_LIGHT)
+        c.setFillColor(TEXT_DARK)
         c.drawString(82, cur_y, lbl + " :")
         cur_y -= 14
         c.setFont("Helvetica", 9)
-        c.setFillColor(HexColor("#38bdf8"))
+        c.setFillColor(ACCENT_BLUE)
         c.drawString(82, cur_y, display_txt)
         c.linkURL(target_url, (82, cur_y - 2, 82 + 300, cur_y + 11), thickness=0)
         cur_y -= 14
 
-    draw_modern_panel(c, 490, 45, 420, 390, dark=True, accent_color=ACCENT_AMBER)
+    draw_modern_panel(c, 490, 45, 420, 390, dark=False, accent_color=ACCENT_AMBER)
     chat_img = "docs/presentation/chat_messages_square.png"
     if os.path.exists(chat_img):
         c.drawImage(chat_img, 508, 403, width=18, height=18, preserveAspectRatio=True, mask='auto')
     c.setFont("Helvetica-Bold", 13.5)
-    c.setFillColor(HexColor("#fbbf24"))
+    c.setFillColor(ACCENT_AMBER)
     c.drawString(532, 405, "THÈMES TECHNIQUES À APPROFONDIR")
 
     discussion_items = [
-        ("Optimisation FreeRTOS Dual-Core", ""),
         ("Podométrie Nette & Gestion des Reboots", ""),
-        ("Boucle MLOps & Mode HITL", ""),
-        ("Sécurité Zero Trust & Données de Marche", "")
+        ("Sécurité Zero Trust & Données de Marche", ""),
+        ("Optimisation FreeRTOS Dual-Core", ""),
     ]
     cur_y = 375
     for lbl, desc in discussion_items:
-        draw_icon_bullet(c, 506, cur_y, HexColor("#fbbf24"))
+        draw_icon_bullet(c, 506, cur_y, ACCENT_AMBER)
         c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_LIGHT)
+        c.setFillColor(TEXT_DARK)
         c.drawString(520, cur_y, lbl)
         cur_y -= 12
         c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_CARD_SUB)
+        c.setFillColor(TEXT_MUTED)
         lines = wrap_text(desc, 54)
         for line in lines:
             c.drawString(520, cur_y, line)
@@ -1695,7 +1722,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 10 (ANNEXE / SUPPORT) : Podométrie Différentielle Nette
+    # SLIDE 12 (ANNEXE / SUPPORT) : Podométrie Différentielle Nette
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "PODOMÉTRIE (SUPPORT / QUESTIONS)")
@@ -1752,7 +1779,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 11 (ANNEXE / SUPPORT) : Coûts du Projet & Frugalité
+    # SLIDE 13 (ANNEXE / SUPPORT) : Coûts du Projet & Frugalité
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "COÛTS DU PROJET")
