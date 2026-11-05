@@ -64,11 +64,8 @@ def draw_slide_background(c, dark=False):
 
 
 def draw_header(c, title, dark=False):
-    """Modern header with vertical glowing accent bar."""
+    """Draws a header"""
     c.saveState()
-    # Glowing vertical accent bar
-    c.setFillColor(PRIMARY_BLUE)
-    c.roundRect(50, 485, 4.5, 22, 2.25, stroke=0, fill=1)
 
     c.setFont("Helvetica-Bold", 20)
     c.setFillColor(TEXT_LIGHT if dark else TEXT_DARK)
@@ -1489,102 +1486,104 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     card_l_x = 45
     card_l_w = 345
 
-    # Illustration de chute centrée verticalement avec la carte de droite (centre Y = 240)
+    # Illustration de chute moderne centrée verticalement avec la carte de droite (centre Y = 240)
     fall_img_path = "docs/presentation/fall_illustration.png"
     if os.path.exists(fall_img_path):
-        c.drawImage(fall_img_path, card_l_x + 5, 130, width=335, height=220, preserveAspectRatio=True, anchor='c', mask='auto')
+        c.drawImage(fall_img_path, 42, 110, width=350, height=260, preserveAspectRatio=True, anchor='c', mask='auto')
 
-    # Droite : Schéma Graphique Vectoriel de la Chaîne d'Escalade et de Secours (Thème Clair)
+    # Droite : Schéma Graphique Vectoriel aligné sur le style du MLOps Pipeline (Slide 8), sans titre
     x_chain = 405
     w_chain = 510
     h_chain = 390
     draw_modern_panel(c, x_chain, col_y, w_chain, h_chain, dark=False, accent_color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 13)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_chain + 18, col_y + h_chain - 26, "CHAÎNE D'ESCALADE & SECOURS")
 
-    bx_x = x_chain + 16
-    bx_w = w_chain - 32
+    bx_x = x_chain + 18
+    bx_w = w_chain - 36
     x_center = x_chain + w_chain / 2
 
     # 0. Événement Déclencheur Choc & Immobilité
     b0_w = 340
-    b0_h = 24
+    b0_h = 38
     b0_x = x_chain + (w_chain - b0_w) / 2
-    b0_y = 356
-    draw_card(c, b0_x, b0_y, b0_w, b0_h, HexColor("#fef2f2"), HexColor("#ef4444"), border_width=1.2, radius=5)
-    draw_vector_icon(c, "impact", b0_x + 10, b0_y + 4, 16, color=HexColor("#dc2626"))
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#b91c1c"))
-    c.drawCentredString(b0_x + b0_w / 2 + 10, b0_y + 7.5, "CHUTE DÉTECTÉE")
+    b0_y = 382
+    draw_card(c, b0_x, b0_y, b0_w, b0_h, HexColor("#fef2f2"), HexColor("#fca5a5"), border_width=1.2, radius=6)
+    draw_card(c, b0_x + 10, b0_y + 5, 28, 28, HexColor("#ffffff"), HexColor("#fca5a5"), border_width=1.0, radius=6)
+    draw_vector_icon(c, "impact", b0_x + 16, b0_y + 11, 16, color=HexColor("#dc2626"))
+    c.setFont("Helvetica-Bold", 9.5)
+    c.setFillColor(HexColor("#dc2626"))
+    c.drawCentredString(b0_x + b0_w / 2 + 12, b0_y + 14, "CHUTE DÉTECTÉE")
 
     # Flèche 0 -> 1
-    draw_down_arrow(c, x_center, 356, 338, HexColor("#ef4444"))
+    draw_down_arrow(c, x_center, 382, 364, HexColor("#dc2626"))
 
     # 1. Alerte Locale Immédiate (Capteur ESP32-S3)
-    b1_y = 286
-    b1_h = 52
-    draw_card(c, bx_x, b1_y, bx_w, b1_h, HexColor("#f0fdfa"), HexColor("#14b8a6"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "alert", bx_x + 12, b1_y + b1_h - 18, 14, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 8.5)
+    b1_y = 308
+    b1_h = 56
+    draw_card(c, bx_x, b1_y, bx_w, b1_h, HexColor("#f0fdfa"), HexColor("#99f6e4"), border_width=1.2, radius=6)
+    draw_card(c, bx_x + 10, b1_y + 12, 32, 32, HexColor("#ffffff"), HexColor("#99f6e4"), border_width=1.0, radius=6)
+    draw_vector_icon(c, "alert", bx_x + 17, b1_y + 19, 18, color=PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 9.2)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(bx_x + 32, b1_y + b1_h - 14, "1. ALERTE LOCALE IMMÉDIATE (CAPTEUR ESP32-S3)")
-    c.setFont("Helvetica", 7.8)
+    c.drawString(bx_x + 50, b1_y + 39, "1. ALERTE LOCALE IMMÉDIATE (CAPTEUR ESP32-S3)")
+    c.setFont("Helvetica", 8.0)
     c.setFillColor(TEXT_DARK)
-    c.drawString(bx_x + 16, b1_y + 24, "• Vibreur actif & Cooldown anti-rebond")
-    c.drawString(bx_x + 16, b1_y + 10, "• Émission trame BLE GATT prioritaire")
+    c.drawString(bx_x + 50, b1_y + 24, "• Vibreur actif & Cooldown anti-rebond")
+    c.drawString(bx_x + 50, b1_y + 10, "• Émission trame BLE GATT prioritaire")
 
     # Flèche 1 -> 2
-    draw_down_arrow(c, x_center, 286, 268, HexColor("#0284c7"), "BLE GATT")
+    draw_down_arrow(c, x_center, 308, 290, PRIMARY_TEAL, "BLE GATT")
 
     # 2. Passerelle Mobile (Flutter)
-    b2_y = 202
-    b2_h = 66
-    draw_card(c, bx_x, b2_y, bx_w, b2_h, HexColor("#f0f9ff"), HexColor("#38bdf8"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "phone_alert", bx_x + 12, b2_y + b2_h - 18, 14, color=HexColor("#0284c7"))
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#0284c7"))
-    c.drawString(bx_x + 32, b2_y + b2_h - 14, "2. PASSERELLE MOBILE (FLUTTER / DART)")
+    b2_y = 222
+    b2_h = 68
+    draw_card(c, bx_x, b2_y, bx_w, b2_h, HexColor("#eff6ff"), HexColor("#bfdbfe"), border_width=1.2, radius=6)
+    draw_card(c, bx_x + 10, b2_y + 18, 32, 32, HexColor("#ffffff"), HexColor("#bfdbfe"), border_width=1.0, radius=6)
+    draw_vector_icon(c, "phone_alert", bx_x + 17, b2_y + 25, 18, color=ACCENT_BLUE)
+    c.setFont("Helvetica-Bold", 9.2)
+    c.setFillColor(ACCENT_BLUE)
+    c.drawString(bx_x + 50, b2_y + 51, "2. PASSERELLE MOBILE (FLUTTER / DART)")
     c.setFont("Helvetica-Bold", 7.8)
     c.setFillColor(HexColor("#047857"))
-    c.drawString(bx_x + 16, b2_y + 37, "• Si Relèvement ou clic 'Je vais bien' :")
-    c.drawString(bx_x + 26, b2_y + 25, "==> ANNULATION IMMÉDIATE (Aucun message émis au Cloud)")
-    c.setFont("Helvetica", 7.8)
+    c.drawString(bx_x + 50, b2_y + 37, "• Si Relèvement ou clic 'Je vais bien' :")
+    c.drawString(bx_x + 60, b2_y + 25, "==> ANNULATION IMMÉDIATE (Aucun message émis au Cloud)")
+    c.setFont("Helvetica", 8.0)
     c.setFillColor(TEXT_DARK)
-    c.drawString(bx_x + 16, b2_y + 10, "• Alerte sonore stridente & écran rouge (délai 60s) + Coordonnées GPS")
+    c.drawString(bx_x + 50, b2_y + 10, "• Alerte sonore stridente & écran rouge (délai 60s) + Coordonnées GPS")
 
     # Flèche 2 -> 3
-    draw_down_arrow(c, x_center, 202, 184, HexColor("#7c3aed"), "60s écoulées sans annulation")
+    draw_down_arrow(c, x_center, 222, 204, ACCENT_BLUE, "60s écoulées sans annulation")
 
     # 3. Backend FastAPI (Orchestrateur de Secours)
-    b3_y = 118
-    b3_h = 66
-    draw_card(c, bx_x, b3_y, bx_w, b3_h, HexColor("#faf5ff"), HexColor("#a855f7"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "server", bx_x + 12, b3_y + b3_h - 18, 14, color=HexColor("#7c3aed"))
-    c.setFont("Helvetica-Bold", 8.5)
+    b3_y = 136
+    b3_h = 68
+    draw_card(c, bx_x, b3_y, bx_w, b3_h, HexColor("#f5f3ff"), HexColor("#ddd6fe"), border_width=1.2, radius=6)
+    draw_card(c, bx_x + 10, b3_y + 18, 32, 32, HexColor("#ffffff"), HexColor("#ddd6fe"), border_width=1.0, radius=6)
+    draw_vector_icon(c, "server", bx_x + 17, b3_y + 25, 18, color=HexColor("#7c3aed"))
+    c.setFont("Helvetica-Bold", 9.2)
     c.setFillColor(HexColor("#7c3aed"))
-    c.drawString(bx_x + 32, b3_y + b3_h - 14, "3. BACKEND FASTAPI (ORCHESTRATEUR DE SECOURS)")
-    c.setFont("Helvetica", 7.8)
+    c.drawString(bx_x + 50, b3_y + 51, "3. BACKEND FASTAPI (ORCHESTRATEUR DE SECOURS)")
+    c.setFont("Helvetica", 8.0)
     c.setFillColor(TEXT_DARK)
-    c.drawString(bx_x + 16, b3_y + 36, "• Récupération ordonnée des contacts d'urgence (Priorités 1 à 5)")
-    c.drawString(bx_x + 16, b3_y + 22, "• Envoi direct de l'email d'urgence avec lien d'acquittement (ACK)")
-    c.drawString(bx_x + 16, b3_y + 9, "• Ordre MQTT Downlink 'SEND_SMS' envoyé au mobile")
+    c.drawString(bx_x + 50, b3_y + 37, "• Récupération ordonnée des contacts d'urgence (Priorités 1 à 5)")
+    c.drawString(bx_x + 50, b3_y + 23, "• Envoi direct de l'email d'urgence avec lien d'acquittement (ACK)")
+    c.drawString(bx_x + 50, b3_y + 9, "• Ordre MQTT Downlink 'SEND_SMS' envoyé au mobile")
 
     # Flèche 3 -> 4
-    draw_down_arrow(c, x_center, 118, 100, HexColor("#d97706"), "MQTT Downlink")
+    draw_down_arrow(c, x_center, 136, 118, HexColor("#7c3aed"), "MQTT Downlink")
 
     # 4. Relais GSM Mobile (SmsManager Android)
-    b4_y = 52
-    b4_h = 48
-    draw_card(c, bx_x, b4_y, bx_w, b4_h, HexColor("#fffbeb"), HexColor("#f59e0b"), border_width=1.2, radius=6)
-    draw_vector_icon(c, "phone_sms", bx_x + 12, b4_y + b4_h - 18, 14, color=HexColor("#d97706"))
-    c.setFont("Helvetica-Bold", 8.5)
-    c.setFillColor(HexColor("#d97706"))
-    c.drawString(bx_x + 32, b4_y + b4_h - 14, "4. RELAIS GSM MOBILE (SmsManager Android)")
-    c.setFont("Helvetica", 7.8)
+    b4_y = 62
+    b4_h = 56
+    draw_card(c, bx_x, b4_y, bx_w, b4_h, HexColor("#fffbeb"), HexColor("#fde68a"), border_width=1.2, radius=6)
+    draw_card(c, bx_x + 10, b4_y + 12, 32, 32, HexColor("#ffffff"), HexColor("#fde68a"), border_width=1.0, radius=6)
+    draw_vector_icon(c, "phone_sms", bx_x + 17, b4_y + 19, 18, color=ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 9.2)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(bx_x + 50, b4_y + 39, "4. RELAIS GSM MOBILE (SmsManager Android)")
+    c.setFont("Helvetica", 8.0)
     c.setFillColor(TEXT_DARK)
-    c.drawString(bx_x + 16, b4_y + 21, "• Émission du SMS natif vers le numéro du proche prioritaire")
-    c.drawString(bx_x + 16, b4_y + 8, "• Escalade automatique vers proche suivant si pas d'ACK (3 min)")
+    c.drawString(bx_x + 50, b4_y + 24, "• Émission du SMS natif vers le numéro du proche prioritaire")
+    c.drawString(bx_x + 50, b4_y + 10, "• Escalade automatique vers proche suivant si pas d'ACK (3 min)")
 
     c.showPage()
 
