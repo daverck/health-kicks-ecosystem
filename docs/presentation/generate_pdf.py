@@ -896,12 +896,12 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # Schéma Électronique Global
     schema_y = 205
     schema_h = 245
-    draw_modern_panel(c, 50, schema_y, 860, schema_h, dark=True, accent_color=PRIMARY_TEAL)
+    draw_modern_panel(c, 50, schema_y, 860, schema_h, dark=False, accent_color=PRIMARY_TEAL)
 
     # Titre du Schéma Électronique (préservé tel que modifié par l'utilisateur)
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(TEXT_TEAL)
-    c.drawString(68, schema_y + schema_h - 18, "SCHÉMA ÉLECTRONIQUE")
+    c.setFont("Helvetica-Bold", 13.5)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(68, schema_y + schema_h - 24, "SCHÉMA ÉLECTRONIQUE")
 
     schematic_path = "docs/presentation/circuit_esp32.png"
     if os.path.exists(schematic_path):

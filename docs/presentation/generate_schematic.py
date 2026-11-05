@@ -10,17 +10,17 @@ import pymupdf
 
 def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
                     png_path="docs/presentation/circuit_esp32.png"):
-    # Dark theme palette matching Slide 3 & Slide 4
-    BG_COLOR = "#1e293b"       # Slate 800 (Card background)
-    WIRE_PWR_5V = "#ef4444"    # Red (5V)
-    WIRE_PWR_3V3 = "#f87171"   # Coral / Salmon (3.3V)
-    WIRE_GND = "#64748b"       # Slate 500
-    WIRE_I2C_SDA = "#38bdf8"   # Sky Blue
-    WIRE_I2C_SCL = "#0ea5e9"   # Ocean Blue
-    WIRE_INT = "#fbbf24"       # Amber
-    WIRE_PWM = "#c084fc"       # Purple
-    WIRE_UI = "#818cf8"        # Indigo
-    TEXT_MAIN = "#f8fafc"      # White / Slate 50
+    # Light theme palette matching the white card background (#ffffff) on Slide 4
+    BG_COLOR = "#ffffff"       # Pure white (Card background)
+    WIRE_PWR_5V = "#dc2626"    # Red (5V)
+    WIRE_PWR_3V3 = "#ef4444"   # Coral / Salmon (3.3V)
+    WIRE_GND = "#475569"       # Slate 600
+    WIRE_I2C_SDA = "#0284c7"   # Sky Blue
+    WIRE_I2C_SCL = "#0369a1"   # Ocean Blue
+    WIRE_INT = "#d97706"       # Amber
+    WIRE_PWM = "#7c3aed"       # Purple
+    WIRE_UI = "#4f46e5"        # Indigo
+    TEXT_MAIN = "#000000"      # Black wires, IC outlines, and labels
 
     with schemdraw.Drawing(file=svg_path, show=False) as d:
         d.config(
@@ -54,7 +54,7 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
             ],
             size=(2.6, 2.6),
             leadlen=0.5
-        ).at((4.5, 4.2)).right().label("DC/DC Boost\n(Step-Up 5.0V)", loc="top", color="#38bdf8"))
+        ).at((4.5, 4.2)).right().label("DC/DC Boost\n(Step-Up 5.0V)", loc="top", color="#0284c7"))
 
         # Connect Switch to Boost VIN (straight horizontal)
         d.add(elm.Line().at(sw1.end).to(boost["VIN"]).color(WIRE_PWR_5V))
@@ -65,17 +65,6 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
         # =========================================================
         # 2. ESP32-S3 WROOM-1 (Center MCU)
         # =========================================================
-        # Left pins:
-        #   0: GPIO 13 (UI Statut & Bouton)
-        #   1: GND (Masse)
-        #   2: 5V (VIN) (Alim Principale - at Y=6.3)
-        # Right pins:
-        #   0: GND (Masse)
-        #   1: GPIO 7 (PWM Vibreur)
-        #   2: GPIO 4 (SDA)
-        #   3: GPIO 5 (SCL)
-        #   4: GPIO 6 (INT WOM)
-        #   5: 3.3V OUT (Alim IMU - at Y=6.3)
         esp = d.add(elm.Ic(
             pins=[
                 # Left side
@@ -92,7 +81,7 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
             ],
             size=(4.8, 5.8),
             leadlen=0.6
-        ).at((10.0, 1.0)).right().label("ESP32-S3 WROOM-1\n(Dual-Core 240 MHz / BLE 5.0)", loc="top", color="#14b8a6"))
+        ).at((10.0, 1.0)).right().label("ESP32-S3 WROOM-1\n(Dual-Core 240 MHz / BLE 5.0)", loc="top", color="#0d9488"))
 
         # Connect Boost 5V OUT straight to ESP32 5V (VIN) (straight horizontal at Y=6.3)
         d.add(elm.Line().at(boost["5V OUT"]).to(esp["5V (VIN)"])
@@ -107,7 +96,7 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
         r_ui = d.add(elm.Resistor().left().at(esp["GPIO 13"])
                      .label("100Ω", loc="top", color=TEXT_MAIN).color(WIRE_UI))
         led_ui = d.add(elm.LED().left().at(r_ui.end)
-                       .label("LED Bleue\n(Statut)", loc="bottom", color="#38bdf8").color("#38bdf8"))
+                       .label("LED Bleue\n(Statut)", loc="bottom", color="#0284c7").color("#0284c7"))
         sw2 = d.add(elm.Switch().left().at(led_ui.end)
                     .label("Bouton SW2", loc="top", color=TEXT_MAIN))
         d.add(elm.Ground().at(sw2.end).color(WIRE_GND))
@@ -125,7 +114,7 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
             ],
             size=(4.2, 3.4),
             leadlen=0.6
-        ).at((18.6, 3.4)).right().label("Module IMU MPU-6050\n(19 Hz / I2C: 0x68)", loc="top", color="#fbbf24"))
+        ).at((18.6, 3.4)).right().label("Module IMU MPU-6050\n(19 Hz / I2C: 0x68)", loc="top", color="#d97706"))
 
         # Straight bus connections to MPU-6050
         # 3.3V is a straight horizontal line at Y=6.3
@@ -146,7 +135,7 @@ def build_schematic(svg_path="docs/presentation/circuit_esp32.svg",
             ],
             size=(4.2, 2.2),
             leadlen=0.6
-        ).at((18.6, 0.6)).right().label("Module Vibreur Haptique\n(LEDC PWM / Driver MOSFET)", loc="top", color="#c084fc"))
+        ).at((18.6, 0.6)).right().label("Module Vibreur Haptique\n(LEDC PWM / Driver MOSFET)", loc="top", color="#7c3aed"))
 
         # Straight PWM connection
         d.add(elm.Line().at(esp["GPIO 7 (PWM)"]).to(vib["IN / SIG (Gate)"]).color(WIRE_PWM))
