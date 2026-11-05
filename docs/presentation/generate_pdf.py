@@ -660,43 +660,48 @@ def wrap_text(text, max_chars):
     return lines
 
 
-def draw_arrow(c, x, y, w, color, label_top="", label_bottom=""):
+def draw_arrow(c, x, y, w, color, label_top="", label_bottom="", reverse=False):
     c.saveState()
     c.setStrokeColor(color)
-    c.setLineWidth(1.6)
+    c.setLineWidth(1.8)
     c.line(x, y, x + w, y)
     p = c.beginPath()
-    p.moveTo(x + w, y)
-    p.lineTo(x + w - 5, y + 3.5)
-    p.lineTo(x + w - 5, y - 3.5)
+    if not reverse:
+        p.moveTo(x + w, y)
+        p.lineTo(x + w - 5.5, y + 4)
+        p.lineTo(x + w - 5.5, y - 4)
+    else:
+        p.moveTo(x, y)
+        p.lineTo(x + 5.5, y + 4)
+        p.lineTo(x + 5.5, y - 4)
     p.close()
     c.setFillColor(color)
     c.drawPath(p, fill=1, stroke=0)
     if label_top:
-        c.setFont("Helvetica-Bold", 6.8)
+        c.setFont("Helvetica-Bold", 7.8)
         c.setFillColor(color)
-        c.drawCentredString(x + w / 2, y + 6, label_top)
+        c.drawCentredString(x + w / 2, y + 7, label_top)
     if label_bottom:
-        c.setFont("Helvetica", 5.8)
+        c.setFont("Helvetica", 6.8)
         c.setFillColor(TEXT_MUTED)
-        c.drawCentredString(x + w / 2, y - 10, label_bottom)
+        c.drawCentredString(x + w / 2, y - 11, label_bottom)
     c.restoreState()
 
 
 def draw_down_arrow(c, x, y_top, y_bottom, color, label=""):
     c.saveState()
     c.setStrokeColor(color)
-    c.setLineWidth(1.6)
+    c.setLineWidth(1.8)
     c.line(x, y_top, x, y_bottom)
     p = c.beginPath()
     p.moveTo(x, y_bottom)
-    p.lineTo(x - 3.5, y_bottom + 5)
-    p.lineTo(x + 3.5, y_bottom + 5)
+    p.lineTo(x - 3.8, y_bottom + 5.5)
+    p.lineTo(x + 3.8, y_bottom + 5.5)
     p.close()
     c.setFillColor(color)
     c.drawPath(p, fill=1, stroke=0)
     if label:
-        c.setFont("Helvetica-Bold", 6.8)
+        c.setFont("Helvetica-Bold", 7.8)
         c.setFillColor(color)
         c.drawString(x + 8, (y_top + y_bottom) / 2 - 2.5, label)
     c.restoreState()
@@ -756,6 +761,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
             print(f"Warning: {filename} is currently open in an external PDF reader. Generating {target_filename} instead.")
 
     c = canvas.Canvas(target_filename, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
+
+    # Consistent bullet typography scale across all slides
+    BULLET_TITLE_SIZE = 12.5      # Standalone bullet lists (Slides 3, 4, 8, 10, 11, 12)
+    BULLET_DETAIL_TITLE = 11.5    # Detailed bullet lists with sub-text (Slide 6)
+    BULLET_DETAIL_SUB = 9.8       # Sub-text for detailed bullet lists (Slide 6)
 
     # ==========================================
     # SLIDE 1 (COUVERTURE) : Logo & Nom du Projet
@@ -867,16 +877,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.setFillColor(color)
         c.drawString(x + 50, card_y + card_h - 30, title)
 
-        cur_y = card_y + card_h - 68
+        cur_y = card_y + card_h - 70
         for b in items:
-            lines = wrap_text(b, 46)
-            draw_icon_bullet(c, x + 22, cur_y, color)
-            c.setFont("Helvetica-Bold", 11)
+            draw_icon_bullet(c, x + 22, cur_y + 1, color)
+            c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
             c.setFillColor(TEXT_DARK)
-            for line in lines:
-                c.drawString(x + 38, cur_y, line)
-                cur_y -= 18
-            cur_y -= 10
+            c.drawString(x + 38, cur_y, b)
+            cur_y -= 32
 
     c.showPage()
 
@@ -891,10 +898,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     schema_h = 245
     draw_modern_panel(c, 50, schema_y, 860, schema_h, dark=True, accent_color=PRIMARY_TEAL)
 
-    # Titre du Schéma Électronique
+    # Titre du Schéma Électronique (préservé tel que modifié par l'utilisateur)
     c.setFont("Helvetica-Bold", 10)
     c.setFillColor(TEXT_TEAL)
-    c.drawString(68, schema_y + schema_h - 18, "SCHÉMA ÉLECTRONIQUE GLOBAL D'INTERCONNEXION MATÉRIELLE (ESP32-S3)")
+    c.drawString(68, schema_y + schema_h - 18, "SCHÉMA ÉLECTRONIQUE")
 
     schematic_path = "docs/presentation/circuit_esp32.png"
     if os.path.exists(schematic_path):
@@ -910,7 +917,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     ruler_img = "docs/presentation/ruler_tabler.png"
     if os.path.exists(ruler_img):
         c.drawImage(ruler_img, 66, card_b_y + card_b_h - 29, width=18, height=18, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(88, card_b_y + card_b_h - 24, "RÉFÉRENTIEL BIOMÉCANIQUE ISB")
 
@@ -922,7 +929,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # Carte Droite : Traitement du Signal Embarqué
     draw_modern_panel(c, 490, card_b_y, card_b_w, card_b_h, dark=False, accent_color=ACCENT_AMBER)
     draw_vector_icon(c, "features", 506, card_b_y + card_b_h - 29, 18, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 12)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_AMBER)
     c.drawString(528, card_b_y + card_b_h - 24, "TRAITEMENT DU SIGNAL")
 
@@ -932,81 +939,71 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Calibration du Zéro-G", ""),
         ("Filtrage Anti-Rebond", "")
     ]
-    cur_y = card_b_y + card_b_h - 48
+    cur_y = card_b_y + card_b_h - 54
     for lbl, desc in dsp_items:
-        draw_icon_bullet(c, 506, cur_y, ACCENT_AMBER)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_AMBER)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 12
-        cur_y -= 5
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 28
 
     c.showPage()
 
     # ==========================================
-    # SLIDE 5 : Architecture Globale Logicielle & Système
+    # SLIDE 5 : Architecture Globale Logicielle & Système (Agrandie, 4. CLOUD OVH sous 2. MOBILE)
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "Architecture Globale")
 
-    diag_y = 45
-    diag_h = 395
     CLOUD_AWS = HexColor("#0284c7")
+    y_top = 445
 
     # -------------------------------------------------------------
-    # 1. EMBARQUÉ : ESP32-S3 (Dual-Core FreeRTOS)
+    # 1. EMBARQUÉ : ESP32-S3 (Dual-Core FreeRTOS) - Largeur agrandie à 248 pt
     # -------------------------------------------------------------
-    w_shoe = 215
-    x_shoe = 38
-    y_top = 440
+    w_shoe = 242
+    x_shoe = 34
 
     # Cœur 0 : Réseau & Système (3 items)
-    h_core0 = 82
-    y_core0 = y_top - 32 - h_core0  # 440 - 32 - 82 = 326
+    h_core0 = 104
+    y_core0 = y_top - 38 - h_core0  # 303
 
-    # Cœur 1 : Temps Réel & Métier (5 items, calibré sans blanc résiduel)
-    h_core1 = 114
-    y_core1 = y_core0 - 10 - h_core1  # 326 - 10 - 114 = 202
+    # Cœur 1 : Temps Réel & Métier (5 items)
+    h_core1 = 152
+    y_core1 = y_core0 - 12 - h_core1  # 139
 
-    # Hauteur parent adaptée au contenu enfant (marge basse 12 pt)
-    y_parent_shoe = y_core1 - 12      # 190
-    h_parent_shoe = y_top - y_parent_shoe  # 250 pt
+    y_parent_shoe = y_core1 - 12      # 127
+    h_parent_shoe = y_top - y_parent_shoe  # 318 pt
 
     draw_modern_panel(c, x_shoe, y_parent_shoe, w_shoe, h_parent_shoe, dark=False, accent_color=PRIMARY_TEAL)
-    draw_vector_icon(c, "mcu", x_shoe + 14, y_top - 25, 16, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 10.5)
+    draw_vector_icon(c, "mcu", x_shoe + 14, y_top - 28, 18, color=PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 12)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_shoe + 36, y_top - 20, "1. EMBARQUÉ (ESP32-S3)")
+    c.drawString(x_shoe + 38, y_top - 22, "1. EMBARQUÉ (ESP32-S3)")
 
     # Carte Cœur 0
-    draw_card(c, x_shoe + 8, y_core0, w_shoe - 16, h_core0, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-    c.setFont("Helvetica-Bold", 8)
+    draw_card(c, x_shoe + 10, y_core0, w_shoe - 20, h_core0, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+    c.setFont("Helvetica-Bold", 10)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_shoe + 14, y_core0 + h_core0 - 16, "Cœur 0 : Réseau & Système")
+    c.drawString(x_shoe + 18, y_core0 + h_core0 - 19, "Cœur 0 : Réseau & Système")
     core0_items = [
         "Pile NimBLE GATT",
         "OTA Streaming Service",
         "Power Manager"
     ]
-    cur_cy = y_core0 + h_core0 - 34
+    cur_cy = y_core0 + h_core0 - 42
     for t_it in core0_items:
-        draw_icon_bullet(c, x_shoe + 14, cur_cy, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 7.2)
+        draw_icon_bullet(c, x_shoe + 18, cur_cy + 0.5, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", 9.2)
         c.setFillColor(TEXT_DARK)
-        c.drawString(x_shoe + 26, cur_cy, t_it)
-        cur_cy -= 16
+        c.drawString(x_shoe + 32, cur_cy, t_it)
+        cur_cy -= 22
 
     # Carte Cœur 1
-    draw_card(c, x_shoe + 8, y_core1, w_shoe - 16, h_core1, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-    c.setFont("Helvetica-Bold", 8)
+    draw_card(c, x_shoe + 10, y_core1, w_shoe - 20, h_core1, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+    c.setFont("Helvetica-Bold", 10)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_shoe + 14, y_core1 + h_core1 - 16, "Cœur 1 : Temps Réel & Métier")
+    c.drawString(x_shoe + 18, y_core1 + h_core1 - 19, "Cœur 1 : Temps Réel & Métier")
 
     core1_all_items = [
         "Bus I2C pour capteurs inertiels",
@@ -1015,250 +1012,249 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         "Pilote Haptique PWM",
         "Buffer Circulaire HITL"
     ]
-    cur_cy = y_core1 + h_core1 - 34
+    cur_cy = y_core1 + h_core1 - 42
     for t_it in core1_all_items:
-        draw_icon_bullet(c, x_shoe + 14, cur_cy, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 7.2)
+        draw_icon_bullet(c, x_shoe + 18, cur_cy + 0.5, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", 9.2)
         c.setFillColor(TEXT_DARK)
-        c.drawString(x_shoe + 26, cur_cy, t_it)
-        cur_cy -= 16
+        c.drawString(x_shoe + 32, cur_cy, t_it)
+        cur_cy -= 22
 
     # FLECHE 1 : ESP32-S3 -> Mobile
-    draw_arrow(c, 256, 280, 36, PRIMARY_TEAL, "BLE GATT", "LESC Chiffré")
+    draw_arrow(c, 279, 305, 52, PRIMARY_TEAL, "BLE GATT", "LESC Chiffré")
 
     # -------------------------------------------------------------
-    # 2. PASSERELLE MOBILE : Flutter / SQLite
+    # 2. PASSERELLE MOBILE : Flutter / SQLite (Haut Colonne 2, largeur 216 pt)
     # -------------------------------------------------------------
-    w_mob = 176
-    x_mob = 296
+    w_mob = 214
+    x_mob = 334
 
     # 2.1 Base Locale SQLite (1 item)
-    h_sqlite = 50
-    y_sqlite = y_top - 32 - h_sqlite  # 440 - 32 - 50 = 358
+    h_sqlite = 56
+    y_sqlite = y_top - 36 - h_sqlite  # 353
 
     # 2.2 Sécurité & Keystore (3 items)
-    h_sec = 82
-    y_sec = y_sqlite - 10 - h_sec      # 358 - 10 - 82 = 266
+    h_sec = 96
+    y_sec = y_sqlite - 8 - h_sec      # 249
 
     # 2.3 Passerelle Hybride Cloud (2 items)
-    h_gw = 66
-    y_gw = y_sec - 10 - h_gw          # 266 - 10 - 66 = 190
+    h_gw = 76
+    y_gw = y_sec - 8 - h_gw          # 165
 
-    # Hauteur parent adaptée au contenu enfant (marge basse 12 pt)
-    y_parent_mob = y_gw - 12          # 178
-    h_parent_mob = y_top - y_parent_mob   # 262 pt
+    y_parent_mob = y_gw - 10          # 155
+    h_parent_mob = y_top - y_parent_mob   # 290 pt
 
     draw_modern_panel(c, x_mob, y_parent_mob, w_mob, h_parent_mob, dark=False, accent_color=ACCENT_BLUE)
-    draw_vector_icon(c, "smartphone", x_mob + 14, y_top - 25, 16, color=ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 10.5)
+    draw_vector_icon(c, "smartphone", x_mob + 14, y_top - 28, 18, color=ACCENT_BLUE)
+    c.setFont("Helvetica-Bold", 11.5)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(x_mob + 36, y_top - 20, "2. MOBILE (Flutter / Dart)")
+    c.drawString(x_mob + 36, y_top - 22, "2. MOBILE (Flutter / Dart)")
 
     # Carte Base SQLite
-    draw_card(c, x_mob + 8, y_sqlite, w_mob - 16, h_sqlite, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-    c.setFont("Helvetica-Bold", 8)
+    draw_card(c, x_mob + 10, y_sqlite, w_mob - 20, h_sqlite, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+    c.setFont("Helvetica-Bold", 9.8)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(x_mob + 14, y_sqlite + h_sqlite - 16, "Base Locale SQLite")
-    draw_icon_bullet(c, x_mob + 14, y_sqlite + h_sqlite - 34, ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 7.2)
+    c.drawString(x_mob + 18, y_sqlite + h_sqlite - 18, "Base Locale SQLite")
+    draw_icon_bullet(c, x_mob + 18, y_sqlite + h_sqlite - 39.5, ACCENT_BLUE)
+    c.setFont("Helvetica-Bold", 9.2)
     c.setFillColor(TEXT_DARK)
-    c.drawString(x_mob + 26, y_sqlite + h_sqlite - 34, "Sandbox OS privée")
+    c.drawString(x_mob + 32, y_sqlite + h_sqlite - 40, "Sandbox OS privée")
 
     # Carte Sécurité & Keystore
-    draw_card(c, x_mob + 8, y_sec, w_mob - 16, h_sec, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-    c.setFont("Helvetica-Bold", 8)
+    draw_card(c, x_mob + 10, y_sec, w_mob - 20, h_sec, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+    c.setFont("Helvetica-Bold", 9.8)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(x_mob + 14, y_sec + h_sec - 16, "Sécurité & Keystore")
+    c.drawString(x_mob + 18, y_sec + h_sec - 18, "Sécurité & Keystore")
     mob_sec_items = [
         "Hardware Keystore",
         "Tokens OAuth2 PKCE",
         "Courtier AWS STS"
     ]
-    cur_my = y_sec + h_sec - 34
+    cur_my = y_sec + h_sec - 40
     for t_it in mob_sec_items:
-        draw_icon_bullet(c, x_mob + 14, cur_my, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 7.2)
+        draw_icon_bullet(c, x_mob + 18, cur_my + 0.5, ACCENT_BLUE)
+        c.setFont("Helvetica-Bold", 9.2)
         c.setFillColor(TEXT_DARK)
-        c.drawString(x_mob + 26, cur_my, t_it)
-        cur_my -= 16
+        c.drawString(x_mob + 32, cur_my, t_it)
+        cur_my -= 20
 
     # Carte Passerelle Hybride Cloud
-    draw_card(c, x_mob + 8, y_gw, w_mob - 16, h_gw, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-    c.setFont("Helvetica-Bold", 8)
+    draw_card(c, x_mob + 10, y_gw, w_mob - 20, h_gw, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+    c.setFont("Helvetica-Bold", 9.8)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(x_mob + 14, y_gw + h_gw - 16, "Passerelle Hybride Cloud")
+    c.drawString(x_mob + 18, y_gw + h_gw - 18, "Passerelle Hybride Cloud")
     mob_gw_items = [
         "MQTT WSS SigV4",
         "API REST HTTPS"
     ]
-    cur_my = y_gw + h_gw - 34
+    cur_my = y_gw + h_gw - 40
     for t_it in mob_gw_items:
-        draw_icon_bullet(c, x_mob + 14, cur_my, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 7.2)
+        draw_icon_bullet(c, x_mob + 18, cur_my + 0.5, ACCENT_BLUE)
+        c.setFont("Helvetica-Bold", 9.2)
         c.setFillColor(TEXT_DARK)
-        c.drawString(x_mob + 26, cur_my, t_it)
-        cur_my -= 16
-
-    # FLECHE 2 : Mobile -> Cloud AWS
-    draw_arrow(c, 475, 280, 42, ACCENT_BLUE, "MQTT WSS / REST", "SigV4 + HTTPS")
+        c.drawString(x_mob + 32, cur_my, t_it)
+        cur_my -= 20
 
     # -------------------------------------------------------------
-    # 3. CLOUD AWS : Ingestion, EC2 & Bases
+    # 4. CLOUD OVH : Serveur Mail Dédié (Positionné sous 2. MOBILE)
     # -------------------------------------------------------------
-    w_cloud = 266
-    x_cloud = 522
-
-    # 3.1 Haut : Ingestion IoT Core + AWS Lambda
-    h_ingest = 72
-    y_ingest = y_top - 32 - h_ingest  # 440 - 32 - 72 = 336
-
-    # 3.2 Milieu : Serveur EC2 Docker
-    h_ec2 = 96
-    y_ec2 = y_ingest - 10 - h_ec2     # 336 - 10 - 96 = 230
-
-    # 3.3 Bas : Bases de données & Stockage S3
-    h_db = 128
-    y_db = y_ec2 - 10 - h_db          # 230 - 10 - 128 = 92
-
-    # Hauteur parent adaptée au contenu enfant (marge basse 12 pt)
-    y_parent_cloud = y_db - 12        # 80
-    h_parent_cloud = y_top - y_parent_cloud  # 360 pt
-
-    draw_modern_panel(c, x_cloud, y_parent_cloud, w_cloud, h_parent_cloud, dark=False, accent_color=CLOUD_AWS)
-    draw_vector_icon(c, "cloud_aws", x_cloud + 14, y_top - 25, 16, color=CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 10.5)
-    c.setFillColor(CLOUD_AWS)
-    c.drawString(x_cloud + 36, y_top - 20, "3. CLOUD AWS")
-
-    # Conteneur Ingestion
-    draw_card(c, x_cloud + 8, y_ingest, w_cloud - 16, h_ingest, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-
-    # Mini-carte gauche : AWS IoT Core (Broker MQTT WSS)
-    h_sub_ingest = 62
-    draw_card(c, x_cloud + 13, y_ingest + 5, 118, h_sub_ingest, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=4)
-    draw_vector_icon(c, "iot_core", x_cloud + 18, y_ingest + 5 + h_sub_ingest - 16, 12, color=CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(CLOUD_AWS)
-    c.drawString(x_cloud + 34, y_ingest + 5 + h_sub_ingest - 14, "AWS IoT Core")
-    draw_icon_bullet(c, x_cloud + 18, y_ingest + 5 + h_sub_ingest - 28, CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_ingest + 5 + h_sub_ingest - 28, "Broker MQTT WSS")
-    draw_icon_bullet(c, x_cloud + 18, y_ingest + 5 + h_sub_ingest - 42, CLOUD_AWS)
-    c.drawString(x_cloud + 28, y_ingest + 5 + h_sub_ingest - 42, "Règles IoT SQL")
-
-    # Mini-carte droite : AWS Lambda (Ingestion & Présence)
-    draw_card(c, x_cloud + 135, y_ingest + 5, 118, h_sub_ingest, CARD_BG, HexColor("#fde68a"), border_width=1, radius=4)
-    draw_vector_icon(c, "lambda", x_cloud + 140, y_ingest + 5 + h_sub_ingest - 16, 12, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_cloud + 156, y_ingest + 5 + h_sub_ingest - 14, "AWS Lambda")
-    draw_icon_bullet(c, x_cloud + 140, y_ingest + 5 + h_sub_ingest - 28, ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 150, y_ingest + 5 + h_sub_ingest - 28, "Ingestion télémétrie")
-    draw_icon_bullet(c, x_cloud + 140, y_ingest + 5 + h_sub_ingest - 42, ACCENT_AMBER)
-    c.drawString(x_cloud + 150, y_ingest + 5 + h_sub_ingest - 42, "Présence & Statut")
-
-    # Conteneur EC2 Docker
-    draw_card(c, x_cloud + 8, y_ec2, w_cloud - 16, h_ec2, CARD_BG, HexColor("#cbd5e1"), border_width=1, radius=6)
-    draw_vector_icon(c, "server", x_cloud + 14, y_ec2 + h_ec2 - 16, 12, color=CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 7.5)
-    c.setFillColor(CLOUD_AWS)
-    c.drawString(x_cloud + 30, y_ec2 + h_ec2 - 13, "Serveur EC2")
-    c.setFont("Helvetica-Bold", 6.6)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 14, y_ec2 + h_ec2 - 25, "Nginx Reverse Proxy SSL")
-
-    # Backend
-    h_sub_ec2 = 58
-    draw_card(c, x_cloud + 13, y_ec2 + 5, 118, h_sub_ec2, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=4)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_cloud + 18, y_ec2 + 5 + h_sub_ec2 - 14, "Backend FastAPI")
-    draw_icon_bullet(c, x_cloud + 18, y_ec2 + 5 + h_sub_ec2 - 28, PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_ec2 + 5 + h_sub_ec2 - 28, "API REST OpenAPI")
-    draw_icon_bullet(c, x_cloud + 18, y_ec2 + 5 + h_sub_ec2 - 42, PRIMARY_TEAL)
-    c.drawString(x_cloud + 28, y_ec2 + 5 + h_sub_ec2 - 42, "Courtier STS (15 min)")
-
-    # Frontend
-    draw_card(c, x_cloud + 135, y_ec2 + 5, 118, h_sub_ec2, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=4)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_cloud + 140, y_ec2 + 5 + h_sub_ec2 - 14, "Frontend Angular 22")
-    draw_icon_bullet(c, x_cloud + 140, y_ec2 + 5 + h_sub_ec2 - 28, ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 150, y_ec2 + 5 + h_sub_ec2 - 28, "Interface Signals")
-
-    # Conteneur Bases de données & Stockage S3
-    draw_card(c, x_cloud + 8, y_db, w_cloud - 16, h_db, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
-
-    # Aurora PG
-    h_sub_db = 56
-    y_row1_db = y_db + 67
-    draw_card(c, x_cloud + 13, y_row1_db, 118, h_sub_db, CARD_BG, HexColor("#a7f3d0"), border_width=1, radius=4)
-    draw_vector_icon(c, "database", x_cloud + 18, y_row1_db + h_sub_db - 16, 12, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_cloud + 34, y_row1_db + h_sub_db - 14, "PostgreSQL 16")
-    draw_icon_bullet(c, x_cloud + 18, y_row1_db + h_sub_db - 30, PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_row1_db + h_sub_db - 30, "Migrations Alembic")
-
-    # DynamoDB
-    draw_card(c, x_cloud + 135, y_row1_db, 118, h_sub_db, CARD_BG, HexColor("#fde68a"), border_width=1, radius=4)
-    draw_vector_icon(c, "database_dynamo", x_cloud + 140, y_row1_db + h_sub_db - 16, 12, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_cloud + 156, y_row1_db + h_sub_db - 14, "Amazon DynamoDB")
-    draw_icon_bullet(c, x_cloud + 140, y_row1_db + h_sub_db - 30, ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 150, y_row1_db + h_sub_db - 30, "Séries NoSQL")
-
-    # Amazon S3 (Stockage Firmware OTA - half width 118 matching other sub-cards)
-    y_row2_db = y_db + 5
-    draw_card(c, x_cloud + 13, y_row2_db, 118, h_sub_db, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=4)
-    draw_vector_icon(c, "s3_bucket", x_cloud + 18, y_row2_db + h_sub_db - 16, 12, color=CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 7.2)
-    c.setFillColor(CLOUD_AWS)
-    c.drawString(x_cloud + 34, y_row2_db + h_sub_db - 14, "Amazon S3")
-    draw_icon_bullet(c, x_cloud + 18, y_row2_db + h_sub_db - 30, CLOUD_AWS)
-    c.setFont("Helvetica-Bold", 6.5)
-    c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_row2_db + h_sub_db - 30, "Firmwares OTA (.bin)")
-
-    # FLECHE 3 : Cloud AWS -> Cloud OVH
-    draw_arrow(c, 792, 260, 28, ACCENT_AMBER, "SMTP", "TLS 587")
-
-    # -------------------------------------------------------------
-    # 4. CLOUD OVH : Serveur Mail Dédié (Hauteur ajustée à son contenu)
-    # -------------------------------------------------------------
-    w_ovh = 105
-    x_ovh = 824
-    h_ovh = 72
-    y_ovh = 224
+    w_ovh = 214
+    x_ovh = 334
+    y_ovh = 42
+    h_ovh = 96
     draw_modern_panel(c, x_ovh, y_ovh, w_ovh, h_ovh, dark=False, accent_color=ACCENT_AMBER)
     cloud_img = "docs/presentation/cloud_lucide.png"
     if os.path.exists(cloud_img):
-        c.drawImage(cloud_img, x_ovh + 8, y_ovh + h_ovh - 22, width=15, height=15, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 9)
+        c.drawImage(cloud_img, x_ovh + 14, y_ovh + h_ovh - 26, width=18, height=18, preserveAspectRatio=True, mask='auto')
+    c.setFont("Helvetica-Bold", 11.5)
     c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_ovh + 26, y_ovh + h_ovh - 17, "4. CLOUD OVH")
+    c.drawString(x_ovh + 36, y_ovh + h_ovh - 21, "4. CLOUD OVH")
 
     # Card Serveur Mail
-    h_mail = 42
-    draw_card(c, x_ovh + 8, y_ovh + 6, w_ovh - 16, h_mail, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
+    h_mail = 52
+    draw_card(c, x_ovh + 10, y_ovh + 10, w_ovh - 20, h_mail, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
     mail_img = "docs/presentation/mail_lucide.png"
     if os.path.exists(mail_img):
-        c.drawImage(mail_img, x_ovh + 13, y_ovh + 6 + 13, width=15, height=15, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 8)
+        c.drawImage(mail_img, x_ovh + 18, y_ovh + 10 + 17, width=18, height=18, preserveAspectRatio=True, mask='auto')
+    c.setFont("Helvetica-Bold", 10)
     c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_ovh + 31, y_ovh + 6 + 17, "Serveur Mail")
+    c.drawString(x_ovh + 42, y_ovh + 10 + 21, "Serveur Mail")
+
+    # FLECHE 2 : Mobile -> Cloud AWS
+    draw_arrow(c, 551, 305, 68, ACCENT_BLUE, "MQTT WSS / REST", "SigV4 + HTTPS")
+
+    # FLECHE 3 : Cloud AWS -> Cloud OVH (vers la gauche en bas)
+    draw_arrow(c, 551, 90, 68, ACCENT_AMBER, "SMTP", "TLS 587", reverse=True)
+
+    # -------------------------------------------------------------
+    # 3. CLOUD AWS : Ingestion, EC2 & Bases (Largeur agrandie à 300 pt)
+    # -------------------------------------------------------------
+    w_cloud = 300
+    x_cloud = 622
+    w_sub = 134
+
+    # 3.1 Haut : Ingestion IoT Core + AWS Lambda
+    h_ingest = 86
+    y_ingest = y_top - 36 - h_ingest  # 323
+
+    # 3.2 Milieu : Serveur EC2 Docker
+    h_ec2 = 112
+    y_ec2 = y_ingest - 10 - h_ec2     # 201
+
+    # 3.3 Bas : Bases de données & Stockage S3
+    h_db = 139
+    y_db = y_ec2 - 10 - h_db          # 52
+
+    y_parent_cloud = 42
+    h_parent_cloud = y_top - y_parent_cloud  # 403 pt
+
+    draw_modern_panel(c, x_cloud, y_parent_cloud, w_cloud, h_parent_cloud, dark=False, accent_color=CLOUD_AWS)
+    draw_vector_icon(c, "cloud_aws", x_cloud + 14, y_top - 28, 18, color=CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 12)
+    c.setFillColor(CLOUD_AWS)
+    c.drawString(x_cloud + 38, y_top - 22, "3. CLOUD AWS")
+
+    # Conteneur Ingestion
+    draw_card(c, x_cloud + 8, y_ingest, w_cloud - 16, h_ingest, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+
+    # Mini-carte gauche : AWS IoT Core (Broker MQTT WSS)
+    h_sub_ingest = 74
+    draw_card(c, x_cloud + 13, y_ingest + 6, w_sub, h_sub_ingest, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=5)
+    draw_vector_icon(c, "iot_core", x_cloud + 18, y_ingest + 6 + h_sub_ingest - 18, 13, color=CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(CLOUD_AWS)
+    c.drawString(x_cloud + 35, y_ingest + 6 + h_sub_ingest - 15, "AWS IoT Core")
+    draw_icon_bullet(c, x_cloud + 18, y_ingest + 6 + h_sub_ingest - 34, CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 30, y_ingest + 6 + h_sub_ingest - 34, "Broker MQTT WSS")
+    draw_icon_bullet(c, x_cloud + 18, y_ingest + 6 + h_sub_ingest - 52, CLOUD_AWS)
+    c.drawString(x_cloud + 30, y_ingest + 6 + h_sub_ingest - 52, "Règles IoT SQL")
+
+    # Mini-carte droite : AWS Lambda (Ingestion & Présence)
+    draw_card(c, x_cloud + 153, y_ingest + 6, w_sub, h_sub_ingest, CARD_BG, HexColor("#fde68a"), border_width=1, radius=5)
+    draw_vector_icon(c, "lambda", x_cloud + 158, y_ingest + 6 + h_sub_ingest - 18, 13, color=ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(x_cloud + 175, y_ingest + 6 + h_sub_ingest - 15, "AWS Lambda")
+    draw_icon_bullet(c, x_cloud + 158, y_ingest + 6 + h_sub_ingest - 34, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 170, y_ingest + 6 + h_sub_ingest - 34, "Ingestion télémétrie")
+    draw_icon_bullet(c, x_cloud + 158, y_ingest + 6 + h_sub_ingest - 52, ACCENT_AMBER)
+    c.drawString(x_cloud + 170, y_ingest + 6 + h_sub_ingest - 52, "Présence & Statut")
+
+    # Conteneur EC2 Docker
+    draw_card(c, x_cloud + 8, y_ec2, w_cloud - 16, h_ec2, CARD_BG, HexColor("#cbd5e1"), border_width=1, radius=6)
+    draw_vector_icon(c, "server", x_cloud + 14, y_ec2 + h_ec2 - 18, 13, color=CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 9.2)
+    c.setFillColor(CLOUD_AWS)
+    c.drawString(x_cloud + 32, y_ec2 + h_ec2 - 15, "Serveur EC2")
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 14, y_ec2 + h_ec2 - 29, "Nginx Reverse Proxy SSL")
+
+    # Backend
+    h_sub_ec2 = 70
+    draw_card(c, x_cloud + 13, y_ec2 + 6, w_sub, h_sub_ec2, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=5)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(x_cloud + 18, y_ec2 + 6 + h_sub_ec2 - 16, "Backend FastAPI")
+    draw_icon_bullet(c, x_cloud + 18, y_ec2 + 6 + h_sub_ec2 - 34, PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 30, y_ec2 + 6 + h_sub_ec2 - 34, "API REST OpenAPI")
+    draw_icon_bullet(c, x_cloud + 18, y_ec2 + 6 + h_sub_ec2 - 52, PRIMARY_TEAL)
+    c.drawString(x_cloud + 30, y_ec2 + 6 + h_sub_ec2 - 52, "Courtier STS (15 min)")
+
+    # Frontend
+    draw_card(c, x_cloud + 153, y_ec2 + 6, w_sub, h_sub_ec2, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=5)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(x_cloud + 158, y_ec2 + 6 + h_sub_ec2 - 16, "Frontend Angular 22")
+    draw_icon_bullet(c, x_cloud + 158, y_ec2 + 6 + h_sub_ec2 - 34, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 170, y_ec2 + 6 + h_sub_ec2 - 34, "Interface Signals")
+
+    # Conteneur Bases de données & Stockage S3
+    draw_card(c, x_cloud + 8, y_db, w_cloud - 16, h_db, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.9, radius=6)
+
+    # Aurora PG
+    h_sub_db = 60
+    y_row1_db = y_db + 72
+    draw_card(c, x_cloud + 13, y_row1_db, w_sub, h_sub_db, CARD_BG, HexColor("#a7f3d0"), border_width=1, radius=5)
+    draw_vector_icon(c, "database", x_cloud + 18, y_row1_db + h_sub_db - 18, 13, color=PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(PRIMARY_TEAL)
+    c.drawString(x_cloud + 35, y_row1_db + h_sub_db - 15, "PostgreSQL 16")
+    draw_icon_bullet(c, x_cloud + 18, y_row1_db + h_sub_db - 36, PRIMARY_TEAL)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 30, y_row1_db + h_sub_db - 36, "Migrations Alembic")
+
+    # DynamoDB
+    draw_card(c, x_cloud + 153, y_row1_db, w_sub, h_sub_db, CARD_BG, HexColor("#fde68a"), border_width=1, radius=5)
+    draw_vector_icon(c, "database_dynamo", x_cloud + 158, y_row1_db + h_sub_db - 18, 13, color=ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 8.5)
+    c.setFillColor(ACCENT_AMBER)
+    c.drawString(x_cloud + 174, y_row1_db + h_sub_db - 15, "Amazon DynamoDB")
+    draw_icon_bullet(c, x_cloud + 158, y_row1_db + h_sub_db - 36, ACCENT_AMBER)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 170, y_row1_db + h_sub_db - 36, "Séries NoSQL")
+
+    # Amazon S3 (Stockage Firmware OTA - half width w_sub matching other sub-cards)
+    y_row2_db = y_db + 6
+    draw_card(c, x_cloud + 13, y_row2_db, w_sub, h_sub_db, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=5)
+    draw_vector_icon(c, "s3_bucket", x_cloud + 18, y_row2_db + h_sub_db - 18, 13, color=CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 8.8)
+    c.setFillColor(CLOUD_AWS)
+    c.drawString(x_cloud + 35, y_row2_db + h_sub_db - 15, "Amazon S3")
+    draw_icon_bullet(c, x_cloud + 18, y_row2_db + h_sub_db - 36, CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 8.0)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 30, y_row2_db + h_sub_db - 36, "Firmwares OTA (.bin)")
 
     c.showPage()
 
@@ -1272,7 +1268,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # Gauche : 28 FEATURES
     draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
     draw_vector_icon(c, "features", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 12.5)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(92, col_y + 390 - 28, "28 FEATURES")
 
@@ -1284,25 +1280,25 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("5. Stabilité Post-Impact", "Écart-type de queue de fenêtre (détection de l'immobilité au sol).")
     ]
 
-    cur_y = col_y + 390 - 55
+    cur_y = col_y + 390 - 60
     for lbl, desc in feat_points:
-        draw_icon_bullet(c, 66, cur_y, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 66, cur_y + 1, ACCENT_BLUE)
+        c.setFont("Helvetica-Bold", BULLET_DETAIL_TITLE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
+        c.drawString(82, cur_y, lbl)
+        cur_y -= 16
+        c.setFont("Helvetica", BULLET_DETAIL_SUB)
         c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
+        lines = wrap_text(desc, 44)
         for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 12
-        cur_y -= 6
+            c.drawString(82, cur_y, line)
+            cur_y -= 14
+        cur_y -= 10
 
     # Droite : CHOIX DU MODÈLE D'INFÉRENCE
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     draw_vector_icon(c, "forest", 508, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 12.5)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(PRIMARY_TEAL)
     c.drawString(532, col_y + 390 - 28, "CHOIX DU MODÈLE D'INFÉRENCE")
 
@@ -1314,20 +1310,20 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Sélection parmi les modèles m2cgen", "Retenu parmi les algorithmes compatibles pour sa conversion en C pur (arbres if/else), sans runtime ni dépendance.")
     ]
 
-    cur_y = col_y + 390 - 55
+    cur_y = col_y + 390 - 60
     for lbl, desc in model_points:
-        draw_icon_bullet(c, 506, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 506, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_DETAIL_TITLE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 16
+        c.setFont("Helvetica", BULLET_DETAIL_SUB)
         c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
+        lines = wrap_text(desc, 44)
         for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 12
-        cur_y -= 6
+            c.drawString(522, cur_y, line)
+            cur_y -= 14
+        cur_y -= 8
 
     c.showPage()
 
@@ -1404,7 +1400,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
     draw_vector_icon(c, "pipeline", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(92, col_y + 390 - 28, "MLOps Pipeline")
 
@@ -1426,16 +1422,16 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     for idx, (st_title, st_sub, st_icon, st_col, st_bg, st_border) in enumerate(mlops_schema_steps):
         draw_card(c, step_x, cur_step_y, step_w, step_h, st_bg, st_border, border_width=1.2, radius=6)
         # Icon badge on the left
-        draw_card(c, step_x + 10, cur_step_y + 9, 30, 30, HexColor("#ffffff"), st_border, border_width=1.0, radius=6)
-        draw_vector_icon(c, st_icon, step_x + 17, cur_step_y + 16, 16, color=st_col)
+        draw_card(c, step_x + 10, cur_step_y + 8, 32, 32, HexColor("#ffffff"), st_border, border_width=1.0, radius=6)
+        draw_vector_icon(c, st_icon, step_x + 17, cur_step_y + 15, 18, color=st_col)
 
-        c.setFont("Helvetica-Bold", 9.5)
+        c.setFont("Helvetica-Bold", 10.2)
         c.setFillColor(st_col)
-        c.drawString(step_x + 48, cur_step_y + 28, st_title)
+        c.drawString(step_x + 50, cur_step_y + 28, st_title)
 
-        c.setFont("Helvetica", 8.2)
+        c.setFont("Helvetica", 9.0)
         c.setFillColor(TEXT_DARK)
-        c.drawString(step_x + 48, cur_step_y + 13, st_sub)
+        c.drawString(step_x + 50, cur_step_y + 12, st_sub)
 
         if idx < len(mlops_schema_steps) - 1:
             arrow_top = cur_step_y
@@ -1446,7 +1442,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     draw_vector_icon(c, "hitl", 508, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(PRIMARY_TEAL)
     c.drawString(532, col_y + 390 - 28, "MODE HITL (Human-in-the-Loop)")
 
@@ -1457,20 +1453,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Requalification Web Studio", "")
     ]
 
-    cur_y = col_y + 390 - 58
+    cur_y = col_y + 390 - 65
     for lbl, desc in hitl_items:
-        draw_icon_bullet(c, 506, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 10)
+        draw_icon_bullet(c, 506, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, lbl)
-        cur_y -= 14
-        c.setFont("Helvetica", 9)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 13
-        cur_y -= 8
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 32
 
     c.showPage()
 
@@ -1509,7 +1498,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, b0_x, b0_y, b0_w, b0_h, HexColor("#fef2f2"), HexColor("#fca5a5"), border_width=1.2, radius=6)
     draw_card(c, b0_x + 10, b0_y + 5, 28, 28, HexColor("#ffffff"), HexColor("#fca5a5"), border_width=1.0, radius=6)
     draw_vector_icon(c, "impact", b0_x + 16, b0_y + 11, 16, color=HexColor("#dc2626"))
-    c.setFont("Helvetica-Bold", 9.5)
+    c.setFont("Helvetica-Bold", 10.2)
     c.setFillColor(HexColor("#dc2626"))
     c.drawCentredString(b0_x + b0_w / 2 + 12, b0_y + 14, "CHUTE DÉTECTÉE")
 
@@ -1522,10 +1511,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, bx_x, b1_y, bx_w, b1_h, HexColor("#f0fdfa"), HexColor("#99f6e4"), border_width=1.2, radius=6)
     draw_card(c, bx_x + 10, b1_y + 12, 32, 32, HexColor("#ffffff"), HexColor("#99f6e4"), border_width=1.0, radius=6)
     draw_vector_icon(c, "alert", bx_x + 17, b1_y + 19, 18, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 9.2)
+    c.setFont("Helvetica-Bold", 10.0)
     c.setFillColor(PRIMARY_TEAL)
     c.drawString(bx_x + 50, b1_y + 39, "1. ALERTE LOCALE IMMÉDIATE (CAPTEUR ESP32-S3)")
-    c.setFont("Helvetica", 8.0)
+    c.setFont("Helvetica", 8.8)
     c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 50, b1_y + 24, "• Vibreur actif & Cooldown anti-rebond")
     c.drawString(bx_x + 50, b1_y + 10, "• Émission trame BLE GATT prioritaire")
@@ -1539,16 +1528,16 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, bx_x, b2_y, bx_w, b2_h, HexColor("#eff6ff"), HexColor("#bfdbfe"), border_width=1.2, radius=6)
     draw_card(c, bx_x + 10, b2_y + 18, 32, 32, HexColor("#ffffff"), HexColor("#bfdbfe"), border_width=1.0, radius=6)
     draw_vector_icon(c, "phone_alert", bx_x + 17, b2_y + 25, 18, color=ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 9.2)
+    c.setFont("Helvetica-Bold", 10.0)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(bx_x + 50, b2_y + 51, "2. PASSERELLE MOBILE (FLUTTER / DART)")
-    c.setFont("Helvetica-Bold", 7.8)
+    c.setFont("Helvetica-Bold", 8.6)
     c.setFillColor(HexColor("#047857"))
     c.drawString(bx_x + 50, b2_y + 37, "• Si Relèvement ou clic 'Je vais bien' :")
-    c.drawString(bx_x + 60, b2_y + 25, "==> ANNULATION IMMÉDIATE (Aucun message émis au Cloud)")
-    c.setFont("Helvetica", 8.0)
+    c.drawString(bx_x + 60, b2_y + 24, "==> ANNULATION IMMÉDIATE (Aucun message émis au Cloud)")
+    c.setFont("Helvetica", 8.6)
     c.setFillColor(TEXT_DARK)
-    c.drawString(bx_x + 50, b2_y + 10, "• Alerte sonore stridente & écran rouge (délai 60s) + Coordonnées GPS")
+    c.drawString(bx_x + 50, b2_y + 9, "• Alerte sonore stridente & écran rouge (délai 60s) + Coordonnées GPS")
 
     # Flèche 2 -> 3
     draw_down_arrow(c, x_center, 222, 204, ACCENT_BLUE, "60s écoulées sans annulation")
@@ -1559,10 +1548,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, bx_x, b3_y, bx_w, b3_h, HexColor("#f5f3ff"), HexColor("#ddd6fe"), border_width=1.2, radius=6)
     draw_card(c, bx_x + 10, b3_y + 18, 32, 32, HexColor("#ffffff"), HexColor("#ddd6fe"), border_width=1.0, radius=6)
     draw_vector_icon(c, "server", bx_x + 17, b3_y + 25, 18, color=HexColor("#7c3aed"))
-    c.setFont("Helvetica-Bold", 9.2)
+    c.setFont("Helvetica-Bold", 10.0)
     c.setFillColor(HexColor("#7c3aed"))
     c.drawString(bx_x + 50, b3_y + 51, "3. BACKEND FASTAPI (ORCHESTRATEUR DE SECOURS)")
-    c.setFont("Helvetica", 8.0)
+    c.setFont("Helvetica", 8.8)
     c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 50, b3_y + 37, "• Récupération ordonnée des contacts d'urgence (Priorités 1 à 5)")
     c.drawString(bx_x + 50, b3_y + 23, "• Envoi direct de l'email d'urgence avec lien d'acquittement (ACK)")
@@ -1577,10 +1566,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_card(c, bx_x, b4_y, bx_w, b4_h, HexColor("#fffbeb"), HexColor("#fde68a"), border_width=1.2, radius=6)
     draw_card(c, bx_x + 10, b4_y + 12, 32, 32, HexColor("#ffffff"), HexColor("#fde68a"), border_width=1.0, radius=6)
     draw_vector_icon(c, "phone_sms", bx_x + 17, b4_y + 19, 18, color=ACCENT_AMBER)
-    c.setFont("Helvetica-Bold", 9.2)
+    c.setFont("Helvetica-Bold", 10.0)
     c.setFillColor(ACCENT_AMBER)
     c.drawString(bx_x + 50, b4_y + 39, "4. RELAIS GSM MOBILE (SmsManager Android)")
-    c.setFont("Helvetica", 8.0)
+    c.setFont("Helvetica", 8.8)
     c.setFillColor(TEXT_DARK)
     c.drawString(bx_x + 50, b4_y + 24, "• Émission du SMS natif vers le numéro du proche prioritaire")
     c.drawString(bx_x + 50, b4_y + 10, "• Escalade automatique vers proche suivant si pas d'ACK (3 min)")
@@ -1608,18 +1597,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     ]
     cur_y = 370
     for lbl, desc in achievements:
-        draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 10.5)
+        draw_icon_bullet(c, 66, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, lbl)
-        cur_y -= 14
-        c.setFont("Helvetica", 9)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 48)
-        for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 13
-        cur_y -= 10
+        c.drawString(82, cur_y, lbl)
+        cur_y -= 32
 
     draw_modern_panel(c, 490, 45, 420, 390, dark=False, accent_color=ACCENT_AMBER)
     draw_vector_icon(c, "compass", 508, 403, 18, color=ACCENT_AMBER)
@@ -1636,20 +1618,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Éléments de Confort", ""),
         ("Connectivité Cellulaire NB-IoT", "")
     ]
-    cur_y = 375
+    cur_y = 370
     for lbl, desc in roadmap:
-        draw_icon_bullet(c, 506, cur_y, ACCENT_AMBER)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_AMBER)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, lbl)
-        cur_y -= 12
-        c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 54)
-        for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 11
-        cur_y -= 7
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 32
 
     c.showPage()
 
@@ -1677,18 +1652,18 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     cur_y = 365
     for lbl, target_url, display_txt, icon_path in demo_links:
         if os.path.exists(icon_path):
-            c.drawImage(icon_path, 64, cur_y - 2, width=12, height=12, preserveAspectRatio=True, mask='auto')
+            c.drawImage(icon_path, 64, cur_y - 1, width=14, height=14, preserveAspectRatio=True, mask='auto')
         else:
-            draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 10.5)
+            draw_icon_bullet(c, 66, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(82, cur_y, lbl + " :")
-        cur_y -= 14
-        c.setFont("Helvetica", 9)
+        c.drawString(84, cur_y, lbl + " :")
+        cur_y -= 17
+        c.setFont("Helvetica", 10.5)
         c.setFillColor(ACCENT_BLUE)
-        c.drawString(82, cur_y, display_txt)
-        c.linkURL(target_url, (82, cur_y - 2, 82 + 300, cur_y + 11), thickness=0)
-        cur_y -= 14
+        c.drawString(84, cur_y, display_txt)
+        c.linkURL(target_url, (84, cur_y - 2, 84 + 320, cur_y + 12), thickness=0)
+        cur_y -= 20
 
     draw_modern_panel(c, 490, 45, 420, 390, dark=False, accent_color=ACCENT_AMBER)
     chat_img = "docs/presentation/chat_messages_square.png"
@@ -1703,20 +1678,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Sécurité Zero Trust & Données de Marche", ""),
         ("Optimisation FreeRTOS Dual-Core", ""),
     ]
-    cur_y = 375
+    cur_y = 370
     for lbl, desc in discussion_items:
-        draw_icon_bullet(c, 506, cur_y, ACCENT_AMBER)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_AMBER)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, lbl)
-        cur_y -= 12
-        c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 54)
-        for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 11
-        cur_y -= 7
+        c.drawString(522, cur_y, lbl)
+        cur_y -= 32
 
     c.showPage()
 
@@ -1731,7 +1699,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     footprint_img = "docs/presentation/footprints_lucide.png"
     if os.path.exists(footprint_img):
         c.drawImage(footprint_img, 68, col_y + 390 - 32, width=18, height=18, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(PRIMARY_TEAL)
     c.drawString(92, col_y + 390 - 28, "ALGORITHME D'ODOMÉTRIE DIFFÉRENTIELLE")
 
@@ -1743,20 +1711,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Absence d'horloge RTC matérielle persistante", "")
     ]
 
-    cur_y = col_y + 390 - 55
+    cur_y = col_y + 390 - 62
     for lbl, desc in podo_items:
-        draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 66, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", BULLET_TITLE_SIZE)
         c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 12
-        cur_y -= 6
+        c.drawString(82, cur_y, lbl)
+        cur_y -= 32
 
     # Watermark grand format de foulée / trace de pas
     trail_watermark = "docs/presentation/trail_walking_watermark.png"
@@ -1766,7 +1727,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # Droite : Graphique Podometre Reel (capture pedometer.png)
     podo_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_pedometer.webp"
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(508, col_y + 390 - 28, "RESTITUTION CLINIQUE DES PAS PAR HEURE")
 
@@ -1786,7 +1747,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # Gauche : Hardware / Matériel Embarqué
     draw_modern_panel(c, 50, col_y, 420, 390, dark=False, accent_color=PRIMARY_TEAL)
     draw_vector_icon(c, "chip", 68, col_y + 390 - 32, 18, color=PRIMARY_TEAL)
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(PRIMARY_TEAL)
     c.drawString(92, col_y + 390 - 28, "MATÉRIEL EMBARQUÉ & PROTOTYPE")
 
@@ -1799,40 +1760,41 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Support Perfboard & composants électroniques divers", "~5.00 EUR", "Circuit d'intégration, connectique, résistances, interrupteur")
     ]
 
-    cur_y = col_y + 390 - 75
+    cur_y = col_y + 390 - 65
     for item, price, desc in hw_costs:
-        draw_icon_bullet(c, 66, cur_y, PRIMARY_TEAL)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 66, cur_y + 1, PRIMARY_TEAL)
+        c.setFont("Helvetica-Bold", 10.8)
         c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, item)
-        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(82, cur_y, item)
+        c.setFont("Helvetica-Bold", 10.8)
         c.setFillColor(PRIMARY_TEAL)
-        c.drawRightString(450, cur_y, price)
-        cur_y -= 13
-        c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 52)
-        for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 11
-        cur_y -= 5
+        c.drawRightString(452, cur_y, price)
+        cur_y -= 15
+        if desc:
+            c.setFont("Helvetica", 9.2)
+            c.setFillColor(TEXT_MUTED)
+            lines = wrap_text(desc, 48)
+            for line in lines:
+                c.drawString(82, cur_y, line)
+                cur_y -= 13
+        cur_y -= 8
 
     # Ligne de TOTAL Matériel
     c.setStrokeColor(PRIMARY_TEAL)
     c.setLineWidth(1)
-    c.line(68, col_y + 36, 450, col_y + 36)
-    c.setFont("Helvetica-Bold", 10.5)
+    c.line(68, col_y + 36, 452, col_y + 36)
+    c.setFont("Helvetica-Bold", 11.5)
     c.setFillColor(TEXT_DARK)
-    c.drawString(68, col_y + 20, "TOTAL")
+    c.drawString(68, col_y + 18, "TOTAL")
     c.setFillColor(PRIMARY_TEAL)
-    c.drawRightString(450, col_y + 20, "32.50 EUR")
+    c.drawRightString(452, col_y + 18, "32.50 EUR")
 
     # Droite : Cloud, Nom de Domaine & Outils
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
     cloud_img = "docs/presentation/cloud_lucide.png"
     if os.path.exists(cloud_img):
         c.drawImage(cloud_img, 508, col_y + 390 - 32, width=18, height=18, preserveAspectRatio=True, mask='auto')
-    c.setFont("Helvetica-Bold", 13)
+    c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
     c.drawString(532, col_y + 390 - 28, "INFRASTRUCTURE CLOUD & SERVICES")
 
@@ -1843,33 +1805,34 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Assistance IA & Pair-Programming (Gemini)", "~5.5 EUR / mois", ""),
     ]
 
-    cur_y = col_y + 390 - 75
+    cur_y = col_y + 390 - 65
     for item, price, desc in services_costs:
-        draw_icon_bullet(c, 506, cur_y, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 9.5)
+        draw_icon_bullet(c, 506, cur_y + 1, ACCENT_BLUE)
+        c.setFont("Helvetica-Bold", 10.8)
         c.setFillColor(TEXT_DARK)
-        c.drawString(520, cur_y, item)
-        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(522, cur_y, item)
+        c.setFont("Helvetica-Bold", 10.8)
         c.setFillColor(ACCENT_BLUE)
-        c.drawRightString(890, cur_y, price)
-        cur_y -= 14
-        c.setFont("Helvetica", 8)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 50)
-        for line in lines:
-            c.drawString(520, cur_y, line)
-            cur_y -= 12
-        cur_y -= 8
+        c.drawRightString(892, cur_y, price)
+        cur_y -= 15
+        if desc:
+            c.setFont("Helvetica", 9.2)
+            c.setFillColor(TEXT_MUTED)
+            lines = wrap_text(desc, 46)
+            for line in lines:
+                c.drawString(522, cur_y, line)
+                cur_y -= 13
+        cur_y -= 12
 
     # Ligne de TOTAL Cloud & Services
     c.setStrokeColor(ACCENT_BLUE)
     c.setLineWidth(1)
-    c.line(508, col_y + 36, 890, col_y + 36)
-    c.setFont("Helvetica-Bold", 10.5)
+    c.line(508, col_y + 36, 892, col_y + 36)
+    c.setFont("Helvetica-Bold", 11.5)
     c.setFillColor(TEXT_DARK)
-    c.drawString(508, col_y + 20, "TOTAL")
+    c.drawString(508, col_y + 18, "TOTAL")
     c.setFillColor(ACCENT_BLUE)
-    c.drawRightString(890, col_y + 20, "~6.50 EUR / mois (12 EUR / an + 5.50/m)")
+    c.drawRightString(892, col_y + 18, "~6.50 EUR / mois (12 EUR / an + 5.50/m)")
 
     # Illustration pile de pièces de monnaie entre les deux cards (tiers du bas)
     coins_img = "docs/presentation/coins_lucide.png"
