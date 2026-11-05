@@ -844,6 +844,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_slide_background(c, dark=False)
     draw_header(c, "CONCEPT")
 
+    # Badge Démonstration en Direct (Haute Visibilité)
+    draw_demo_badge(c, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT", accent_color=ACCENT_AMBER)
+
     card_w = 420
     card_h = 260
     card_y = 140
@@ -1247,10 +1250,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawString(528, row_top_y + row_top_h - 24, "TRAITEMENT DU SIGNAL")
 
     dsp_items = [
-        "Fenêtrage Glissant (3.0s)",
         "Invariance par Rotation",
         "Calibration du Zéro-G",
-        "Filtrage Anti-Rebond"
+        "Fenêtrage Glissant de 3.0s"
     ]
     cur_y = row_top_y + row_top_h - 58
     for lbl in dsp_items:
@@ -1291,11 +1293,9 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawString(528, row_bot_y + row_bot_h - 24, "CHOIX DU MODÈLE D'INFÉRENCE")
 
     model_points = [
-        "vs Deep Learning (TFLite Micro)",
-        "vs Modèles Linéaires & SVM",
-        "vs Arbre de Décision Unique (CART)",
         "Sélection parmi les modèles m2cgen",
         "Random Forest (80 arbres) : Modèle retenu"
+        "vs Deep Learning"
     ]
 
     cur_y = row_bot_y + row_bot_h - 56
@@ -1313,9 +1313,6 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # ==========================================
     draw_slide_background(c, dark=False)
     draw_header(c, "VALIDATION & CONTRÔLE")
-
-    # Badge Démonstration en Direct (Haute Visibilité)
-    draw_demo_badge(c, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT", accent_color=ACCENT_AMBER)
 
     # Gauche : Graphique des performances ML réel (capture web Studio cliquable)
     col_y = 45
@@ -1384,13 +1381,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_vector_icon(c, "pipeline", 68, col_y + 390 - 32, 18, color=ACCENT_BLUE)
     c.setFont("Helvetica-Bold", 13.5)
     c.setFillColor(ACCENT_BLUE)
-    c.drawString(92, col_y + 390 - 28, "MLOps Pipeline")
+    c.drawString(92, col_y + 390 - 28, "MLOps")
 
     # Schéma Visuel du Pipeline MLOps (5 étapes connectées)
     mlops_schema_steps = [
         ("1. Capture Inertielle (ESP32-S3)", "Flux IMU 6 axes (50 Hz) transmis via BLE GATT", "mcu", PRIMARY_TEAL, HexColor("#f0fdfa"), HexColor("#99f6e4")),
         ("2. Qualification Studio (Mobile & Web)", "Labellisation terrain & validation visuelle des séries", "smartphone", ACCENT_BLUE, HexColor("#eff6ff"), HexColor("#bfdbfe")),
-        ("3. Pipeline Python d'Entraînement", "Extraction des 28 features & Random Forest (Scikit-Learn)", "forest", HexColor("#7c3aed"), HexColor("#f5f3ff"), HexColor("#ddd6fe")),
+        ("3. Script Python d'Entraînement", "Extraction des 28 features & Random Forest (Scikit-Learn)", "forest", HexColor("#7c3aed"), HexColor("#f5f3ff"), HexColor("#ddd6fe")),
         ("4. Transpilation C Pur (m2cgen)", "Génération d'arbres statiques C++ sans runtime", "chip", ACCENT_AMBER, HexColor("#fffbeb"), HexColor("#fde68a")),
         ("5. Injection Firmware Sans Recompilation", "Déploiement OTA du modèle sur le capteur", "cloud_aws", HexColor("#0284c7"), HexColor("#f0f9ff"), HexColor("#bae6fd")),
     ]
