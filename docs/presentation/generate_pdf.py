@@ -3,7 +3,7 @@ using ReportLab (pure Python, vector graphics, standalone, clickable links).
 """
 
 import os
-from defusedxml.ElementTree import parse, ElementTree as ET
+from defusedxml.ElementTree import parse
 from reportlab.lib.colors import HexColor
 from reportlab.pdfgen import canvas
 

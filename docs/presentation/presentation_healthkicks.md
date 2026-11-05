@@ -1,5 +1,4 @@
 ---
-
 marp: true
 
 theme: gaia
@@ -11,22 +10,13 @@ paginate: true
 backgroundColor: #0f172a
 
 color: #f8fafc
-
 ---
-
-
 
 # **HealthKicks**
 
-
-
 ### Chaussure Intelligente : Podométrie Haute Précision & Détection de Chute Autonome
 
-
-
 **IoT Embarqué (ESP32-S3)** | **Edge AI (TinyML)** | **Passerelle Mobile & AWS IoT Core**
-
-
 
 - **ACTIVITÉ & SPORT** : Podomètre | Rappel d'inactivité haptique | Centré sur le mouvement des pieds
 
@@ -34,11 +24,7 @@ color: #f8fafc
 
 - **EDGE AI & SOBRIÉTÉ** : Composants standard grand public (coût relativement faible) | Edge AI
 
-
-
 ---
-
-
 
 <!--
 
@@ -48,19 +34,11 @@ _color: #0f172a
 
 -->
 
-
-
 ![bg right:33% w:260px](qr-code.png)
-
-
 
 # **Qui suis-je ? — Mon Parcours**
 
-
-
 ### David Serck | Développeur Full-Stack, Cloud & IoT
-
-
 
 - **Parcours & Expérience Professionnelle (3 Entreprises)** :
 
@@ -80,19 +58,13 @@ _color: #0f172a
 
 - **Portfolio & CV en ligne** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) _(ou scannez le QR code ci-contre)_.
 
-
-
 <!-- Notes orateur :
 
 Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à consulter mon portfolio en ligne via le lien ou le QR code.
 
 -->
 
-
-
 ---
-
-
 
 <!--
 
@@ -101,8 +73,6 @@ _backgroundColor: #f8fafc
 _color: #0f172a
 
 -->
-
-
 
 # **1. Architecture Globale : Du Capteur au Multi-Cloud**
 
@@ -133,11 +103,7 @@ _color: #0f172a
 
 # **2. Cœur IoT : Chaussure Instrumentée & ESP32-S3**
 
-
-
 ### Matériel, Référentiel Biomécanique & Maintenance Sécurisée
-
-
 
 - **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (étage MOSFET & diode de roue libre).
 
@@ -147,19 +113,13 @@ _color: #0f172a
 
 - **Chiffrement BLE LESC** : Appairage sécurisé Just Works avec échange de clés ECDH.
 
-
-
 <!-- Notes orateur :
 
 L'ESP32-S3 offre les extensions vectorielles DSP idéales pour le calcul de magnitude euclidienne. L'OTA est sécurisé pour éviter tout bricking d'un équipement scellé dans la semelle.
 
 -->
 
-
-
 ---
-
-
 
 <!--
 
@@ -169,15 +129,9 @@ _color: #0f172a
 
 -->
 
-
-
 # **3. Edge Machine Learning : Classification & Sécurité**
 
-
-
 ### Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
-
-
 
 - **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
 
@@ -195,11 +149,7 @@ _color: #0f172a
 
 - **Filtrage Temporel Anti-Rebond** : Inférence ML directe sans verrou rigide d'impact physique + debouncing temporel (5000 ms).
 
-
-
 ---
-
-
 
 <!--
 
@@ -209,15 +159,9 @@ _color: #0f172a
 
 -->
 
-
-
 # **4. Boucle MLOps : Du Terrain au Code C Embarqué**
 
-
-
 ### Collecte Studio, Stratified 5-Fold & Transpilation sans Runtime
-
-
 
 1. **Mode Studio** : Enregistrement de données IMU brutes (54/100 Hz), transfert burst BLE avec contrôle CRC32 vers DynamoDB.
 
@@ -227,19 +171,13 @@ _color: #0f172a
 
 4. **Validation Automatique & CI** : Seuil éliminatoire Macro F1 ≥ 85% avant tout déploiement. Compilation de contrôle PlatformIO (`pio run`).
 
-
-
 <!-- Notes orateur :
 
 Cycle complet sans framework d'inférence lourd (pas de TensorFlow Lite Micro). Du code C pur, ultra-léger, inféré en quelques microsecondes.
 
 -->
 
-
-
 ---
-
-
 
 <!--
 
@@ -249,15 +187,9 @@ _color: #0f172a
 
 -->
 
-
-
 # **5. Réseau & Podométrie Différentielle Nette**
 
-
-
 ### Odométrie SQLite, Ventilation Horaire Réelle & AWS IoT Core
-
-
 
 - **Podométrie Différentielle Mobile** :
 
@@ -275,19 +207,13 @@ _color: #0f172a
 
   - Alertes transmises en QoS 1 vers `healthkicks/v1/{deviceId}/events/detection`.
 
-
-
 <!-- Notes orateur :
 
 Architecture hors-ligne par conception. Si le téléphone perd le réseau, la podométrie continue d'être accumulée localement et synchronisée dès reconnexion.
 
 -->
 
-
-
 ---
-
-
 
 <!--
 
@@ -297,29 +223,21 @@ _color: #0f172a
 
 -->
 
-
-
 # **6. Performances Mesurées & Validation**
-
-
 
 ### Métriques Clés d'Exécution & Suivi Studio en Direct
 
-
-
-| Métrique Clé                | Valeur Mesurée | Implication Système           |
+| Métrique Clé | Valeur Mesurée | Implication Système |
 
 | :-------------------------- | :------------- | :---------------------------- |
 
-| **Temps d'inférence C**     | **~12 µs**     | 0.02% du CPU ESP32-S3         |
+| **Temps d'inférence C** | **~12 µs** | 0.02% du CPU ESP32-S3 |
 
-| **Précision ML (Macro F1)** | **91.3%**      | Détection multi-allure fiable |
+| **Précision ML (Macro F1)** | **91.3%** | Détection multi-allure fiable |
 
-| **Exactitude Globale**      | **92.2%**      | Robustesse toutes allures     |
+| **Exactitude Globale** | **92.2%** | Robustesse toutes allures |
 
-| **Rappel des Chutes**       | **95.5%**      | 95.8% F1 sur chute arrière    |
-
-
+| **Rappel des Chutes** | **95.5%** | 95.8% F1 sur chute arrière |
 
 - **Validation & Benchmark Live** : Matrice de confusion et métriques détaillées consultables en direct sur [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
 
@@ -327,11 +245,7 @@ _color: #0f172a
 
 - **Rigueur & Tests Automatisés** : 324 tests backend FastAPI et 312 tests mobile Flutter validant l'odométrie SQLite, l'auth et la synchronisation.
 
-
-
 ---
-
-
 
 <!--
 
@@ -341,15 +255,9 @@ _color: #0f172a
 
 -->
 
-
-
 # **7. Conclusion & Perspectives**
 
-
-
 ### Les Piliers d'un Écosystème Connecté et Autonome
-
-
 
 - **Ce que nous avons démontré** :
 
@@ -369,11 +277,7 @@ _color: #0f172a
 
   - **Connectivité cellulaire** : Module NB-IoT optionnel pour une autonomie totale en extérieur sans smartphone.
 
-
-
 ---
-
-
 
 <!--
 
@@ -385,15 +289,9 @@ color: #f8fafc
 
 -->
 
-
-
 # **Merci pour votre attention !**
 
-
-
 ### Questions & Échanges Techniques
-
-
 
 - **Portfolio & Profil** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio)
 
@@ -408,4 +306,3 @@ color: #f8fafc
   - Sécurité Zero Trust, courtage STS et MQTT WebSockets SigV4.
 
   - Démarche MLOps, transpilation C et réentraînement de modèles.
-

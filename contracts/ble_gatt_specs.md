@@ -193,6 +193,7 @@ Format textuel ASCII encodé en UTF-8 :
    - _Exemple_ : `SET_INACTIVITY 1 3000 600`
 
 6. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
+
    ```text
    SET_HITL <enabled:0|1>
    ```
@@ -214,6 +215,7 @@ Format textuel ASCII encodé en UTF-8 :
    - _Valeur par défaut_ : `0.65`.
    - _Exemple_ : `SET_FALL_CONFIDENCE 0.75`
    - _Notification retour_ : `FALL_CONFIDENCE_OK <valeur>` ou `FALL_CONFIDENCE_ERROR <raison>`.
+
 #### 2. Notifications Émises par la Chaussure (`NOTIFY`)
 
 Format textuel ASCII encodé en UTF-8 :
@@ -228,8 +230,8 @@ Format textuel ASCII encodé en UTF-8 :
 | `CALIBRATION_ERROR <reason>`                          | Mouvement / instabilité              | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)             |
 | `HITL_OK <0                                           | 1>`                                  | Commande `SET_HITL`                                                        | Mode HITL activé (1) ou désactivé (0) avec succès |
 | `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
-| `FALL_CONFIDENCE_OK <valeur>`                          | Commande `SET_FALL_CONFIDENCE`        | Seuil de confiance de chute mis à jour avec succès                      |
-| `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`        | Rejet de la commande (ex: `out_of_range`, `invalid_params`)              |
+| `FALL_CONFIDENCE_OK <valeur>`                         | Commande `SET_FALL_CONFIDENCE`       | Seuil de confiance de chute mis à jour avec succès                         |
+| `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`       | Rejet de la commande (ex: `out_of_range`, `invalid_params`)                |
 | `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
 | `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
