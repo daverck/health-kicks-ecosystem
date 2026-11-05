@@ -219,12 +219,12 @@ Format textuel ASCII encodé en UTF-8 :
 8. **Configuration du Cooldown de Détection de Chute** :
 
    `	ext
-   SET_FALL_COOLDOWN <cooldown_ms:1000..60000>
+   SET_FALL_COOLDOWN <cooldown_ms:500..60000>
    `
    - _Paramètre_ : Délai d'anti-rebond minimal en millisecondes (uint32) entre deux alertes de chute consécutives (_fallCooldownMs).
-   - _Plage valide_ : 1000 (1 s) à 60000 (60 s).
-   - _Valeur par défaut_ : 5000 (5 s).
-   - _Exemple_ : SET_FALL_COOLDOWN 5000
+   - _Plage valide_ : 500 (0.5 s) à 60000 (60 s).
+   - _Valeur par défaut_ : 3000 (3 s).
+   - _Exemple_ : SET_FALL_COOLDOWN 3000
    - _Notification retour_ : FALL_COOLDOWN_OK <cooldown_ms> ou FALL_COOLDOWN_ERROR <raison>.
 
 9. **Synchronisation d'Horloge (Time Sync & Clock Calibration)** :
