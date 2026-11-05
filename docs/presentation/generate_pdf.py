@@ -307,6 +307,20 @@ def draw_vector_icon(c, name, x, y, size=18, color=None, bg_color=None):
         p_arc1.arc(cx - size*0.3, y + size*0.4, cx + size*0.3, y + size*1.0, 45, 90)
         c.drawPath(p_arc1, stroke=1, fill=0)
 
+    elif name == "s3_bucket":
+        # Amazon S3 Bucket (Slide 4)
+        c.setFillColor(secondary)
+        c.setStrokeColor(primary)
+        c.setLineWidth(1.2)
+        p = c.beginPath()
+        p.moveTo(cx - size*0.34, y + size*0.74)
+        p.lineTo(cx - size*0.24, y + size*0.18)
+        p.lineTo(cx + size*0.24, y + size*0.18)
+        p.lineTo(cx + size*0.34, y + size*0.74)
+        p.close()
+        c.drawPath(p, stroke=1, fill=1)
+        c.ellipse(cx - size*0.34, y + size*0.64, cx + size*0.34, y + size*0.84, stroke=1, fill=1)
+
     elif name == "forest":
         # Random Forest / Decision Trees (Slide 5)
         c.setFillColor(secondary)
@@ -704,7 +718,51 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c = canvas.Canvas(target_filename, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
     # ==========================================
-    # SLIDE 1 : Titre & Vision Simplifiée
+    # SLIDE 1 : Parcours Professionnel & Portfolio QR Code
+    # ==========================================
+    draw_slide_background(c, dark=False)
+
+    qr_path = "docs/presentation/qr-code.png"
+    portfolio_url = "https://daverck.github.io/serck-david-portfolio"
+
+    card_qr_w = 460
+    card_qr_h = 405
+    card_qr_x = (PAGE_WIDTH - card_qr_w) / 2
+    card_qr_y = 35
+
+    draw_modern_panel(c, card_qr_x, card_qr_y, card_qr_w, card_qr_h, dark=False, accent_color=PRIMARY_BLUE)
+
+    # Nom en grand et centré en haut de la carte
+    c.setFont("Helvetica-Bold", 24)
+    c.setFillColor(TEXT_DARK)
+    c.drawCentredString(card_qr_x + card_qr_w / 2, card_qr_y + card_qr_h - 34, "David Serck")
+
+    # Métier en grand
+    c.setFont("Helvetica-Bold", 12.5)
+    c.setFillColor(PRIMARY_BLUE)
+    c.drawCentredString(card_qr_x + card_qr_w / 2, card_qr_y + card_qr_h - 58, "Développeur  Full-Stack : Angular - Python - Java")
+
+    # Micro-icônes officielles des technologies maîtrisées
+    tech_y = card_qr_y + card_qr_h - 88
+    center_tech_x = card_qr_x + card_qr_w / 2
+    if os.path.exists("docs/presentation/angular_dev_color.png"):
+        c.drawImage("docs/presentation/angular_dev_color.png", center_tech_x - 52, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
+    if os.path.exists("docs/presentation/python_color_official.png"):
+        c.drawImage("docs/presentation/python_color_official.png", center_tech_x - 11, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
+    if os.path.exists("docs/presentation/java_official_cup.png"):
+        c.drawImage("docs/presentation/java_official_cup.png", center_tech_x + 30, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
+
+    if os.path.exists(qr_path):
+        qr_size = 250
+        qr_x = card_qr_x + (card_qr_w - qr_size) / 2
+        qr_y = card_qr_y + 45
+        c.drawImage(qr_path, qr_x, qr_y, width=qr_size, height=qr_size, preserveAspectRatio=True)
+        c.linkURL(portfolio_url, (qr_x, qr_y, qr_x + qr_size, qr_y + qr_size), thickness=0)
+
+    c.showPage()
+
+    # ==========================================
+    # SLIDE 2 : Titre & Vision Simplifiée
     # ==========================================
     draw_slide_background(c, dark=True)
 
@@ -779,50 +837,6 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 2 : Parcours Professionnel & Portfolio QR Code
-    # ==========================================
-    draw_slide_background(c, dark=False)
-
-    qr_path = "docs/presentation/qr-code.png"
-    portfolio_url = "https://daverck.github.io/serck-david-portfolio"
-
-    card_qr_w = 460
-    card_qr_h = 405
-    card_qr_x = (PAGE_WIDTH - card_qr_w) / 2
-    card_qr_y = 35
-
-    draw_modern_panel(c, card_qr_x, card_qr_y, card_qr_w, card_qr_h, dark=False, accent_color=PRIMARY_BLUE)
-
-    # Nom en grand et centré en haut de la carte
-    c.setFont("Helvetica-Bold", 24)
-    c.setFillColor(TEXT_DARK)
-    c.drawCentredString(card_qr_x + card_qr_w / 2, card_qr_y + card_qr_h - 34, "David Serck")
-
-    # Métier en grand
-    c.setFont("Helvetica-Bold", 12.5)
-    c.setFillColor(PRIMARY_BLUE)
-    c.drawCentredString(card_qr_x + card_qr_w / 2, card_qr_y + card_qr_h - 58, "Développeur Full-Stack : Angular - Python - Java")
-
-    # Micro-icônes officielles des technologies maîtrisées
-    tech_y = card_qr_y + card_qr_h - 88
-    center_tech_x = card_qr_x + card_qr_w / 2
-    if os.path.exists("docs/presentation/angular_dev_color.png"):
-        c.drawImage("docs/presentation/angular_dev_color.png", center_tech_x - 52, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
-    if os.path.exists("docs/presentation/python_color_official.png"):
-        c.drawImage("docs/presentation/python_color_official.png", center_tech_x - 11, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
-    if os.path.exists("docs/presentation/java_official_cup.png"):
-        c.drawImage("docs/presentation/java_official_cup.png", center_tech_x + 30, tech_y, width=22, height=22, preserveAspectRatio=True, mask='auto')
-
-    if os.path.exists(qr_path):
-        qr_size = 250
-        qr_x = card_qr_x + (card_qr_w - qr_size) / 2
-        qr_y = card_qr_y + 45
-        c.drawImage(qr_path, qr_x, qr_y, width=qr_size, height=qr_size, preserveAspectRatio=True)
-        c.linkURL(portfolio_url, (qr_x, qr_y, qr_x + qr_size, qr_y + qr_size), thickness=0)
-
-    c.showPage()
-
-    # ==========================================
     # SLIDE 3 : Cœur IoT & Biomécanique (Système Embarqué)
     # ==========================================
     draw_slide_background(c, dark=False)
@@ -856,30 +870,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(ACCENT_BLUE)
     c.drawString(88, card_b_y + card_b_h - 24, "RÉFÉRENTIEL BIOMÉCANIQUE ISB")
 
-    isb_items = [
-        ("Axe Z (Vertical)", "+1.0 g au repos"),
-        ("Axe X (Antéro-postérieur)", ""),
-        ("Axe Y (Médio-latéral)", "")
-    ]
-    cur_y = card_b_y + card_b_h - 48
-    for lbl, desc in isb_items:
-        draw_icon_bullet(c, 66, cur_y, ACCENT_BLUE)
-        c.setFont("Helvetica-Bold", 9.5)
-        c.setFillColor(TEXT_DARK)
-        c.drawString(80, cur_y, lbl)
-        cur_y -= 13
-        c.setFont("Helvetica", 8.5)
-        c.setFillColor(TEXT_MUTED)
-        lines = wrap_text(desc, 26)
-        for line in lines:
-            c.drawString(80, cur_y, line)
-            cur_y -= 12
-        cur_y -= 5
-
-    # Illustration 3D des axes ISB de la chaussure
+    # Illustration 3D des axes ISB de la chaussure (agrandie et centrée dans la carte, sans texte redondant)
     axes_img_path = "docs/presentation/shoe_isb_axes.png"
     if os.path.exists(axes_img_path):
-        c.drawImage(axes_img_path, 235, card_b_y + 4, width=225, height=122, preserveAspectRatio=True, anchor='c', mask='auto')
+        c.drawImage(axes_img_path, 58, card_b_y + 4, width=404, height=126, preserveAspectRatio=True, anchor='c', mask='auto')
 
     # Carte Droite : Traitement du Signal Embarqué
     draw_modern_panel(c, 490, card_b_y, card_b_w, card_b_h, dark=False, accent_color=ACCENT_AMBER)
@@ -1078,13 +1072,13 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     h_ec2 = 96
     y_ec2 = y_ingest - 10 - h_ec2     # 336 - 10 - 96 = 230
 
-    # 3.3 Bas : Bases de données
-    h_db = 68
-    y_db = y_ec2 - 10 - h_db          # 230 - 10 - 68 = 152
+    # 3.3 Bas : Bases de données & Stockage S3
+    h_db = 128
+    y_db = y_ec2 - 10 - h_db          # 230 - 10 - 128 = 92
 
     # Hauteur parent adaptée au contenu enfant (marge basse 12 pt)
-    y_parent_cloud = y_db - 12        # 140
-    h_parent_cloud = y_top - y_parent_cloud  # 300 pt
+    y_parent_cloud = y_db - 12        # 80
+    h_parent_cloud = y_top - y_parent_cloud  # 360 pt
 
     draw_modern_panel(c, x_cloud, y_parent_cloud, w_cloud, h_parent_cloud, dark=False, accent_color=CLOUD_AWS)
     draw_vector_icon(c, "cloud_aws", x_cloud + 14, y_top - 25, 16, color=CLOUD_AWS)
@@ -1155,31 +1149,44 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.setFillColor(TEXT_DARK)
     c.drawString(x_cloud + 150, y_ec2 + 5 + h_sub_ec2 - 28, "Interface Signals")
 
-    # Conteneur Bases de données
+    # Conteneur Bases de données & Stockage S3
     draw_card(c, x_cloud + 8, y_db, w_cloud - 16, h_db, HexColor("#f8fafc"), HexColor("#cbd5e1"), border_width=0.8, radius=6)
 
     # Aurora PG
-    h_sub_db = 58
-    draw_card(c, x_cloud + 13, y_db + 5, 118, h_sub_db, CARD_BG, HexColor("#a7f3d0"), border_width=1, radius=4)
-    draw_vector_icon(c, "database", x_cloud + 18, y_db + 5 + h_sub_db - 16, 12, color=PRIMARY_TEAL)
+    h_sub_db = 56
+    y_row1_db = y_db + 67
+    draw_card(c, x_cloud + 13, y_row1_db, 118, h_sub_db, CARD_BG, HexColor("#a7f3d0"), border_width=1, radius=4)
+    draw_vector_icon(c, "database", x_cloud + 18, y_row1_db + h_sub_db - 16, 12, color=PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 7.2)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(x_cloud + 34, y_db + 5 + h_sub_db - 14, "PostgreSQL 16")
-    draw_icon_bullet(c, x_cloud + 18, y_db + 5 + h_sub_db - 30, PRIMARY_TEAL)
+    c.drawString(x_cloud + 34, y_row1_db + h_sub_db - 14, "PostgreSQL 16")
+    draw_icon_bullet(c, x_cloud + 18, y_row1_db + h_sub_db - 30, PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 6.5)
     c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 28, y_db + 5 + h_sub_db - 30, "Migrations Alembic")
+    c.drawString(x_cloud + 28, y_row1_db + h_sub_db - 30, "Migrations Alembic")
 
     # DynamoDB
-    draw_card(c, x_cloud + 135, y_db + 5, 118, h_sub_db, CARD_BG, HexColor("#fde68a"), border_width=1, radius=4)
-    draw_vector_icon(c, "database_dynamo", x_cloud + 140, y_db + 5 + h_sub_db - 16, 12, color=ACCENT_AMBER)
+    draw_card(c, x_cloud + 135, y_row1_db, 118, h_sub_db, CARD_BG, HexColor("#fde68a"), border_width=1, radius=4)
+    draw_vector_icon(c, "database_dynamo", x_cloud + 140, y_row1_db + h_sub_db - 16, 12, color=ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 7.2)
     c.setFillColor(ACCENT_AMBER)
-    c.drawString(x_cloud + 156, y_db + 5 + h_sub_db - 14, "Amazon DynamoDB")
-    draw_icon_bullet(c, x_cloud + 140, y_db + 5 + h_sub_db - 30, ACCENT_AMBER)
+    c.drawString(x_cloud + 156, y_row1_db + h_sub_db - 14, "Amazon DynamoDB")
+    draw_icon_bullet(c, x_cloud + 140, y_row1_db + h_sub_db - 30, ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 6.5)
     c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 150, y_db + 5 + h_sub_db - 30, "Séries NoSQL")
+    c.drawString(x_cloud + 150, y_row1_db + h_sub_db - 30, "Séries NoSQL")
+
+    # Amazon S3 (Stockage Firmware OTA)
+    y_row2_db = y_db + 5
+    draw_card(c, x_cloud + 13, y_row2_db, 240, h_sub_db, CARD_BG, HexColor("#bae6fd"), border_width=1, radius=4)
+    draw_vector_icon(c, "s3_bucket", x_cloud + 18, y_row2_db + h_sub_db - 16, 12, color=CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 7.2)
+    c.setFillColor(CLOUD_AWS)
+    c.drawString(x_cloud + 34, y_row2_db + h_sub_db - 14, "Amazon S3")
+    draw_icon_bullet(c, x_cloud + 18, y_row2_db + h_sub_db - 30, CLOUD_AWS)
+    c.setFont("Helvetica-Bold", 6.5)
+    c.setFillColor(TEXT_DARK)
+    c.drawString(x_cloud + 28, y_row2_db + h_sub_db - 30, "Stockage des Firmwares OTA (.bin)")
 
     # FLECHE 3 : Cloud AWS -> Cloud OVH
     draw_arrow(c, 792, 260, 28, ACCENT_AMBER, "SMTP", "TLS 587")
@@ -1292,20 +1299,20 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.drawCentredString(720, 478, "DÉMONSTRATION 1 : RECONNAISSANCE D'ALLURE EN DIRECT")
 
     # Gauche : Graphique des performances ML réel (capture web Studio cliquable)
-    ml_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_ml_stats.avif"
+    ml_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_ml_confusion_matrix.webp"
     card_l_w = 460
     card_h = 390
     draw_modern_panel(c, 50, col_y, card_l_w, card_h, dark=False, accent_color=PRIMARY_TEAL)
     c.setFont("Helvetica-Bold", 12)
     c.setFillColor(PRIMARY_TEAL)
-    c.drawString(68, col_y + card_h - 26, "BENCHMARK RÉEL STUDIO (F1-SCORE & DISTRIBUTION)")
+    c.drawString(68, col_y + card_h - 26, "BENCHMARK RÉEL STUDIO (MATRICE DE CONFUSION)")
 
     if os.path.exists(ml_img_path):
         img_w = 424
         img_h = 310
         img_x = 68
         img_y = col_y + 18
-        c.drawImage(ml_img_path, img_x, img_y, width=img_w, height=img_h, preserveAspectRatio=True)
+        c.drawImage(ml_img_path, 58, col_y + 18, width=444, height=325, preserveAspectRatio=True, anchor='c')
         studio_url = "https://healthkicks.duckdns.org/dashboard/studio/classes"
         c.linkURL(studio_url, (img_x, img_y, img_x + img_w, img_y + img_h), thickness=0)
 
@@ -1706,9 +1713,8 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         ("Compteur Monotone Physique", ""),
         ("Calcul Différentiel Mobile", ""),
         ("Résilience aux Redémarrages", ""),
-        # ("Bascule Nette a Minuit", ""),
-        # ("Ventilation Horaire Reelle", "Chaque pas est assigne a son heure exacte d'accumulation (aucune extrapolation theorique)."),
-        ("Insensibilité aux Gestes Parasites", "")
+        ("Insensibilité aux Gestes Parasites", ""),
+        ("Absence d'horloge RTC matérielle persistante", "")
     ]
 
     cur_y = col_y + 390 - 55
@@ -1732,7 +1738,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.drawImage(trail_watermark, 65, col_y + 20, width=390, height=115, preserveAspectRatio=True, anchor='c', mask='auto')
 
     # Droite : Graphique Podometre Reel (capture pedometer.png)
-    podo_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_pedometer.avif"
+    podo_img_path = "health-kicks-frontend/public/images/screenshots/web_showcase_pedometer.webp"
     draw_modern_panel(c, 490, col_y, 420, 390, dark=False, accent_color=ACCENT_BLUE)
     c.setFont("Helvetica-Bold", 13)
     c.setFillColor(ACCENT_BLUE)
@@ -1850,4 +1856,3 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
 if __name__ == "__main__":
     build_pdf()
-
