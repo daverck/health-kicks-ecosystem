@@ -1590,6 +1590,32 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         c.drawString(82, cur_y, lbl)
         cur_y -= 32
 
+    # Illustration du chemin sinueux vers l'horizon (Moitié inférieure de la carte gauche)
+    horizon_img = "docs/presentation/horizon_pathway.png"
+    if os.path.exists(horizon_img):
+        c.drawImage(horizon_img, 58, 52, width=404, height=235, preserveAspectRatio=True, anchor='c')
+
+        # Pastilles des jalons le long du chemin (du premier plan vers l'horizon)
+        milestones = [
+            (366, 86, "TinyML", PRIMARY_TEAL, HexColor("#f0fdfa")),
+            (148, 152, "Alerte", ACCENT_BLUE, HexColor("#eff6ff")),
+            (390, 198, "Sécurité", ACCENT_BLUE, HexColor("#eff6ff")),
+            (178, 222, "NB-IoT & Twin", ACCENT_AMBER, HexColor("#fffbeb")),
+        ]
+        for mx, my, mlbl, mcol, mbg in milestones:
+            c.setFont("Helvetica-Bold", 8.2)
+            tw = c.stringWidth(mlbl, "Helvetica-Bold", 8.2)
+            pw = tw + 14
+            ph = 15
+            c.saveState()
+            c.setFillColor(mbg)
+            c.setStrokeColor(mcol)
+            c.setLineWidth(1.0)
+            c.roundRect(mx - pw / 2, my - ph / 2, pw, ph, 7.5, stroke=1, fill=1)
+            c.setFillColor(mcol)
+            c.drawCentredString(mx, my - 2.8, mlbl)
+            c.restoreState()
+
     draw_modern_panel(c, 490, 45, 420, 390, dark=False, accent_color=ACCENT_AMBER)
     draw_vector_icon(c, "compass", 508, 403, 18, color=ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 13.5)
