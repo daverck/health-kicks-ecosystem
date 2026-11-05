@@ -839,9 +839,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     c.showPage()
 
     # ==========================================
-    # SLIDE 3 : Genèse & Fonctionnalités (Sans Logo ni Header, Cartes remontées sur fond clair)
+    # SLIDE 3 : Genèse & Fonctionnalités (Concept)
     # ==========================================
     draw_slide_background(c, dark=False)
+    draw_header(c, "CONCEPT")
 
     card_w = 420
     card_h = 260
@@ -953,7 +954,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # SLIDE 5 : Architecture Globale Logicielle & Système (Agrandie, 4. CLOUD OVH sous 2. MOBILE)
     # ==========================================
     draw_slide_background(c, dark=False)
-    draw_header(c, "Architecture Globale")
+    draw_header(c, "ARCHITECTURE GLOBALE")
 
     CLOUD_AWS = HexColor("#0284c7")
     y_top = 445
