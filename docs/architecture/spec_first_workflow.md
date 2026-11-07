@@ -1,61 +1,61 @@
-# Guide de Synchronisation Spec-First & Génération de Contrats
+# Spec-First Synchronization & Contract Generation Guide
 
-Ce guide décrit le protocole opérationnel **Spec-First** appliqué à l'ensemble de l'écosystème **HealthKicks**. Il détaille le cycle de vie des contrats, de leur définition formelle à leur consommation typée dans les applications clientes et embarquées.
-
----
-
-## 1. Philosophie & Principes Directeurs
-
-Dans une architecture distribuée combinant **Firmware C++ (ESP32-S3)**, **Edge AI Python**, **Backend FastAPI**, **Mobile Flutter** et **Frontend Angular 21**, la dérive de spécification (_API / schema drift_) constitue le risque majeur d'instabilité.
-
-### Les 3 Principes Fondamentaux
-
-1. **Contrat Unique et Canonique** : Chaque interface d'échange (REST, BLE GATT, MQTT IoT Core) dispose d'une source de vérité unique, versionnée dans le dépôt.
-2. **Génération Déterministe** : Les types clients ne sont jamais réécrits manuellement ; ils sont générés automatiquement depuis la spécification validée.
-3. **Contrôle Automatique en CI** : Tout commit introduisant une divergence entre le code et sa spécification est automatiquement rejeté par les hooks de pre-commit et le pipeline GitHub Actions.
+This guide describes the **Spec-First** operational protocol enforced across the entire **HealthKicks** ecosystem. It details the contract lifecycle, from formal definition to typed consumption in client and embedded applications.
 
 ---
 
-## 2. Pipeline REST & OpenAPI (Backend ↔ Frontend)
+## 1. Philosophy & Guiding Principles
+
+In a distributed architecture combining **C++ Firmware (ESP32-S3)**, **Python Edge AI**, **FastAPI Backend**, **Flutter Mobile**, and **Angular 22 Frontend**, specification drift (_API / schema drift_) is the primary risk of system instability.
+
+### Core Principles
+
+1. **Single Canonical Contract**: Each communication interface (REST, BLE GATT, MQTT IoT Core) has a single source of truth, version-controlled in the repository.
+2. **Deterministic Generation**: Client types are never rewritten manually; they are generated automatically from validated specifications.
+3. **Automated CI Enforcement**: Any commit introducing divergence between source code and its specification is rejected by pre-commit hooks and GitHub Actions.
+
+---
+
+## 2. REST & OpenAPI Pipeline (Backend ↔ Frontend)
 
 ```mermaid
 flowchart LR
-    A["FastAPI & Pydantic<br/>(health-kicks/app/)"] -->|Live Spec Export| B["Spécification Canonique<br/>(health-kicks/openapi.json)"]
-    B -->|openapi-typescript| C["Types TypeScript<br/>(generated-api.types.ts)"]
-    C -->|Typage Stricte| D["Composants & Services Angular<br/>(health-kicks-frontend/)"]
-    B -.->|Vérification CI / Pre-commit| E["scripts/verify_openapi_drift.py"]
-    A -.->|Vérification CI / Pre-commit| E
+    A["FastAPI & Pydantic<br/>(health-kicks/app/)"] -->|Live Spec Export| B["Canonical Specification<br/>(health-kicks/openapi.json)"]
+    B -->|openapi-typescript| C["TypeScript Types<br/>(generated-api.types.ts)"]
+    C -->|Strict Typing| D["Angular Components & Services<br/>(health-kicks-frontend/)"]
+    B -.->|CI / Pre-commit Verification| E["scripts/verify_openapi_drift.py"]
+    A -.->|CI / Pre-commit Verification| E
 ```
 
-### Étape 1 : Modification des Schémas ou Endpoints Backend
+### Step 1: Modifying Backend Schemas or Endpoints
 
-Les modèles d'échange sont déclarés sous [`health-kicks/app/schemas/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/schemas) à l'aide de Pydantic v2 (`StrictModel`). Les routes FastAPI sous [`health-kicks/app/api/v1/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/api/v1) déclarent explicitement `response_model`, les codes HTTP et les paramètres de requête.
+Exchange models are declared under [`health-kicks/app/schemas/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/schemas) using Pydantic v2 (`StrictModel`). FastAPI routes under [`health-kicks/app/api/v1/`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/api/v1) explicitly declare `response_model`, HTTP status codes, and query parameters.
 
-### Étape 2 : Export de la Spécification Canonique
+### Step 2: Canonical Specification Export
 
-Dès qu'un schéma ou une signature de route est modifié, l'export OpenAPI doit être mis à jour :
+Whenever a schema or route signature changes, the OpenAPI export must be refreshed:
 
 ```bash
-# Depuis la racine du monorepo :
+# From monorepo root:
 python scripts/verify_openapi_drift.py --write
 ```
 
-Cette commande exécute l'application FastAPI en mémoire via `uv`, extrait `app.openapi()` et formate le fichier [`health-kicks/openapi.json`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/openapi.json) de manière déterministe (`indent=2, sort_keys=True`).
+This command runs FastAPI in memory via `uv`, extracts `app.openapi()`, and formats [`health-kicks/openapi.json`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/openapi.json) deterministically (`indent=2, sort_keys=True`).
 
-### Étape 3 : Génération des Types TypeScript Frontend
+### Step 3: Frontend TypeScript Type Generation
 
-Le frontend Angular 21 utilise `openapi-typescript` pour générer un fichier de typage TypeScript complet :
+The Angular frontend uses `openapi-typescript` to generate comprehensive TypeScript definitions:
 
 ```bash
-# Dans le dossier health-kicks-frontend/ :
+# In health-kicks-frontend/ directory:
 pnpm run generate:api
 ```
 
-Le fichier généré est situé dans [`health-kicks-frontend/src/app/models/generated-api.types.ts`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-frontend/src/app/models/generated-api.types.ts).
+The generated file is located at [`health-kicks-frontend/src/app/models/generated-api.types.ts`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-frontend/src/app/models/generated-api.types.ts).
 
-### Étape 4 : Consommation dans les Modèles et Composants Angular
+### Step 4: Consumption in Angular Models and Components
 
-Les modèles Angular consomment directement les schémas générés au lieu de redéclarer des interfaces manuelles :
+Angular models consume generated schemas directly rather than maintaining manual interfaces:
 
 ```typescript
 import { components } from "./generated-api.types";
@@ -67,58 +67,58 @@ export type PaginatedSessionsResponse =
 export type StudioAuthorSummary = components["schemas"]["StudioAuthorSummary"];
 ```
 
-Tout renommage ou suppression de champ côté backend provoque une erreur de compilation TypeScript immédiate (`TS2322` / `TS2339`) lors du `pnpm build` ou `pnpm test:ci`.
+Any field renaming or deletion backend-side causes an immediate TypeScript compilation error (`TS2322` / `TS2339`) during `pnpm build` or `pnpm test:ci`.
 
-### Étape 5 : Contrôle Automatique de Dérive (CI)
+### Step 5: Automated Drift Control (CI)
 
-Le script [`scripts/verify_openapi_drift.py`](file:///f:/Programmation/healthkicks-ecosystem/scripts/verify_openapi_drift.py) s'assure que :
+[`scripts/verify_openapi_drift.py`](file:///f:/Programmation/healthkicks-ecosystem/scripts/verify_openapi_drift.py) verifies that:
 
-1. Le fichier `health-kicks/openapi.json` correspond exactement au schéma FastAPI en direct.
-2. Tous les chemins (`paths`) et modèles (`schemas`) de la spécification sont présents dans `generated-api.types.ts`.
+1. `health-kicks/openapi.json` matches the live FastAPI schema exactly.
+2. All `paths` and `schemas` from the specification exist in `generated-api.types.ts`.
 
 ---
 
-## 3. Pipeline BLE GATT (Firmware ↔ Mobile)
+## 3. BLE GATT Pipeline (Firmware ↔ Mobile)
 
 ```mermaid
 flowchart TD
-    Contract["Contrat Canonique BLE<br/>(contracts/ble_gatt_specs.md)"]
-    Contract -->|Miroir C++| FW["Firmware ESP32-S3<br/>(include/invariants.h)"]
-    Contract -->|Miroir Dart| Mob["Mobile Flutter<br/>(core/constants/ble_constants.dart)"]
-    Verif["scripts/verify_ble_contracts.py"] -.->|Audit Automatisé| Contract
-    Verif -.->|Audit Automatisé| FW
-    Verif -.->|Audit Automatisé| Mob
+    Contract["Canonical BLE Contract<br/>(contracts/ble_gatt_specs.md)"]
+    Contract -->|C++ Mirror| FW["ESP32-S3 Firmware<br/>(include/invariants.h)"]
+    Contract -->|Dart Mirror| Mob["Flutter Mobile<br/>(core/constants/ble_constants.dart)"]
+    Verif["scripts/verify_ble_contracts.py"] -.->|Automated Audit| Contract
+    Verif -.->|Automated Audit| FW
+    Verif -.->|Automated Audit| Mob
 ```
 
-### Règles du Contrat BLE GATT
+### BLE GATT Contract Rules
 
-1. **Source de Vérité** : [`contracts/ble_gatt_specs.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/ble_gatt_specs.md) définit tous les UUIDs de services (`0x0001` à `0x0010`), caractéristiques (`0x0002` à `0x0012`), codes d'état d'activité (`0x00` Idle, `0x01` Walk, `0x02` Run, `0x10`-`0x12` Falls) et formats binaires.
-2. **Alignement Obligatoire** :
-   - C++ : [`health-kicks-esp32-s3/include/invariants.h`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-esp32-s3/include/invariants.h)
-   - Dart : [`health-kicks-mobile/lib/core/constants/ble_constants.dart`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-mobile/lib/core/constants/ble_constants.dart)
-3. **Vérification Automatique** : Le script [`scripts/verify_ble_contracts.py`](file:///f:/Programmation/healthkicks-ecosystem/scripts/verify_ble_contracts.py) s'exécute en pre-commit et en CI pour certifier l'égalité stricte des constantes.
-
----
-
-## 4. Pipeline AWS IoT Core & Télémétrie MQTT
-
-1. **Hiérarchie des Topics** :
-   - Commandes haptiques : `healthkicks/v1/{device_id}/haptic/command`
-   - Ordre d'enregistrement Studio : `healthkicks/v1/{device_id}/studio/start`
-   - Présence & Statut : `healthkicks/v1/{device_id}/presence`
-   - Télémétrie IMU / Pas : `healthkicks/v1/{device_id}/telemetry`
-2. **Moindre Privilège AWS STS** :
-   - Les identifiants mobiles sont négociés via [`app/services/aws_sts_service.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/services/aws_sts_service.py).
-   - Les politiques de session AWS IoT restreignent strictement `iot:Connect` au format de client ID `healthkicks-mobile-{user_id}-*` et `iot:Subscribe` aux topics autorisés pour l'utilisateur.
+1. **Source of Truth**: [`contracts/ble_gatt_specs.md`](file:///f:/Programmation/healthkicks-ecosystem/contracts/ble_gatt_specs.md) defines all service UUIDs (`0x0001` to `0x0010`), characteristics (`0x0002` to `0x0012`), activity state codes (`0x00` Idle, `0x01` Walk, `0x02` Run, `0x10`-`0x12` Falls), and binary formats.
+2. **Mandatory Alignment**:
+   - C++: [`health-kicks-esp32-s3/include/invariants.h`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-esp32-s3/include/invariants.h)
+   - Dart: [`health-kicks-mobile/lib/core/constants/ble_constants.dart`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks-mobile/lib/core/constants/ble_constants.dart)
+3. **Automated Verification**: [`scripts/verify_ble_contracts.py`](file:///f:/Programmation/healthkicks-ecosystem/scripts/verify_ble_contracts.py) runs in pre-commit and CI to certify strict constant equivalence.
 
 ---
 
-## 5. Synthèse des Commandes Développeur
+## 4. AWS IoT Core & MQTT Telemetry Pipeline
 
-| Action                                    | Commande                                            | Portée   |
-| :---------------------------------------- | :-------------------------------------------------- | :------- |
-| **Vérifier les contrats BLE**             | `python scripts/verify_ble_contracts.py`            | Monorepo |
-| **Vérifier la dérive OpenAPI & Types**    | `python scripts/verify_openapi_drift.py`            | Monorepo |
-| **Exporter l'OpenAPI mis à jour**         | `python scripts/verify_openapi_drift.py --write`    | Backend  |
-| **Régénérer les types TypeScript**        | `pnpm --dir health-kicks-frontend run generate:api` | Frontend |
-| **Exécuter les vérifications Pre-commit** | `uv tool run pre-commit run --all-files`            | Monorepo |
+1. **Topic Hierarchy**:
+   - Haptic commands: `healthkicks/v1/{device_id}/haptic/command`
+   - Studio recording start: `healthkicks/v1/{device_id}/studio/start`
+   - Presence & Status: `healthkicks/v1/{device_id}/presence`
+   - IMU Telemetry / Steps: `healthkicks/v1/{device_id}/telemetry`
+2. **AWS STS Least Privilege**:
+   - Mobile credentials are negotiated via [`app/services/aws_sts_service.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/app/services/aws_sts_service.py).
+   - AWS IoT session policies strictly restrict `iot:Connect` to client ID pattern `healthkicks-mobile-{user_id}-*` and `iot:Subscribe` to authorized user topics.
+
+---
+
+## 5. Developer Command Reference
+
+| Action | Command | Scope |
+| :--- | :--- | :--- |
+| **Verify BLE contracts** | `python scripts/verify_ble_contracts.py` | Monorepo |
+| **Verify OpenAPI & Type drift** | `python scripts/verify_openapi_drift.py` | Monorepo |
+| **Export refreshed OpenAPI spec** | `python scripts/verify_openapi_drift.py --write` | Backend |
+| **Regenerate TypeScript types** | `pnpm --dir health-kicks-frontend run generate:api` | Frontend |
+| **Run all Pre-commit checks** | `uv tool run pre-commit run --all-files` | Monorepo |

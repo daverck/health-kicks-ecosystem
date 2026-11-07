@@ -1,54 +1,54 @@
-# Spécification d'Architecture : Mécanisme de Présence Hybride
+# Architecture Specification: Hybrid Presence Mechanism
 
-Ce document décrit l'architecture et les flux de synchronisation d'état de connexion (**présence**) entre l'application mobile, le broker AWS IoT Core, la fonction AWS Lambda de présence et l'API FastAPI dans l'écosystème **HealthKicks**.
+This document describes the architecture and state synchronization flows for connection state (**presence**) between the mobile companion app, AWS IoT Core broker, AWS Lambda presence relay, and FastAPI API in the **HealthKicks** ecosystem.
 
 ---
 
-## 1. Schéma d'Architecture Cible
+## 1. Target Architecture Diagram
 
 ```text
 +-----------------------------------------------------------------------------+
-|                           Application Mobile                                |
-|  - Connexion BLE : Publie "online" sur healthkicks/v1/{device_id}/status    |
-|  - Déconnexion BLE : Publie "offline" sur healthkicks/v1/{device_id}/status |
-|  - MQTT LWT (au CONNECT) : healthkicks/v1/users/{user_id}/gateway-status    |
+|                           Mobile Application                                |
+|  - BLE Connected: Publishes "online" on healthkicks/v1/{device_id}/status   |
+|  - BLE Disconnected: Publishes "offline" on healthkicks/v1/{device_id}/status|
+|  - MQTT LWT (at CONNECT): healthkicks/v1/users/{user_id}/gateway-status     |
 +--------------------------------------+--------------------------------------+
                                        | MQTT / WebSocket
                                        v
 +-----------------------------------------------------------------------------+
 |                                AWS IoT Core                                 |
-|  - Topic applicatif : healthkicks/v1/+/status                               |
-|  - Topic LWT (coupure réseau/crash) : healthkicks/v1/users/+/gateway-status |
+|  - Application topic: healthkicks/v1/+/status                               |
+|  - LWT topic (network drop / crash): healthkicks/v1/users/+/gateway-status  |
 +--------------------------------------+--------------------------------------+
-                                       | Règle IoT (Rule)
+                                       | IoT Rule
                                        v
 +-----------------------------------------------------------------------------+
-|                            Lambda de Présence                               |
-|  - Normalise l'événement (device_id unitaire ou user_id global)             |
-|  - Effectue un POST HTTPS vers le Backend FastAPI                           |
+|                            Presence Lambda                                  |
+|  - Normalizes event (unitary device_id or global user_id)                   |
+|  - Executes HTTPS POST to FastAPI Backend                                   |
 +--------------------------------------+--------------------------------------+
                                        | POST /api/v1/internal/device-presence
                                        v
 +-----------------------------------------------------------------------------+
-|                           Backend FastAPI / Aurora                          |
-|  - Si device_id : UPDATE devices SET status = :state WHERE id = :device_id  |
-|  - Si user_id (LWT) : UPDATE devices SET status = 'offline'                 |
-|                       WHERE user_id = :user_id                              |
-|  - Diffusion temps réel : Notification WebSocket vers le frontend Web       |
+|                           FastAPI Backend / Aurora                          |
+|  - If device_id: UPDATE devices SET status = :state WHERE id = :device_id   |
+|  - If user_id (LWT): UPDATE devices SET status = 'offline'                  |
+|                      WHERE user_id = :user_id                               |
+|  - Real-time broadcast: WebSocket notification to Web Frontend              |
 +-----------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Principe Hybride de Détection de Présence
+## 2. Hybrid Presence Detection Principle
 
-La présence des équipements connectés HealthKicks repose sur un mécanisme à double niveau combinant **statut unitaire BLE** et **déconnexion brutale LWT** (_Last Will and Testament_) :
+HealthKicks connected equipment presence relies on a dual-tier mechanism combining **unitary BLE status** and **sudden disconnection LWT** (_Last Will and Testament_):
 
-### A. Niveau 1 : Statuts BLE Unitaires (Gérés par l'App Mobile)
+### A. Tier 1: Unitary BLE Statuses (Managed by Mobile App)
 
-- Dès qu'une chaussure (`HK-x`) est connectée et que ses services GATT sont prêts, l'application mobile publie immédiatement un message sur le topic dédié de l'équipement :
-  - **Topic :** `healthkicks/v1/{device_id}/status`
-  - **Payload :**
+- As soon as a shoe (`HK-x`) connects and its GATT services are ready, the mobile application immediately publishes a status message on the device's dedicated topic:
+  - **Topic:** `healthkicks/v1/{device_id}/status`
+  - **Payload:**
     ```json
     {
       "device_id": "HK-2",
@@ -57,8 +57,8 @@ La présence des équipements connectés HealthKicks repose sur un mécanisme à
       "timestamp": "2026-09-16T21:00:00.000Z"
     }
     ```
-- Lors d'une déconnexion volontaire de l'équipement BLE ou d'une perte de portée radio (signal BLE rompu) :
-  - L'application mobile publie immédiatement :
+- Upon voluntary disconnection or radio range loss (broken BLE signal):
+  - The mobile app immediately publishes:
     ```json
     {
       "device_id": "HK-2",
@@ -68,12 +68,12 @@ La présence des équipements connectés HealthKicks repose sur un mécanisme à
     }
     ```
 
-### B. Niveau 2 : Coupure Brutale Réseau / Crash Mobile (MQTT LWT)
+### B. Tier 2: Network Drop / Mobile Crash (MQTT LWT)
 
-- L'application mobile agit comme passerelle pour plusieurs capteurs rattachés à un même utilisateur (`user_id`).
-- Lors de l'établissement de la connexion MQTT vers AWS IoT Core (`MqttConnectMessage`), l'application configure un testament MQTT LWT lié au compte utilisateur :
-  - **Topic LWT :** `healthkicks/v1/users/{user_id}/gateway-status`
-  - **Payload LWT :**
+- The mobile app serves as gateway for multiple sensors attached to a single user (`user_id`).
+- When establishing the MQTT connection to AWS IoT Core (`MqttConnectMessage`), the app configures an MQTT LWT linked to the user account:
+  - **LWT Topic:** `healthkicks/v1/users/{user_id}/gateway-status`
+  - **LWT Payload:**
     ```json
     {
       "user_id": "1",
@@ -81,40 +81,40 @@ La présence des équipements connectés HealthKicks repose sur un mécanisme à
       "gateway": "mobile"
     }
     ```
-  - **QoS :** `1` (`atLeastOnce`).
-- En cas de perte de connexion brutale (perte réseau 4G/5G/Wi-Fi, coupure de batterie, fermeture forcée de l'application), le broker AWS IoT Core publie automatiquement ce message testamentaire.
-- Le backend met alors en `offline` **tous** les périphériques associés à ce `user_id`.
+  - **QoS:** `1` (`atLeastOnce`).
+- In case of sudden connection drop (cellular/Wi-Fi loss, battery depletion, OS force kill), the AWS IoT Core broker automatically publishes this testamentary message.
+- The backend then switches **all** devices linked to this `user_id` to `offline`.
 
 ---
 
-## 3. Configuration AWS Cloud
+## 3. AWS Cloud Configuration
 
-Le moteur de règles AWS IoT Core ne supporte qu'un seul filtre de topic par clause `FROM` et interdit les alias débutant par un underscore (`_`).
-La bonne pratique AWS consiste donc à créer **deux règles IoT ciblées** déclenchant la **même fonction Lambda** :
+The AWS IoT Core rule engine requires a single topic filter per `FROM` clause and forbids aliases starting with an underscore (`_`).
+The recommended AWS pattern creates **two targeted IoT rules** triggering the **same Lambda function**:
 
-### A. Règle 1 : Statuts BLE Unitaires (`healthkicks_device_presence_rule`)
+### A. Rule 1: Unitary BLE Statuses (`healthkicks_device_presence_rule`)
 
-Capture les connexions et déconnexions unitaires émises par le mobile lors des transitions BLE :
+Captures unitary connects and disconnects emitted by mobile during BLE transitions:
 
 ```sql
 SELECT *, topic() as topic FROM 'healthkicks/v1/+/status'
 ```
 
-_Action :_ Invoquer la Lambda `healthkicks_presence_handler`.
+_Action:_ Invoke `healthkicks_presence_handler` Lambda.
 
-### B. Règle 2 : Testament Passerelle LWT (`healthkicks_user_gateway_presence_rule`)
+### B. Rule 2: Gateway LWT Testament (`healthkicks_user_gateway_presence_rule`)
 
-Capture la rupture brutale de l'application mobile (perte réseau, crash, batterie) :
+Captures sudden drops of the mobile gateway app (network loss, crash, battery):
 
 ```sql
 SELECT *, topic() as topic FROM 'healthkicks/v1/users/+/gateway-status'
 ```
 
-_Action :_ Invoquer la même Lambda `healthkicks_presence_handler`.
+_Action:_ Invoke the same `healthkicks_presence_handler` Lambda.
 
-### C. Fonction Lambda AWS (`healthkicks_presence_handler`)
+### C. AWS Lambda Function (`healthkicks_presence_handler`)
 
-La fonction Lambda reçoit l'événement MQTT, extrait `device_id` ou `user_id` et transmet la notification à l'API interne du backend :
+The Lambda function receives the MQTT event, extracts `device_id` or `user_id`, and forwards the notification to the backend internal API:
 
 ```python
 import json
@@ -167,10 +167,10 @@ def lambda_handler(event, context):
 
 ---
 
-## 4. Contrat Backend FastAPI : `POST /api/v1/internal/device-presence`
+## 4. FastAPI Backend Contract: `POST /api/v1/internal/device-presence`
 
-- **Authentification :** En-tête `X-Ingest-Token` (ou `X-HealthKicks-Ingest-Token`).
-- **Schéma Pydantic :**
+- **Authentication:** `X-Ingest-Token` (or `X-HealthKicks-Ingest-Token`) header.
+- **Pydantic Schema:**
   ```python
   class DevicePresencePayload(BaseModel):
       device_id: str | None = None
@@ -179,13 +179,13 @@ def lambda_handler(event, context):
       status: str | None = None
       timestamp: datetime | None = None
   ```
-- **Logique Métier :**
-  1. Si `device_id` est spécifié :
-     - Mise à jour du champ `status` de la table `devices`.
-     - Si passage `online` : mise à jour de `last_seen_utc = timestamp`.
-     - Si passage `offline` : conservation de la valeur précédente de `last_seen_utc`.
-  2. Si `user_id` est spécifié (déclenchement LWT suite à rupture passerelle) :
-     - Résolution de l'identifiant utilisateur (par ID entier, email ou identifiants SSO).
-     - Récupération de tous les `device_id` rattachés via `device_ownership`.
-     - Mise à jour en lot (`UPDATE devices SET status = 'offline' WHERE device_id IN (...)`).
-  3. Relais de l'événement de statut sur le canal d'actualisation temps réel pour le frontend Web.
+- **Business Logic:**
+  1. If `device_id` is provided:
+     - Updates `status` column in `devices` table.
+     - If transitioning to `online`: updates `last_seen_utc = timestamp`.
+     - If transitioning to `offline`: preserves previous `last_seen_utc` value.
+  2. If `user_id` is provided (LWT triggered by gateway failure):
+     - Resolves user identifier.
+     - Retrieves all attached `device_id` rows via `device_ownership`.
+     - Batch update (`UPDATE devices SET status = 'offline' WHERE device_id IN (...)`).
+  3. Broadcasts presence status update over real-time channel to the Web frontend.

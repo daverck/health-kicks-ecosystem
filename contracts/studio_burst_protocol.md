@@ -1,91 +1,91 @@
-# Protocole Binaire de Télémétrie Studio (BLE Burst & Control)
+# Studio Telemetry Binary Protocol (BLE Burst & Control)
 
-Ce document spécifie formellement le protocole de communication bidirectionnel et de transfert de paquets binaires à haut débit (**Studio Burst**) utilisé entre la chaussure connectée (**Firmware ESP32-S3**), l'agent **Edge AI** et l'application **Mobile Flutter**.
-
----
-
-## 1. Vue d'Ensemble & Objectifs
-
-Le mode **Studio** est dédié à la capture haute fidélité de données brutes issues de la centrale inertielle (IMU MPU-6050 à $50\,\text{Hz}$ ou $100\,\text{Hz}$) pour la constitution de jeux de données d'entraînement biomécaniques et la requalification clinique.
-
-### Contraintes d'Ingénierie
-
-1. **Bande passante BLE contrainte** : Le débit utile Bluetooth Low Energy doit être maximisé sans surcharger la mémoire tampon de la pile radio (_NimBLE ring buffer_).
-2. **Atomicité des sessions** : Une session Studio possède un cycle de vie strict : Réservation REST/Cloud $\to$ Compte à rebours haptique $\to$ Enregistrement $\to$ Déchargement binaire rapide (_Burst_) $\to$ Validation d'intégrité.
-3. **Format compact sans flottant** : Les mesures d'accélération et de vitesse angulaire sont quantifiées en entiers signés 16-bit (_Fixed-point representation_) en ordre réseau (_Big-Endian_).
+This document formally specifies the bidirectional communication and high-throughput binary packet transfer protocol (**Studio Burst**) used between the connected shoe (**ESP32-S3 Firmware**), the **Edge AI** agent, and the **Flutter Mobile** companion application.
 
 ---
 
-## 2. Diagramme de Séquence de Session Studio
+## 1. Overview & Objectives
+
+**Studio** mode is dedicated to high-fidelity capture of raw inertial measurement unit data (MPU-6050 IMU at $50\,\text{Hz}$ or $100\,\text{Hz}$) for constructing biomechanical training datasets and clinical relabeling.
+
+### Engineering Constraints
+
+1. **Constrained BLE Bandwidth**: Useful Bluetooth Low Energy throughput must be maximized without overflowing the radio stack ring buffer (_NimBLE ring buffer_).
+2. **Session Atomicity**: A Studio session follows a strict lifecycle: REST/Cloud Reservation $\to$ Haptic Countdown $\to$ Recording $\to$ Fast Binary Offloading (_Burst_) $\to$ Integrity Validation.
+3. **Compact Floating-Point-Free Format**: Acceleration and angular velocity measurements are quantized into 16-bit signed integers (_Fixed-point representation_) in network byte order (_Big-Endian_).
+
+---
+
+## 2. Studio Session Sequence Diagram
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Clinician as Clinicien / Opérateur
-    participant Mobile as Application Mobile
-    participant Backend as Backend FastAPI
-    participant Shoe as Chaussure (ESP32-S3)
+    actor Clinician as Clinician / Operator
+    participant Mobile as Mobile Application
+    participant Backend as FastAPI Backend
+    participant Shoe as Connected Shoe (ESP32-S3)
 
-    Clinician->>Mobile: Déclenche enregistrement Studio ("walk", 5.0s)
-    Mobile->>Backend: POST /api/v1/studio/sessions/start (Réservation)
+    Clinician->>Mobile: Trigger Studio recording ("walk", 5.0s)
+    Mobile->>Backend: POST /api/v1/studio/sessions/start (Reservation)
     Backend-->>Mobile: 200 OK (session_id = "HK-SESS-9876")
 
     Mobile->>Shoe: Write Control (0x0004): "START walk 5.0 HK-SESS-9876"
-    Note over Shoe: Déclenche Compte à Rebours Haptique (3s)
+    Note over Shoe: Trigger Haptic Countdown (3s)
     Shoe-->>Mobile: Notify Control (0x0004): "COUNTDOWN 3"
     Shoe-->>Mobile: Notify Control (0x0004): "COUNTDOWN 2"
     Shoe-->>Mobile: Notify Control (0x0004): "COUNTDOWN 1"
 
-    Note over Shoe: Pulse Haptique de Départ (BIP Long)
+    Note over Shoe: Starting Haptic Pulse (Long BEEP)
     Shoe-->>Mobile: Notify Control (0x0004): "RECORDING HK-SESS-9876"
-    Note over Shoe: Échantillonnage IMU 50 Hz en RAM (jusqu'à 5.0s)
-    Clinician->>Mobile: Termine après au moins 2.0s (optionnel)
+    Note over Shoe: 50 Hz IMU Sampling to RAM (up to 5.0s)
+    Clinician->>Mobile: End after at least 2.0s (optional)
     Mobile->>Shoe: Write Control (0x0004): "FINISH"
 
-    Note over Shoe: Double Pulse Haptique de Fin
+    Note over Shoe: End Double Haptic Pulse
     Shoe-->>Mobile: Notify Control (0x0004): "FINISHED <count> HK-SESS-9876 <actual_duration_sec>"
 
-    loop Déchargement Burst (Opcode 0x02)
-        Shoe-->>Mobile: Notify Burst (0x0005): [Header 4B + Frames IMU N*12B]
+    loop Burst Offload (Opcode 0x02)
+        Shoe-->>Mobile: Notify Burst (0x0005): [Header 4B + IMU Frames N*12B]
     end
 
-    Note over Mobile: Réassemblage des frames & validation seq_num
-    Mobile->>Backend: POST /api/v1/telemetry/raw (Envoi des 250 lectures IMU)
-    Backend-->>Mobile: 200 OK (Persistance DynamoDB + métadonnées PostgreSQL)
+    Note over Mobile: Reassemble frames & validate seq_num
+    Mobile->>Backend: POST /api/v1/telemetry/raw (Send 250 IMU readings)
+    Backend-->>Mobile: 200 OK (DynamoDB persistence + PostgreSQL metadata)
 ```
 
 ---
 
-## 3. Canal de Contrôle (`CHAR_STUDIO_CONTROL_UUID` : `0x0004`)
+## 3. Control Channel (`CHAR_STUDIO_CONTROL_UUID`: `0x0004`)
 
-Le canal de contrôle gère la machine à états de la session. Les messages sont au format texte UTF-8.
+The control channel manages session state machine transitions. Messages are formatted in UTF-8 text.
 
-### A. Commandes Maître $\to$ Esclave (Mobile $\to$ Chaussure)
+### A. Master $\to$ Slave Commands (Mobile $\to$ Shoe)
 
-| Commande     | Syntaxe                                     | Description                                                                              |
-| :----------- | :------------------------------------------ | :--------------------------------------------------------------------------------------- |
-| **`START`**  | `START <label> <duration_sec> <session_id>` | Initie une session avec étiquette, durée (2.0 à 30.0s) et UUID de session.               |
-| **`CANCEL`** | `CANCEL`                                    | Interrompt immédiatement l'enregistrement ou le déchargement et repasse à l'état `IDLE`. |
-| **`FINISH`** | `FINISH`                                    | Termine l'enregistrement après au moins 2.0s et transmet les échantillons recueillis.    |
+| Command | Syntax | Description |
+| :--- | :--- | :--- |
+| **`START`** | `START <label> <duration_sec> <session_id>` | Initiates a session with label, duration (2.0 to 30.0s), and session UUID. |
+| **`CANCEL`** | `CANCEL` | Immediately aborts recording or offloading and resets state machine to `IDLE`. |
+| **`FINISH`** | `FINISH` | Ends recording after at least 2.0s and transmits collected samples. |
 
-### B. Notifications Esclave $\to$ Maître (Chaussure $\to$ Mobile)
+### B. Slave $\to$ Master Notifications (Shoe $\to$ Mobile)
 
-| Notification    | Format                                                        | Signification                                                                   |
-| :-------------- | :------------------------------------------------------------ | :------------------------------------------------------------------------------ |
-| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>`                               | Décompte haptique préparatoire ($3$, $2$, $1$).                                 |
-| **`RECORDING`** | `RECORDING <session_id>`                                      | Début effectif de l'acquisition des données inertielles.                        |
-| **`FINISHED`**  | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Fin de la capture ; annonce le nombre et la durée réelle des frames à recevoir. |
-| **`ERROR`**     | `ERROR <message>`                                             | Erreur matérielle (IMU déconnectée, débordement mémoire RAM, etc.).             |
+| Notification | Format | Meaning |
+| :--- | :--- | :--- |
+| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>` | Preparatory haptic countdown ($3$, $2$, $1$). |
+| **`RECORDING`** | `RECORDING <session_id>` | Effective start of inertial data acquisition. |
+| **`FINISHED`** | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Capture complete; declares total frame count and actual duration to receive. |
+| **`ERROR`** | `ERROR <message>` | Hardware fault (IMU disconnected, RAM buffer overflow, etc.). |
 
 ---
 
-## 4. Canal de Données Burst (`CHAR_STUDIO_DATA_BURST_UUID` : `0x0005`)
+## 4. Burst Data Channel (`CHAR_STUDIO_DATA_BURST_UUID`: `0x0005`)
 
-Les données IMU sont transmises sous forme de paquets binaires compacts via notifications BLE.
+IMU data is transferred as compact binary packets via BLE notifications.
 
-### A. En-Tête de Paquet Burst (4 octets)
+### A. Burst Packet Header (4 Bytes)
 
-Chaque paquet binaire débute par un en-tête de synchronisation de 4 octets :
+Each binary packet begins with a 4-byte synchronization header:
 
 ```text
  0                   1                   2                   3
@@ -93,79 +93,79 @@ Chaque paquet binaire débute par un en-tête de synchronisation de 4 octets :
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |  Opcode (0x02/4)|    Sequence Number (uint16_t MSB, LSB)      |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  PayloadBytes |           Charge utile IMU ...                |
+|  PayloadBytes |           IMU Payload ...                     |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ```
 
-1. **`Opcode` (1 octet)** :
-   - `0x01` : `BURST_PACKET_START_OF_BURST` (Optionnel, annonce d'échantillons).
-   - `0x02` : `BURST_PACKET_DATA_CHUNK` (Trames brutes non compressées, 14 octets par frame).
-   - `0x03` : `BURST_PACKET_END_OF_BURST` (Fin de burst avec total échantillons et CRC32).
-   - `0x04` : `BURST_PACKET_DELTA_CHUNK` (Compression delta sans perte avec Keyframe).
-2. **`Sequence Number` (2 octets)** : Entier non signé 16-bit en ordre _Big-Endian_, incrémenté de $1$ à chaque paquet ($0, 1, 2, \dots$). Permet la détection immédiate de perte de paquets.
-3. **`PayloadBytes` (1 octet)** : Longueur en octets de la charge utile IMU contenue dans ce paquet.
+1. **`Opcode` (1 Byte)**:
+   - `0x01`: `BURST_PACKET_START_OF_BURST` (Optional, sample announcement).
+   - `0x02`: `BURST_PACKET_DATA_CHUNK` (Uncompressed raw frames, 14 bytes per frame).
+   - `0x03`: `BURST_PACKET_END_OF_BURST` (End of burst with total sample count and CRC32).
+   - `0x04`: `BURST_PACKET_DELTA_CHUNK` (Lossless delta-compression with Keyframe).
+2. **`Sequence Number` (2 Bytes)**: Unsigned 16-bit integer in _Big-Endian_ order, incremented by $1$ per packet ($0, 1, 2, \dots$). Enables instant packet loss detection.
+3. **`PayloadBytes` (1 Byte)**: Byte length of the IMU payload in this packet.
 
 ---
 
-### B. Format Binaire d'une Frame IMU Brute (14 octets)
+### B. Raw IMU Frame Binary Format (14 Bytes)
 
-Chaque mesure inertielle brute est représentée par 1 valeur temporelle `uint16_t` et 6 valeurs `int16_t` encodées en _Big-Endian_ (ordre réseau `htons`) :
+Each raw inertial measurement is encoded as 1 `uint16_t` timestamp offset and 6 `int16_t` sensor values in _Big-Endian_ order (`htons`):
 
-| Offset | Champ      |    Type    |             Échelle & Unité              |     Formule de conversion      |
-| :----: | :--------- | :--------: | :--------------------------------------: | :----------------------------: |
-|  `+0`  | `delta_ms` | `uint16_t` |      $1\,\text{LSB} = 1\,\text{ms}$      |   Millisecondes depuis début   |
-|  `+2`  | `ax`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{valeur} / 1000.0$ |
-|  `+4`  | `ay`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{valeur} / 1000.0$ |
-|  `+6`  | `az`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{valeur} / 1000.0$ |
-|  `+8`  | `gx`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{valeur} / 10.0$  |
-| `+10`  | `gy`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{valeur} / 10.0$  |
-| `+12`  | `gz`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{valeur} / 10.0$  |
+| Offset | Field | Type | Scale & Unit | Conversion Formula |
+| :----: | :--- | :---: | :---: | :---: |
+| `+0` | `delta_ms` | `uint16_t` | $1\,\text{LSB} = 1\,\text{ms}$ | Milliseconds since start |
+| `+2` | `ax` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_x = \text{value} / 1000.0$ |
+| `+4` | `ay` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_y = \text{value} / 1000.0$ |
+| `+6` | `az` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_z = \text{value} / 1000.0$ |
+| `+8` | `gx` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_x = \text{value} / 10.0$ |
+| `+10` | `gy` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_y = \text{value} / 10.0$ |
+| `+12` | `gz` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_z = \text{value} / 10.0$ |
 
-_Taille totale par frame brute_ : $2 + (6 \times 2) = 14\,\text{octets}$.
-
----
-
-### C. Format Binaire d'un Paquet Delta Compressé (`Opcode 0x04`)
-
-Pour maximiser le débit sans perte de fidélité, le protocole supporte l'encodage différentiel (Delta-Encoding) :
-
-#### Charge utile d'un paquet `0x04` :
-
-1. **`frame_count` (1 octet)** : Nombre total de trames incluses dans le paquet ($1 + K$).
-2. **Keyframe de référence (14 octets)** : Trame brute complète encodée selon la table 4.B ci-dessus.
-3. **Trames Delta ($K \times 7$ octets)** : Pour chaque trame suivante ($i = 1 \dots K$), les différences par rapport à la trame précédente ($t_{i-1}$) sont quantifiées sur 1 octet signé :
-   - `d_ms` (1 octet, `uint8_t`) : $\Delta \text{delta\_ms} = t_i - t_{i-1}$ (typiquement $20\,\text{ms}$ à $50\,\text{Hz}$, plage $0 \dots 255$).
-   - `d_ax` (1 octet, `int8_t`) : $\Delta a_x \in [-127, +127]\,\text{mg}$.
-   - `d_ay` (1 octet, `int8_t`) : $\Delta a_y \in [-127, +127]\,\text{mg}$.
-   - `d_az` (1 octet, `int8_t`) : $\Delta a_z \in [-127, +127]\,\text{mg}$.
-   - `d_gx` (1 octet, `int8_t`) : $\Delta g_x \in [-127, +127]\,(0.1^\circ/\text{s})$.
-   - `d_gy` (1 octet, `int8_t`) : $\Delta g_y \in [-127, +127]\,(0.1^\circ/\text{s})$.
-   - `d_gz` (1 octet, `int8_t`) : $\Delta g_z \in [-127, +127]\,(0.1^\circ/\text{s})$.
-
-_Taille totale par trame delta_ : $7\,\text{octets}$ (gain de **$50\%$** par rapport aux 14 octets bruts).
-
-#### Mécanisme de Repli Dynamique (Fallback) & Sécurité
-
-- Si une variation dynamique ou un choc violent fait déborder un delta hors de $[-127, +127]$ ou $\Delta \text{ms} > 255$, le microcontrôleur coupe le paquet delta ou émet un paquet brut `0x02`.
-- Les opcodes `0x02` et `0x04` sont parfaitement composables au sein d'une même session.
-- **Vérification d'intégrité cryptographique** : Le CRC32 IEEE 802.3 transmis dans `BURST_PACKET_END_OF_BURST` (`0x03`) est systématiquement calculé sur les trames décompressées (14 octets $\times N$). Le client mobile valide ce même CRC32 après décompression, garantissant mathématiquement une intégrité à 100%.
+_Total raw frame size_: $2 + (6 \times 2) = 14\,\text{bytes}$.
 
 ---
 
-## 5. Négociation MTU & Débit Adaptatif
+### C. Delta Compressed Packet Format (`Opcode 0x04`)
 
-Le protocole calcule dynamiquement la densité de paquets en fonction de la taille MTU négociée lors de la connexion BLE :
+To maximize throughput without losing fidelity, the protocol supports differential encoding (Delta-Encoding):
 
-$$\text{Taille Utile} = \text{MTU} - 3\,(\text{En-tête ATT}) - 4\,(\text{En-tête Burst})$$
+#### Payload of an `0x04` Packet:
 
-| Mode de Transfert  |      MTU Négocié      | En-tête ATT + Burst | Taille Utile |         Frames / Paquet          | Octets Payload |
-| :----------------- | :-------------------: | :-----------------: | :----------: | :------------------------------: | :------------: |
-| **Brut (`0x02`)**  |     **185** (iOS)     |      7 octets       |  178 octets  |          **12 frames**           |   168 octets   |
-| **Brut (`0x02`)**  | **256** (HealthKicks) |      7 octets       |  249 octets  |          **17 frames**           |   238 octets   |
-| **Delta (`0x04`)** |     **185** (iOS)     |      7 octets       |  178 octets  | **24 frames** (1 Key + 23 Delta) |   176 octets   |
-| **Delta (`0x04`)** | **256** (HealthKicks) |      7 octets       |  249 octets  | **33 frames** (1 Key + 32 Delta) |   239 octets   |
+1. **`frame_count` (1 Byte)**: Total number of frames in packet ($1 + K$).
+2. **Reference Keyframe (14 Bytes)**: Full raw frame encoded per table 4.B above.
+3. **Delta Frames ($K \times 7$ Bytes)**: For each successive frame ($i = 1 \dots K$), differences relative to preceding frame ($t_{i-1}$) are quantized to 1 signed byte:
+   - `d_ms` (1 Byte, `uint8_t`): $\Delta \text{delta\_ms} = t_i - t_{i-1}$ (typically $20\,\text{ms}$ at $50\,\text{Hz}$, range $0 \dots 255$).
+   - `d_ax` (1 Byte, `int8_t`): $\Delta a_x \in [-127, +127]\,\text{mg}$.
+   - `d_ay` (1 Byte, `int8_t`): $\Delta a_y \in [-127, +127]\,\text{mg}$.
+   - `d_az` (1 Byte, `int8_t`): $\Delta a_z \in [-127, +127]\,\text{mg}$.
+   - `d_gx` (1 Byte, `int8_t`): $\Delta g_x \in [-127, +127]\,(0.1^\circ/\text{s})$.
+   - `d_gy` (1 Byte, `int8_t`): $\Delta g_y \in [-127, +127]\,(0.1^\circ/\text{s})$.
+   - `d_gz` (1 Byte, `int8_t`): $\Delta g_z \in [-127, +127]\,(0.1^\circ/\text{s})$.
 
-### Régulation de Flux & Anti-Saturation
+_Total size per delta frame_: $7\,\text{bytes}$ (**$50\%$ reduction** compared to 14 raw bytes).
 
-- Un délai inter-paquet de **$5\,\text{ms}$** est appliqué sur le microcontrôleur entre deux envois consécutifs. Ce délai garantit que le contrôleur radio NimBLE ne sature pas sa file d'attente de transmission (évite les erreurs `BLE_HS_ENOMEM`).
-- Grâce à la compression Delta (`0x04`), une session complète de $5\,\text{secondes}$ à $50\,\text{Hz}$ ($250\,\text{frames}$) est entièrement transmise en **$8\,\text{paquets}$** (contre 15 paquets auparavant), réduisant la durée d'occupation radio de moitié.
+#### Dynamic Fallback & Safety Mechanisms
+
+- If rapid motion or a heavy impact causes a delta to exceed $[-127, +127]$ or $\Delta \text{ms} > 255$, the microcontroller terminates the delta packet or emits a raw `0x02` packet.
+- Opcodes `0x02` and `0x04` can be mixed seamlessly within the same session.
+- **Cryptographic Integrity Validation**: The IEEE 802.3 CRC32 transmitted in `BURST_PACKET_END_OF_BURST` (`0x03`) is systematically computed over decompressed frames (14 bytes $\times N$). The mobile client validates this CRC32 post-decompression, mathematically ensuring 100% data integrity.
+
+---
+
+## 5. MTU Negotiation & Adaptive Throughput
+
+The protocol dynamically calculates packet density based on the negotiated BLE MTU:
+
+$$\text{Usable Payload Size} = \text{MTU} - 3\,(\text{ATT Header}) - 4\,(\text{Burst Header})$$
+
+| Transfer Mode | Negotiated MTU | ATT + Burst Header | Usable Payload | Frames / Packet | Payload Bytes |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Raw (`0x02`)** | **185** (iOS) | 7 bytes | 178 bytes | **12 frames** | 168 bytes |
+| **Raw (`0x02`)** | **256** (HealthKicks) | 7 bytes | 249 bytes | **17 frames** | 238 bytes |
+| **Delta (`0x04`)** | **185** (iOS) | 7 bytes | 178 bytes | **24 frames** (1 Key + 23 Delta) | 176 bytes |
+| **Delta (`0x04`)** | **256** (HealthKicks) | 7 bytes | 249 bytes | **33 frames** (1 Key + 32 Delta) | 239 bytes |
+
+### Flow Control & Anti-Saturation
+
+- A **$5\,\text{ms}$** inter-packet transmission delay is enforced on the microcontroller between consecutive packets. This ensures the NimBLE radio controller TX queue does not starve or overflow (preventing `BLE_HS_ENOMEM` errors).
+- Leveraging Delta compression (`0x04`), a complete $5\,\text{second}$ session at $50\,\text{Hz}$ ($250\,\text{frames}$) is transmitted in only **$8\,\text{packets}$** (down from 15 packets), halving radio channel airtime.

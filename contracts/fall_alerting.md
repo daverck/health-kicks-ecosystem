@@ -1,71 +1,71 @@
-# Contrat d'Échange — Alerting en cas de Chute (Fall Alerting)
+# Exchange Contract — Fall Alerting
 
-> **Statut** : `VALIDATED v1.1` — Spécification validée par l'utilisateur (Email SMTP + SMS piloté par le Backend via Relais GSM Mobile).
-> **Projets impactés** :
+> **Status**: `VALIDATED v1.1` — Specification validated with user (SMTP Email + Backend-directed SMS via Mobile GSM Relay).
+> **Impacted Projects**:
 >
-> - `health-kicks` (Backend FastAPI, SQLAlchemy/Alembic, Worker d'escalade, SMTP, Ordres SMS MQTT Downlink, Suivi `SMS_STATUS`, Webhook IoT, Page d'acquittement HTML)
-> - `health-kicks-mobile` (Mobile Flutter Android, Détection BLE -> Uplink MQTT, GPS, Écran d'alerte 60 s, Réception Downlink MQTT, Envoi SMS natif `SmsManager` + acquittement `SMS_STATUS`, Appel 112)
-> - `health-kicks-frontend` (Angular 22, Page `/dashboard/fall-alerts` à deux onglets : _Historique des alertes_ avec trace Email/SMS et _Mes proches d'urgence_ avec téléphone optionnel)
-> - `health-kicks-esp32-s3` : **Aucun changement** (s'appuie sur la caractéristique BLE `7a5a0002` définie dans [`ble_gatt_specs.md`](./ble_gatt_specs.md)).
+> - `health-kicks` (FastAPI Backend, SQLAlchemy/Alembic, Escalation Worker, SMTP, Downlink MQTT SMS Commands, `SMS_STATUS` Tracking, IoT Webhook, HTML Acknowledgment Page)
+> - `health-kicks-mobile` (Flutter Android Mobile, BLE Detection -> MQTT Uplink, GPS, 60s Alert Screen, Downlink MQTT Handling, Native `SmsManager` SMS Dispatch + `SMS_STATUS` Ack, 112 Dialing)
+> - `health-kicks-frontend` (Angular 22, `/dashboard/fall-alerts` with two tabs: _Alert History_ with Email/SMS tracing and _Emergency Contacts_ with optional phone)
+> - `health-kicks-esp32-s3`: **No changes** (relies on BLE characteristic `7a5a0002` defined in [`ble_gatt_specs.md`](./ble_gatt_specs.md)).
 
 ---
 
-## 1. Périmètre & Principes Directeurs
+## 1. Scope & Guiding Principles
 
-| Principe                         | Règle Normative                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| :------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Canaux d'alerte**              | **Email** (SMTP STARTTLS émis par le backend) **+ SMS optionnel** (orchestré par le backend via MQTT Downlink et émis par le téléphone Android de l'utilisateur via `SmsManager`, avec évolution future possible vers une API SMS Cloud type OVH SMS).                                                                                                                                                                                                                                                                                                                      |
-| **Pré-condition**                | **Mode Surveillance Active** ([`docs/mobile_architecture.md`](../docs/mobile_architecture.md)) : l'application mobile Android maintient le Foreground Service connecté à la chaussure (BLE) **et** au broker AWS IoT Core (MQTT). Aucune alerte email/SMS n'est émise pour une chute remontée en différé (`SUPPRESSED`).                                                                                                                                                                                                                                                    |
-| **Destinataires (Proches)**      | Contacts d'urgence associés au compte utilisateur : `first_name`, `last_name`, `email` (obligatoire), `phone` (**optionnel**, format international/local normalisé), `priority` (`1..5`). **Gérés exclusivement depuis l'application web** (onglet _Mes proches d'urgence_ sur `/dashboard/fall-alerts`). Maximum **5** proches par utilisateur. Aucun envoi automatique lors de l'ajout, mais un bouton **« Tester »** envoie un email de test et, si `phone` est renseigné, un ordre de SMS de test au mobile.                                                            |
-| **Escalade séquentielle**        | Un seul proche est notifié à la fois par ordre de `priority` croissant (`1`, puis `2`, etc.). Si le proche possède un numéro `phone`, le backend déclenche simultanément l'envoi de l'email **et** l'ordre d'envoi du SMS pour ce proche. Sans prise en charge sous **180 secondes (3 min)**, le proche suivant est notifié. Dès qu'un proche confirme la prise en charge (via le lien dans l'email ou dans le SMS), **l'escalade s'arrête et les proches suivants ne sont jamais notifiés**.                                                                               |
-| **Épuisement (`EXHAUSTED`)**     | Si le dernier proche de la liste n'a pas confirmé après **180 secondes** (ou si l'utilisateur n'a configuré aucun proche à la fin des 60 s), l'alerte passe à l'état `EXHAUSTED` : **on arrête les relances** et le téléphone du patient affiche en plein écran **« Appeler le 112 »**.                                                                                                                                                                                                                                                                                     |
-| **Fenêtre d'annulation (60 s)**  | À la réception d'une chute, l'alerte démarre en `PENDING` pour **60 secondes** (minuterie pilotée par le backend) pendant que le téléphone affiche l'écran « Ça va ? ». Si le patient clique sur « Je vais bien » ou si la chaussure détecte un relevage (`fall_recovery`, code `0x13`), l'alerte passe en `CANCELLED` et **aucune notification n'est envoyée**.                                                                                                                                                                                                            |
-| **Relevage après envoi**         | Si `fall_recovery` (ou annulation manuelle par le patient) survient pendant `ESCALATING`, l'alerte passe immédiatement en `CANCELLED`, **l'escalade s'arrête et aucune notification supplémentaire n'est envoyée**.                                                                                                                                                                                                                                                                                                                                                         |
-| **Prise en charge (ACK)**        | Via un **lien cliquable signé valable 2 heures (7 200 s)** présent dans l'email et dans le SMS : `f"{frontend_url}/fall-alerts/ack?token={token}"`. Le lien ouvre directement la page du frontend Angular (`/fall-alerts/ack?token=...`) qui charge les métadonnées de l'alerte via `GET /api/v1/fall-alerts/ack/info` (lecture seule sécurisée), puis un bouton explicite confirme la prise en charge via `POST /api/v1/fall-alerts/ack` (payload JSON `{"token": "..."}`) afin d'éviter tout faux acquittement par les robots d'aperçu de liens SMS ou scanners d'emails. |
-| **Concurrence d'alertes**        | Un utilisateur ne peut avoir **qu'une seule alerte active** (`PENDING` ou `ESCALATING`) à la fois. Toute nouvelle chute `DETECTED` reçue alors qu'une alerte est déjà active pour cet utilisateur est rattachée/ignorée de manière idempotente sans déclencher une seconde chaîne parallèle.                                                                                                                                                                                                                                                                                |
-| **Visibilité Historique & RBAC** | L'historique des alertes est visible par **l'utilisateur concerné** (rôle `user` ou `clinician`, chacun ne voyant **que ses propres alertes**) et par le rôle **`admin`** (qui voit toutes les alertes avec pseudonymisation RGPD par défaut pour les comptes tiers, aligné sur Studio).                                                                                                                                                                                                                                                                                    |
+| Principle | Normative Rule |
+| :--- | :--- |
+| **Alert Channels** | **Email** (SMTP STARTTLS sent by backend) **+ Optional SMS** (orchestrated by backend via Downlink MQTT and sent by the user's Android phone via `SmsManager`, with future evolution path towards a Cloud SMS API like OVH SMS). |
+| **Precondition** | **Active Surveillance Mode** ([`docs/mobile_architecture.md`](../docs/mobile_architecture.md)): the Android mobile app maintains the Foreground Service connected to the footwear (BLE) **and** to the AWS IoT Core broker (MQTT). No email/SMS alert is emitted for deferred falls (`SUPPRESSED`). |
+| **Recipients (Contacts)** | Emergency contacts associated with the user account: `first_name`, `last_name`, `email` (mandatory), `phone` (**optional**, normalized international/local format), `priority` (`1..5`). **Managed exclusively from the web application** (_Emergency Contacts_ tab on `/dashboard/fall-alerts`). Maximum **5** contacts per user. No automatic message upon creation, but a **"Test"** button sends a test email and, if `phone` is set, a test SMS order to the mobile device. |
+| **Sequential Escalation** | Exactly one contact is alerted at a time in ascending order of `priority` (`1`, then `2`, etc.). If the contact has a `phone` number, the backend simultaneously dispatches the email **and** the SMS command for that contact. Without acknowledgment within **180 seconds (3 min)**, the next contact is alerted. As soon as any contact confirms handling (via link in email or SMS), **escalation stops and subsequent contacts are never notified**. |
+| **Exhaustion (`EXHAUSTED`)** | If the last contact on the list has not confirmed after **180 seconds** (or if the user configured no contacts by the end of the 60s window), the alert transitions to `EXHAUSTED`: **retries stop** and the patient's phone displays full-screen **"Call 112"**. |
+| **Cancellation Window (60s)** | Upon receiving a fall event, the alert starts in `PENDING` for **60 seconds** (timer managed by backend) while the phone displays the "Are you okay?" screen. If the patient clicks "I'm okay" or if the footwear detects recovery (`fall_recovery`, code `0x13`), the alert transitions to `CANCELLED` and **no notification is sent**. |
+| **Recovery Post-Dispatch** | If `fall_recovery` (or manual user cancel) occurs during `ESCALATING`, the alert immediately transitions to `CANCELLED`, **escalation halts, and no further notifications are sent**. |
+| **Acknowledgment (ACK)** | Via a **signed link valid for 2 hours (7,200 s)** in email and SMS: `f"{frontend_url}/fall-alerts/ack?token={token}"`. The link opens the Angular frontend page (`/fall-alerts/ack?token=...`) which fetches alert metadata via `GET /api/v1/fall-alerts/ack/info` (secure read-only), followed by an explicit button confirmation via `POST /api/v1/fall-alerts/ack` (JSON payload `{"token": "..."}`) to prevent accidental acknowledgments from SMS link preview crawlers or email scanners. |
+| **Alert Concurrency** | A user can have **only one active alert** (`PENDING` or `ESCALATING`) at a time. Any new `DETECTED` fall received while an alert is active is attached/ignored idempotently without triggering a parallel escalation chain. |
+| **History Visibility & RBAC** | Alert history is visible to the **concerned user** (role `user` or `clinician`, each seeing **only their own alerts**) and the **`admin`** role (who sees all alerts with GDPR pseudonymization by default for third-party accounts, aligned with Studio). |
 
 ---
 
-## 2. Machine à États (`FallAlertState`)
+## 2. State Machine (`FallAlertState`)
 
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING : MQTT action=DETECTED (delivery=live)
-    [*] --> SUPPRESSED : MQTT action=DETECTED (delivery=replayed ou retard > 120s)
+    [*] --> SUPPRESSED : MQTT action=DETECTED (delivery=replayed or delay > 120s)
     PENDING --> CANCELLED : MQTT action=CANCEL (user_cancel | fall_recovery)
-    PENDING --> ESCALATING : 60 s écoulées OU MQTT action=CONFIRM (≥ 1 proche configuré)
-    PENDING --> EXHAUSTED : 60 s écoulées OU MQTT action=CONFIRM (0 proche configuré)
-    ESCALATING --> ESCALATING : 180 s sans ACK (ou échec d'envoi) → proche suivant
+    PENDING --> ESCALATING : 60s elapsed OR MQTT action=CONFIRM (≥ 1 contact configured)
+    PENDING --> EXHAUSTED : 60s elapsed OR MQTT action=CONFIRM (0 contacts configured)
+    ESCALATING --> ESCALATING : 180s without ACK (or send failure) → next contact
     ESCALATING --> CANCELLED : MQTT action=CANCEL (user_cancel | fall_recovery)
-    ESCALATING --> ACKNOWLEDGED : POST /api/v1/fall-alerts/ack (jeton valide ≤ 2h)
-    ESCALATING --> EXHAUSTED : dernier proche + 180 s sans ACK (ou tous envois en échec)
-    EXHAUSTED --> ACKNOWLEDGED : POST /api/v1/fall-alerts/ack tardif (jeton encore valide ≤ 2h)
+    ESCALATING --> ACKNOWLEDGED : POST /api/v1/fall-alerts/ack (valid token ≤ 2h)
+    ESCALATING --> EXHAUSTED : last contact + 180s without ACK (or all sends failed)
+    EXHAUSTED --> ACKNOWLEDGED : late POST /api/v1/fall-alerts/ack (token still valid ≤ 2h)
     CANCELLED --> [*]
     ACKNOWLEDGED --> [*]
     SUPPRESSED --> [*]
 ```
 
-| État (`FallAlertState`) | Terminal | Description                                                                                                                                                                                                                                                    |
-| :---------------------- | :------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PENDING`               |    ❌    | Chute reçue en direct ; fenêtre d'annulation de 60 s en cours (`next_action_at = detected_at + 60s`). Aucune notification envoyée.                                                                                                                             |
-| `ESCALATING`            |    ❌    | Envoi séquentiel en cours ; `current_contact_rank` (`1..N`) indique le proche actuellement sollicité (`next_action_at = now + 180s`).                                                                                                                          |
-| `ACKNOWLEDGED`          |    ✅    | Un proche a confirmé la prise en charge via le lien signé (Email ou SMS). Escalade stoppée.                                                                                                                                                                    |
-| `CANCELLED`             |    ✅    | Annulée par le patient (`user_cancel`) ou par détection de relevage (`fall_recovery`). Aucune notification envoyée après cet état.                                                                                                                             |
-| `EXHAUSTED`             | ⚠️ semi  | Tous les proches ont été sollicités sans confirmation dans le délai imparti (ou aucun proche configuré). Le mobile affiche « Appeler le 112 ». Seule transition encore autorisée : `ACKNOWLEDGED` si un proche clique sur son lien avant l'expiration des 2 h. |
-| `SUPPRESSED`            |    ✅    | Chute remontée hors surveillance active (`delivery="replayed"`, bit 2 `flags` NVS BLE, ou retard > 120 s). Enregistrée pour traçabilité sans aucune notification.                                                                                              |
+| State (`FallAlertState`) | Terminal | Description |
+| :--- | :---: | :--- |
+| `PENDING` | ❌ | Fall received live; 60s cancellation window active (`next_action_at = detected_at + 60s`). No notifications sent. |
+| `ESCALATING` | ❌ | Sequential alert dispatch in progress; `current_contact_rank` (`1..N`) indicates contact currently being solicited (`next_action_at = now + 180s`). |
+| `ACKNOWLEDGED` | ✅ | A contact confirmed acknowledgment via signed link (Email or SMS). Escalation stopped. |
+| `CANCELLED` | ✅ | Cancelled by patient (`user_cancel`) or recovery detection (`fall_recovery`). No notifications sent after this state. |
+| `EXHAUSTED` | ⚠️ semi | All contacts solicited without confirmation in allotted time (or no contacts configured). Mobile shows "Call 112". Only allowed next transition: `ACKNOWLEDGED` if a contact clicks their link before the 2h expiration. |
+| `SUPPRESSED` | ✅ | Fall recorded outside active surveillance (`delivery="replayed"`, bit 2 `flags` NVS BLE, or delay > 120s). Saved for traceability without notifications. |
 
 ---
 
-## 3. Contrats MQTT IoT (Mobile ↔ AWS IoT Core ↔ Backend)
+## 3. IoT MQTT Contracts (Mobile ↔ AWS IoT Core ↔ Backend)
 
-Les topics utilisent l'espace de noms utilisateur `healthkicks/v1/users/{user_uuid}/...` basé sur l'identifiant unique universel (UUIDv4) du compte utilisateur, déjà autorisé en `iot:Publish`, `iot:Subscribe` et `iot:Receive` par la politique STS dynamique (`AWSSTSService.build_session_policy`).
+Topics use the user namespace `healthkicks/v1/users/{user_uuid}/...` based on the UUIDv4 of the user account, pre-authorized for `iot:Publish`, `iot:Subscribe`, and `iot:Receive` by the dynamic STS policy (`AWSSTSService.build_session_policy`).
 
-### A. Topic Uplink (Mobile → Cloud) : `healthkicks/v1/users/{user_uuid}/events/fall-alert`
+### A. Uplink Topic (Mobile → Cloud): `healthkicks/v1/users/{user_uuid}/events/fall-alert`
 
-Publié par l'application mobile en **QoS 1**.
+Published by mobile application in **QoS 1**.
 
-#### 1. Payload `action = "DETECTED"` (émis dès la réception BLE `0x10`, `0x11`, `0x12`, `0x1F`)
+#### 1. Payload `action = "DETECTED"` (emitted upon BLE `0x10`, `0x11`, `0x12`, `0x1F`)
 
 ```json
 {
@@ -86,7 +86,7 @@ Publié par l'application mobile en **QoS 1**.
 }
 ```
 
-#### 2. Payload `action = "CONFIRM"` (si le patient appuie sur « J'ai besoin d'aide maintenant » avant la fin des 60 s)
+#### 2. Payload `action = "CONFIRM"` (if patient taps "I need help now" before 60s elapse)
 
 ```json
 {
@@ -102,7 +102,7 @@ Publié par l'application mobile en **QoS 1**.
 }
 ```
 
-#### 3. Payload `action = "CANCEL"` (appui sur « Je vais bien » ou réception BLE `0x13` `fall_recovery`)
+#### 3. Payload `action = "CANCEL"` (tap "I'm okay" or BLE `0x13` `fall_recovery` received)
 
 ```json
 {
@@ -113,7 +113,7 @@ Publié par l'application mobile en **QoS 1**.
 }
 ```
 
-#### 4. Payload `action = "SMS_STATUS"` (retour d'exécution du relais SMS Android vers le Backend via MQTT ou REST `POST /api/v1/fall-alerts/sms-status`)
+#### 4. Payload `action = "SMS_STATUS"` (execution report from Android SMS relay to Backend via MQTT or REST `POST /api/v1/fall-alerts/sms-status`)
 
 ```json
 {
@@ -126,27 +126,27 @@ Publié par l'application mobile en **QoS 1**.
 }
 ```
 
-#### Contraintes de validation des champs Uplink
+#### Uplink Validation Constraints
 
-| Champ             | Type             |     Requis      | Contraintes & Sémantique                                                                                                                                                    |
-| :---------------- | :--------------- | :-------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `event_id`        | `string`         |       ✅        | UUID v4 généré par le mobile lors de la chute. **Clé d'idempotence** partagée entre `DETECTED`, `CONFIRM`, `CANCEL` et `SMS_STATUS`.                                        |
-| `action`          | `enum`           |       ✅        | `"DETECTED"` \| `"CONFIRM"` \| `"CANCEL"` \| `"SMS_STATUS"`                                                                                                                 |
-| `device_id`       | `string`         |  si `DETECTED`  | Identifiant de la chaussure (`1..128` car.).                                                                                                                                |
-| `event_type`      | `enum`           |  si `DETECTED`  | `"fall_forward"` \| `"fall_backward"` \| `"fall_lateral"` \| `"fall_generic"`                                                                                               |
-| `confidence`      | `float`          |  si `DETECTED`  | Score ML compris entre `0.0` et `1.0`.                                                                                                                                      |
-| `detected_at`     | `int`            |  si `DETECTED`  | Epoch UTC en millisecondes (`ms`) au moment de la chute.                                                                                                                    |
-| `delivery`        | `enum`           |  si `DETECTED`  | `"live"` si transmis immédiatement en mode Surveillance Active ; `"replayed"` si issu du cache NVS hors-ligne de la chaussure (`flags` bit 2 = 1) ou d'une file hors-ligne. |
-| `location`        | `object \| null` |       ❌        | Position GPS (`lat`: `[-90, 90]`, `lon`: `[-180, 180]`, `accuracy_m`: `≥ 0`, `captured_at`: epoch ms UTC).                                                                  |
-| `cancel_reason`   | `enum`           |   si `CANCEL`   | `"user_cancel"` (bouton « Je vais bien ») \| `"fall_recovery"` (relevage `0x13` détecté par la chaussure).                                                                  |
-| `notification_id` | `int`            | si `SMS_STATUS` | Identifiant de la ligne `fall_alert_notifications` (`channel="sms"`) créée par le backend.                                                                                  |
-| `sms_status`      | `enum`           | si `SMS_STATUS` | `"SENT"` (SMS remis au modem GSM Android) \| `"FAILED"` (permission refusée ou erreur modem).                                                                               |
-| `error_message`   | `string \| null` |       ❌        | Détail de l'erreur en cas de `sms_status == "FAILED"` (max 512 car.).                                                                                                       |
-| `sent_at`         | `int`            |       ✅        | Epoch UTC en millisecondes (`ms`) d'envoi du message MQTT.                                                                                                                  |
+| Field | Type | Required | Constraints & Semantics |
+| :--- | :--- | :---: | :--- |
+| `event_id` | `string` | ✅ | UUID v4 generated by mobile upon fall. **Idempotence key** shared across `DETECTED`, `CONFIRM`, `CANCEL`, and `SMS_STATUS`. |
+| `action` | `enum` | ✅ | `"DETECTED"` \| `"CONFIRM"` \| `"CANCEL"` \| `"SMS_STATUS"` |
+| `device_id` | `string` | if `DETECTED` | Shoe identifier (`1..128` chars). |
+| `event_type` | `enum` | if `DETECTED` | `"fall_forward"` \| `"fall_backward"` \| `"fall_lateral"` \| `"fall_generic"` |
+| `confidence` | `float` | if `DETECTED` | ML confidence score between `0.0` and `1.0`. |
+| `detected_at` | `int` | if `DETECTED` | UTC Epoch in milliseconds (`ms`) at fall detection. |
+| `delivery` | `enum` | if `DETECTED` | `"live"` if transmitted immediately in Active Surveillance mode; `"replayed"` if originating from offline shoe NVS cache (`flags` bit 2 = 1) or offline queue. |
+| `location` | `object \| null` | ❌ | GPS location (`lat`: `[-90, 90]`, `lon`: `[-180, 180]`, `accuracy_m`: `≥ 0`, `captured_at`: epoch ms UTC). |
+| `cancel_reason` | `enum` | if `CANCEL` | `"user_cancel"` ("I'm okay" button) \| `"fall_recovery"` (recovery `0x13` detected by shoe). |
+| `notification_id` | `int` | if `SMS_STATUS` | Identifier of `fall_alert_notifications` row (`channel="sms"`) created by backend. |
+| `sms_status` | `enum` | if `SMS_STATUS` | `"SENT"` (SMS submitted to Android GSM modem) \| `"FAILED"` (permission denied or modem error). |
+| `error_message` | `string \| null` | ❌ | Error detail if `sms_status == "FAILED"` (max 512 chars). |
+| `sent_at` | `int` | ✅ | UTC Epoch in milliseconds (`ms`) when MQTT message was sent. |
 
-### B. Topic Downlink (Cloud → Mobile) : `healthkicks/v1/users/{user_uuid}/fall-alert/status`
+### B. Downlink Topic (Cloud → Mobile): `healthkicks/v1/users/{user_uuid}/fall-alert/status`
 
-Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**) à chaque création, changement d'état d'une alerte, ou demande de SMS de test (`state = "TEST_SMS"`).
+Published by backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**) upon alert creation, state change, or test SMS request (`state = "TEST_SMS"`).
 
 ```json
 {
@@ -164,59 +164,59 @@ Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**
     "contact_id": 7,
     "contact_first_name": "Marie",
     "recipient_phone": "+32470123456",
-    "message": "[HealthKicks URGENCE] Chute détectée pour Jean Martin (10:39). Position : https://maps.google.com/?q=50.8466,4.3528 Confirmez la prise en charge : https://healthkicks.duckdns.org:8443/api/v1/fall-alerts/ack?token=...",
+    "message": "[HealthKicks EMERGENCY] Fall detected for Jean Martin (10:39). Location: https://maps.google.com/?q=50.8466,4.3528 Confirm handling: https://healthkicks.duckdns.org:8443/api/v1/fall-alerts/ack?token=...",
     "is_test": false
   }
 }
 ```
 
-| État reçu (`state`)        | Action de l'application mobile (Android)                                                                                                                                                                                                                                                                                                                         |
-| :------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PENDING`                  | Affiche l'écran d'alerte plein écran (« Chute détectée — Ça va ? ») avec compte à rebours synchronisé sur `next_action_at`, bouton **« Je vais bien (Annuler) »** et bouton **« J'ai besoin d'aide »**.                                                                                                                                                          |
-| `ESCALATING`               | Affiche « Alerte envoyée au proche n°`current_contact_rank` sur `contacts_total` — En attente de réponse… » + bouton « Je vais bien (Annuler l'alerte) ». Si `sms_command` est présent (et non encore traité pour ce `notification_id`), envoie immédiatement le SMS via `SmsManager` et publie `action: "SMS_STATUS"` (`SENT` ou `FAILED`) sur le topic uplink. |
-| `ACKNOWLEDGED`             | Affiche « Rassurez-vous : **`acknowledged_by.first_name`** a pris en charge votre alerte » avec un bouton pour fermer l'écran.                                                                                                                                                                                                                                   |
-| `EXHAUSTED`                | Affiche en plein écran haute visibilité **« Aucun proche n'a pu confirmer — Appeler le 112 »** (bouton déclenchant le composeur téléphonique `tel:112`).                                                                                                                                                                                                         |
-| `CANCELLED` / `SUPPRESSED` | Ferme l'écran d'alerte actif s'il est affiché.                                                                                                                                                                                                                                                                                                                   |
-| `TEST_SMS`                 | **N'ouvre pas l'écran d'alerte de chute.** Envoie immédiatement le SMS de test décrit dans `sms_command` via `SmsManager`.                                                                                                                                                                                                                                       |
+| Received State (`state`) | Android Mobile Application Action |
+| :--- | :--- |
+| `PENDING` | Displays full-screen alert ("Fall detected — Are you okay?") with countdown synchronized with `next_action_at`, **"I'm okay (Cancel)"** button, and **"I need help"** button. |
+| `ESCALATING` | Displays "Alert sent to contact #`current_contact_rank` of `contacts_total` — Waiting for reply..." + "I'm okay (Cancel alert)" button. If `sms_command` is present (and not yet processed for this `notification_id`), immediately sends SMS via `SmsManager` and publishes `action: "SMS_STATUS"` (`SENT` or `FAILED`) on uplink topic. |
+| `ACKNOWLEDGED` | Displays "Reassurance: **`acknowledged_by.first_name`** has acknowledged your alert" with a button to dismiss. |
+| `EXHAUSTED` | Displays high-visibility full-screen **"No contact could confirm — Call 112"** (button triggering phone dialer `tel:112`). |
+| `CANCELLED` / `SUPPRESSED` | Dismisses active alert screen if displayed. |
+| `TEST_SMS` | **Does not open fall alert screen.** Immediately dispatches test SMS described in `sms_command` via `SmsManager`. |
 
-### C. Règle AWS IoT Core & Fonction Lambda Relais
+### C. AWS IoT Core Rule & Lambda Relay
 
-- **IoT Rule Name** : `healthkicks_fall_alert_rule`
-- **Rule SQL** :
+- **IoT Rule Name**: `healthkicks_fall_alert_rule`
+- **Rule SQL**:
   ```sql
   SELECT *, topic(4) AS user_uuid FROM 'healthkicks/v1/users/+/events/fall-alert'
   ```
-- **Target** : Fonction AWS Lambda `healthkicks-fall-alert-relay` qui effectue un `POST {BACKEND_URL}/api/v1/internal/fall-alerts` avec l'en-tête `X-Ingest-Token` (transmet aussi bien `DETECTED`, `CONFIRM`, `CANCEL` que `SMS_STATUS`).
+- **Target**: AWS Lambda function `healthkicks-fall-alert-relay` which executes `POST {BACKEND_URL}/api/v1/internal/fall-alerts` with header `X-Ingest-Token` (forwarding `DETECTED`, `CONFIRM`, `CANCEL`, and `SMS_STATUS`).
 
 ---
 
-## 4. Contrats REST API (Backend FastAPI)
+## 4. REST API Contracts (FastAPI Backend)
 
-### A. Endpoint Interne d'Ingestion (Lambda → Backend)
+### A. Internal Ingestion Endpoint (Lambda → Backend)
 
 #### `POST /api/v1/internal/fall-alerts`
 
-- **Authentification** : Header `X-Ingest-Token` (`Depends(verify_ingest_token)`).
-- **Règles métier supplémentaires pour `action == "SMS_STATUS"`** :
-  - Recherche `FallAlertNotification` par `id == payload.notification_id` en vérifiant que l'alerte parente appartient à `user_id`.
-  - Si introuvable → `404 Not Found`.
-  - Si `notification.status != "ACKNOWLEDGED"` : met à jour `notification.status = payload.sms_status` (`"SENT"` ou `"FAILED"`) et `notification.error_message = payload.error_message`.
-  - Retourne `200 OK` (`FallAlertIngestResponse` avec l'état courant de l'alerte).
+- **Authentication**: Header `X-Ingest-Token` (`Depends(verify_ingest_token)`).
+- **Business Rules for `action == "SMS_STATUS"`**:
+  - Searches `FallAlertNotification` by `id == payload.notification_id`, verifying parent alert belongs to `user_id`.
+  - If not found → `404 Not Found`.
+  - If `notification.status != "ACKNOWLEDGED"`: updates `notification.status = payload.sms_status` (`"SENT"` or `"FAILED"`) and `notification.error_message = payload.error_message`.
+  - Returns `200 OK` (`FallAlertIngestResponse` with current alert state).
 
 ---
 
-### B. Gestion des Proches / Contacts d'Urgence (Frontend Web ↔ Backend)
+### B. Emergency Contacts Management (Web Frontend ↔ Backend)
 
-| Méthode & Route                                                |   Code Succès    | Description & Codes d'Erreur                                                                                                                                                                                                                  |
-| :------------------------------------------------------------- | :--------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/v1/users/me/alert-contacts`                          |     `200 OK`     | Retourne `list[AlertContactResponse]` triée par `priority` croissant (`1..N`).                                                                                                                                                                |
-| `POST /api/v1/users/me/alert-contacts`                         |  `201 Created`   | Ajoute un proche en dernière position (`priority = count + 1`). `email` obligatoire, `phone` optionnel. `409 Conflict` si le plafond de **5 proches** est atteint ou si l'`email` existe déjà pour cet utilisateur.                           |
-| `PUT /api/v1/users/me/alert-contacts/order`                    |     `200 OK`     | Réordonne les priorités (`{"contact_ids": [int, ...]}`).                                                                                                                                                                                      |
-| `PATCH /api/v1/users/me/alert-contacts/{contact_id}`           |     `200 OK`     | Modifie `first_name`, `last_name`, `email` et/ou `phone` (passer `phone: null` ou `""` efface le numéro).                                                                                                                                     |
-| `DELETE /api/v1/users/me/alert-contacts/{contact_id}`          | `204 No Content` | Supprime le proche et re-compacte les `priority` restantes (`1..N`).                                                                                                                                                                          |
-| `POST /api/v1/users/me/alert-contacts/{contact_id}/test-email` |  `202 Accepted`  | Envoie un email de vérification au proche **et**, si `contact.phone` est renseigné, publie un ordre `state="TEST_SMS"` sur le topic MQTT du mobile. Met à jour `last_test_email_at`. Rate-limit : **3 envois / heure / utilisateur** (`429`). |
+| Method & Route | Success Code | Description & Error Codes |
+| :--- | :---: | :--- |
+| `GET /api/v1/users/me/alert-contacts` | `200 OK` | Returns `list[AlertContactResponse]` sorted by ascending `priority` (`1..N`). |
+| `POST /api/v1/users/me/alert-contacts` | `201 Created` | Adds a contact in last position (`priority = count + 1`). `email` mandatory, `phone` optional. `409 Conflict` if cap of **5 contacts** reached or `email` already exists for user. |
+| `PUT /api/v1/users/me/alert-contacts/order` | `200 OK` | Reorders priorities (`{"contact_ids": [int, ...]}`). |
+| `PATCH /api/v1/users/me/alert-contacts/{contact_id}` | `200 OK` | Updates `first_name`, `last_name`, `email`, and/or `phone` (passing `phone: null` or `""` clears phone). |
+| `DELETE /api/v1/users/me/alert-contacts/{contact_id}` | `204 No Content` | Removes contact and recompacts remaining `priority` ranks (`1..N`). |
+| `POST /api/v1/users/me/alert-contacts/{contact_id}/test-email` | `202 Accepted` | Sends verification email to contact **and**, if `contact.phone` is populated, publishes `state="TEST_SMS"` order on mobile MQTT topic. Updates `last_test_email_at`. Rate limit: **3 sends / hour / user** (`429`). |
 
-#### Schémas JSON (`app/schemas/fall_alert.py`)
+#### JSON Schemas (`app/schemas/fall_alert.py`)
 
 ```json
 // AlertContactCreate
@@ -227,7 +227,7 @@ Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**
   "phone": "+32470123456"
 }
 
-// AlertContactUpdate (tous les champs sont optionnels, au moins un requis)
+// AlertContactUpdate (all fields optional, at least one required)
 {
   "first_name": "Marie",
   "last_name": "Dupont-Martin",
@@ -257,28 +257,28 @@ Publié par le backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**
 }
 ```
 
-_Contraintes de validation_ :
+_Validation constraints_:
 
-- `first_name`, `last_name` : chaîne nettoyée (`strip()`), longueur `1..100` caractères.
-- `email` : format email valide, converti en minuscules, longueur `3..320` caractères (obligatoire).
-- `phone` : optionnel (`null` ou chaîne vide convertie en `null`). Après suppression des espaces, tirets, points et parenthèses, doit respecter `^\+?[0-9]{6,20}$` (longueur max 32 caractères).
+- `first_name`, `last_name`: cleaned string (`strip()`), length `1..100` chars.
+- `email`: valid email format, converted to lowercase, length `3..320` chars (mandatory).
+- `phone`: optional (`null` or empty string converted to `null`). After removing spaces, dashes, dots, and parentheses, must match `^\+?[0-9]{6,20}$` (max length 32 chars).
 
 ---
 
-### C. Historique des Alertes de Chute (Frontend Web ↔ Backend)
+### C. Fall Alert History (Web Frontend ↔ Backend)
 
 #### Endpoint `GET /api/v1/fall-alerts`
 
-- **Filtre utilisateur `user_id`** : Chaîne optionnelle (`str | None`), réservée aux administrateurs. Accepte :
-  - Un identifiant utilisateur numérique (ex. `42` ou `"42"`).
-  - Un pseudonyme de sujet complet ou partiel (ex. `SUBJ-A8F19C2D` ou `A8F19C2D`), insensible à la casse.
-  - La recherche par texte quelconque ne déclenche pas d'erreur HTTP 422 : si aucun utilisateur ne correspond, une liste vide est renvoyée (`items: []`).
-- **Pseudonymisation Systématique** :
-  - `user_display_name` renvoie systématiquement le pseudonyme sous la forme `Patient SUBJ-XXXXXXXX` (garantissant l'absence de fuite de données nominatives dans les interfaces et logs d'alertes).
-  - `subject_pseudonym` expose le jeton déterministe HMAC `SUBJ-XXXXXXXX`.
-  - Le frontend affiche systématiquement `Patient SUBJ-XXXXXXXX` et, pour les administrateurs, peut afficher un badge discret `#<user_id>`.
+- **User Filter `user_id`**: Optional string (`str | None`), reserved for administrators. Accepts:
+  - A numeric user ID (e.g. `42` or `"42"`).
+  - A full or partial subject pseudonym (e.g. `SUBJ-A8F19C2D` or `A8F19C2D`), case-insensitive.
+  - Arbitrary search text does not trigger HTTP 422: if no user matches, returns empty list (`items: []`).
+- **Systematic Pseudonymization**:
+  - `user_display_name` systematically returns `Patient SUBJ-XXXXXXXX` (preventing PII leaks in alert interfaces and logs).
+  - `subject_pseudonym` exposes the deterministic HMAC token `SUBJ-XXXXXXXX`.
+  - The frontend systematically displays `Patient SUBJ-XXXXXXXX` and, for administrators, can show an unobtrusive `#<user_id>` badge.
 
-Dans `FallAlertDetail.notifications[]`, chaque entrée expose désormais le canal (`channel: "email" | "sms"`) et le numéro de téléphone éventuel (`contact_phone: string | null`) :
+In `FallAlertDetail.notifications[]`, each item exposes the channel (`channel: "email" | "sms"`) and contact phone (`contact_phone: string | null`):
 
 ```json
 {
@@ -298,32 +298,32 @@ Dans `FallAlertDetail.notifications[]`, chaque entrée expose désormais le cana
 
 - `notifications[].channel` ∈ `"email"` | `"sms"`
 - `notifications[].status` ∈ `"SENT"` | `"PENDING_SMS"` | `"ACKNOWLEDGED"` | `"FAILED"`
-- **Pseudonymisation RGPD (`admin` sur compte tiers)** : `contact_phone` est masqué (ex. `+32*******56`).
+- **GDPR Pseudonymization (`admin` on third-party accounts)**: `contact_phone` is masked (e.g. `+32*******56`).
 
 ---
 
-## 5. Modèle de Données Relationnel (PostgreSQL / Alembic)
+## 5. Relational Data Model (PostgreSQL / Alembic)
 
-Migration Alembic additionnelle (`20261023_0005_add_sms_support_to_fall_alerting.py`) :
+Alembic migration (`20261023_0005_add_sms_support_to_fall_alerting.py`):
 
-1. **`alert_contacts`** :
-   - Ajout de la colonne `phone` (`String(32)`, nullable).
-2. **`fall_alert_notifications`** :
-   - Ajout de la colonne `channel` (`String(16)`, non null, server_default `"email"`).
-   - Ajout de la colonne `contact_phone` (`String(32)`, nullable).
+1. **`alert_contacts`**:
+   - Added `phone` column (`String(32)`, nullable).
+2. **`fall_alert_notifications`**:
+   - Added `channel` column (`String(16)`, non-null, server_default `"email"`).
+   - Added `contact_phone` column (`String(32)`, nullable).
 
 ---
 
-## 6. Worker d'Escalade (`AlertService`)
+## 6. Escalation Worker (`AlertService`)
 
-Lors de la notification du contact de rang `k` :
+When notifying contact of rank `k`:
 
-1. **Canal Email** : envoi via `SmtpEmailChannel` et création d'une ligne `FallAlertNotification(channel="email", status="SENT" | "FAILED")`.
-2. **Canal SMS (si `contact.phone` est non nul)** :
-   - Création d'une ligne `FallAlertNotification(channel="sms", contact_phone=contact.phone, status="PENDING_SMS")`.
-   - Génération d'un jeton signé dédié `(alert.id, sms_notification.id)` et construction du message SMS concis contenant le nom du patient, le lien Google Maps (si disponible) et le lien d'acquittement.
-   - Inclusion de `sms_command` dans le payload MQTT Downlink publié sur `healthkicks/v1/users/{user_uuid}/fall-alert/status`.
-   - Si la publication MQTT échoue côté backend, la notification SMS passe immédiatement à `status="FAILED"`.
-3. **Progression de l'escalade** :
-   - Si au moins un canal a réussi (`email` envoyé **ou** `sms_command` publié sur MQTT), le palier de 180 s démarre (`current_contact_rank = k`, `next_action_at_utc = now + 180s`).
-   - Si tous les canaux du contact ont échoué immédiatement, le worker passe sans attendre au contact `k + 1`.
+1. **Email Channel**: sent via `SmtpEmailChannel` and creates row `FallAlertNotification(channel="email", status="SENT" | "FAILED")`.
+2. **SMS Channel (if `contact.phone` is non-null)**:
+   - Creates row `FallAlertNotification(channel="sms", contact_phone=contact.phone, status="PENDING_SMS")`.
+   - Generates dedicated signed token `(alert.id, sms_notification.id)` and constructs concise SMS message with patient name, Google Maps link (if available), and acknowledgment link.
+   - Includes `sms_command` in Downlink MQTT payload published to `healthkicks/v1/users/{user_uuid}/fall-alert/status`.
+   - If MQTT publish fails backend-side, the SMS notification immediately transitions to `status="FAILED"`.
+3. **Escalation Progression**:
+   - If at least one channel succeeds (`email` sent **or** `sms_command` published to MQTT), 180s timer starts (`current_contact_rank = k`, `next_action_at_utc = now + 180s`).
+   - If all channels for this contact fail immediately, worker proceeds immediately to contact `k + 1`.

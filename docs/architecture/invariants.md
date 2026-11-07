@@ -1,127 +1,127 @@
-# Invariants d'Architecture Critiques - HealthKicks Ecosystem
+# Critical Architecture Invariants - HealthKicks Ecosystem
 
-Ce document consigne les règles fondamentales et non négociables régissant l'écosystème **HealthKicks** (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`).
+This document records the fundamental, non-negotiable architectural rules governing the **HealthKicks** ecosystem (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`).
 
 ---
 
-## 1. Séparation des Responsabilités de Persistance (Dual-Store Pattern)
+## 1. Separation of Persistence Responsibilities (Dual-Store Pattern)
 
-L'écosystème applique une stricte séparation entre le stockage relationnel transactionnel et le stockage télémétrique haute fréquence :
+The ecosystem enforces a strict separation between relational transactional storage and high-frequency telemetry storage:
 
 ```mermaid
 flowchart TD
-    Edge[Edge Agent / ESP32] -->|MQTT Trames Brutes IMU 100Hz| IoTCore[AWS IoT Core]
+    Edge[Edge Agent / ESP32] -->|MQTT Raw IMU Frames 100Hz| IoTCore[AWS IoT Core]
     IoTCore -->|Batch Telemetry Rule| DynamoDB[(Amazon DynamoDB\nhealthkicks_telemetry)]
     IoTCore -->|Detection Alert / Ingest Webhook| Backend[FastAPI Cloud Backend]
-    Backend -->|Métadonnées & Sessions Studio| Aurora[(PostgreSQL Aurora)]
-    Backend -->|Requête Télémétrie Ciblée| DynamoDB
+    Backend -->|Metadata & Studio Sessions| Aurora[(PostgreSQL Aurora)]
+    Backend -->|Targeted Telemetry Query| DynamoDB
     Frontend[Angular Client] -->|REST API| Backend
 ```
 
 ### A. Amazon DynamoDB (`healthkicks_telemetry`)
 
-- **Périmètre** : Trames IMU brutes à haute fréquence (accéléromètre $a_x, a_y, a_z$, gyroscope $g_x, g_y, g_z$), collectées lors des sessions de capture Studio ou du streaming temps réel.
-- **Raison d'être** : Éviter l'épuisement des IOPS et l'encombrement de la base relationnelle par des séries temporelles volumineuses.
-- **Clés & Index** : Partition Key `device_id`, Sort Key temporelle ou composite `session_id#timestamp`.
-- **Rétention** : Optimisé pour l'ingestion massive et la lecture par plage temporelle pour les graphiques de waveform (Chart.js) et le cache d'entraînement ML.
+- **Scope**: High-frequency raw IMU frames (accelerometer $a_x, a_y, a_z$, gyroscope $g_x, g_y, g_z$), collected during Studio capture sessions or real-time streaming.
+- **Rationale**: Prevents IOPS exhaustion and storage bloat of the relational database caused by bulky time series.
+- **Keys & Indexes**: Partition Key `device_id`, temporal Sort Key or composite `session_id#timestamp`.
+- **Retention**: Optimized for high-throughput batch ingestion and time-range scans for waveform charts (Chart.js) and ML training caches.
 
 ### B. PostgreSQL Aurora (`healthkicks`)
 
-- **Périmètre** : Source unique de vérité relationnelle (`StudioSession`, `Device`, `DeviceOwnership`, `ActivityEvent`, `HapticLog`, `User`, `IdempotencyKey`).
-- **Raison d'être** : Intégrité référentielle ACID, gestion des identités, jointures relationnelles, droits d'accès (RBAC) et requêtes agrégées pour le Dashboard (comptage de chutes, historique des événements, pagination).
+- **Scope**: Single relational source of truth (`StudioSession`, `Device`, `DeviceOwnership`, `ActivityEvent`, `HapticLog`, `User`, `IdempotencyKey`).
+- **Rationale**: ACID referential integrity, identity management, relational joins, role-based access control (RBAC), and aggregated queries for the Dashboard (fall counts, event history, pagination).
 
 ---
 
-## 2. Statut de Validation des Sessions Studio (`is_validated`)
+## 2. Studio Session Validation Status (`is_validated`)
 
-Le cycle de vie d'une session de capture Studio suit une règle stricte de curation avant toute utilisation en intelligence artificielle :
+The lifecycle of a Studio recording follows a strict curation rule before any use in machine learning:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Captured: Ingestion MQTT / Studio Trigger
-    Captured --> Unvalidated: Enregistrée en BDD (is_validated = False)
-    Unvalidated --> Inspected: Consultation graphique Dashboard (Chart.js)
-    Inspected --> Reclassified: Correction label éventuelle (PATCH /studio/sessions/:id)
-    Reclassified --> Validated: Validation par le Clinicien (is_validated = True)
-    Inspected --> Validated: Validation directe
-    Validated --> MLTraining: Éligible à scripts/train_detector.py
-    Unvalidated --> Rejected: Rejet ou suppression (DELETE /studio/sessions/:id)
+    [*] --> Captured: MQTT Ingestion / Studio Trigger
+    Captured --> Unvalidated: Saved in DB (is_validated = False)
+    Unvalidated --> Inspected: Dashboard waveform inspection (Chart.js)
+    Inspected --> Reclassified: Optional label correction (PATCH /studio/sessions/:id)
+    Reclassified --> Validated: Validation by Clinician (is_validated = True)
+    Inspected --> Validated: Direct validation
+    Validated --> MLTraining: Eligible for scripts/train_detector.py
+    Unvalidated --> Rejected: Rejection or deletion (DELETE /studio/sessions/:id)
     Rejected --> [*]
 ```
 
-- **Valeur par défaut** : Tout enregistrement dans la table `studio_sessions` possède `is_validated = False` à la création.
-- **Garde-fou ML** : Le pipeline d'entraînement local et d'extraction de features ([`scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) filtre **exclusivement** les sessions validées :
+- **Default Value**: Every record in `studio_sessions` is initialized with `is_validated = False`.
+- **ML Guard**: The local training and feature extraction pipeline ([`scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py)) **strictly** filters validated sessions:
   ```python
   db_sessions = db.query(StudioSession).filter(StudioSession.is_validated.is_(True)).all()
   ```
-- **Objectif** : Empêcher la contamination du modèle d'inférence par des mouvements parasites, des captures avortées ou des étiquetages erronés.
+- **Objective**: Prevents model contamination from parasitic motions, truncated recordings, or incorrect labels.
 
 ---
 
-## 3. Politique de Sécurité RBAC Stricte (Role-Based Access Control)
+## 3. Strict RBAC Security Policy (Role-Based Access Control)
 
-La confidentialité des données biomécaniques et cliniques est garantie par une séparation stricte au niveau de la couche API :
+Confidentiality of biomechanical and clinical data is enforced at the API layer:
 
-### A. Rôle Clinicien / Praticien (`UserRole.USER`)
+### A. Clinician / Practitioner Role (`UserRole.USER`)
 
-- **Isolation des sessions** : Un clinicien ne peut lister, consulter, modifier ou supprimer **que ses propres sessions** (`StudioSession.user_id == user.id`).
-- Tout accès à une session d'un tiers lève immédiatement un statut `HTTP 403 Forbidden` :
+- **Session Isolation**: A clinician can list, inspect, modify, or delete **only their own sessions** (`StudioSession.user_id == user.id`).
+- Unauthorized access to a third-party session immediately raises `HTTP 403 Forbidden`:
   ```python
   if not _is_admin(user) and sess.user_id != user.id:
       raise HTTPException(status_code=403, detail="Forbidden")
   ```
-- Les listes paginées filtrent automatiquement sur l'identifiant de l'utilisateur authentifié.
+- Paginated endpoints automatically filter by the authenticated user's ID.
 
-### B. Rôle Administrateur (`UserRole.ADMIN`)
+### B. Administrator Role (`UserRole.ADMIN`)
 
-- Visibilité transverse et globale sur toutes les sessions de l'écosystème.
-- Capacité de filtrer par `user_id` spécifique ou de requêter sur l'ensemble de la flotte de dispositifs.
-
----
-
-## 4. Pipeline ML & Transpilation Embarquée C++ (`health-kicks` ↔ `health-kicks-esp32-s3`)
-
-L'inférence d'activité et de détection de chute s'exécute directement sur le microcontrôleur ESP32-S3 via du code C++ pur auto-généré :
-
-- **Pipeline d'entraînement** : [`health-kicks/scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py) entraîne le classifieur Random Forest (`scikit-learn==1.4.2`).
-- **Génération C++ embarquée** : [`health-kicks/scripts/update_edge_model.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/update_edge_model.py) transpile les arbres de décision directement en code C sans dépendance runtime (`health-kicks-esp32-s3/include/activity_detector_model.h`).
-- **Règle absolue d'interopérabilité des features** :
-  - Les 16 features calculées à l'entraînement (`compute_window_features`) et à l'inférence embarquée dans `health-kicks-esp32-s3` (`activity_detector.cpp`) **doivent rester strictement identiques** en ordre, formule, fenêtre (5 secondes / ~94 échantillons à 19 Hz) et normalisation.
-  - Tout changement dans le pipeline d'extraction de features impose une régénération et une compilation du firmware PlatformIO.
+- Global visibility across all sessions in the ecosystem.
+- Ability to filter by specific `user_id` or query across the entire fleet of devices.
 
 ---
 
-## 5. Standardisation du Repère Biomécanique ISB (Wu & Cavanagh, 1995)
+## 4. ML Pipeline & Embedded C++ Transpilation (`health-kicks` ↔ `health-kicks-esp32-s3`)
 
-L'ensemble des sous-systèmes de capture, de transport et de visualisation IMU respecte le standard international de la **Société Internationale de Biomécanique (ISB)** :
+Activity inference and fall detection run directly on the ESP32-S3 microcontroller using pure auto-generated C++:
 
-- **Repère cartésien direct (dextrorsum) lié au pied/corps** :
-  - **Axe $X$** : **Antéro-postérieur** (orienté vers l'avant / sens de marche).
-  - **Axe $Y$** : **Médio-latéral** (orienté vers la gauche pour le corps complet / face interne du pied droit).
-  - **Axe $Z$** : **Longitudinal / Vertical** (orienté vers le haut, mesure **$+1.0\,g$** au repos statique sous gravité terrestre).
-- **Règles gyroscopiques (Règle de la main droite)** :
-  - **$g_x$ (GX)** : Roulis (Inversion / Éversion).
-  - **$g_y$ (GY)** : Tangage (Flexion dorsale / plantaire).
-  - **$g_z$ (GZ)** : Lacet (Rotation interne / externe).
-- **Référence documentaire dédiée** : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+- **Training Pipeline**: [`health-kicks/scripts/train_detector.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/train_detector.py) trains the Random Forest classifier (`scikit-learn==1.4.2`).
+- **Embedded C++ Generation**: [`health-kicks/scripts/update_edge_model.py`](file:///f:/Programmation/healthkicks-ecosystem/health-kicks/scripts/update_edge_model.py) transpiles decision trees directly to C code with zero runtime dependencies (`health-kicks-esp32-s3/include/activity_detector_model.h`).
+- **Absolute Feature Interoperability Rule**:
+  - The 16 features computed during training (`compute_window_features`) and during embedded inference in `health-kicks-esp32-s3` (`activity_detector.cpp`) **must remain strictly identical** in order, mathematical formula, window size (5 seconds / ~94 samples at 19 Hz), and normalization.
+  - Any modification to feature extraction requires re-generating and rebuilding the PlatformIO firmware.
 
 ---
 
-## 6. Odomètre Différentiel et Continuité Temporelle des Pas Mobile
+## 5. Standardization of ISB Biomechanical Reference Frame (Wu & Cavanagh, 1995)
 
-Le comptage et la consolidation des pas entre le matériel embarqué, l'application mobile et le backend cloud respectent un algorithme différentiel strict :
+All capture, transport, and visualization subsystems follow the **International Society of Biomechanics (ISB)** standard:
 
-### A. Contrainte Matérielle de l'ESP32-S3
+- **Right-handed Cartesian frame attached to the foot/body**:
+  - **$X$ Axis**: **Antero-posterior** (forward / direction of travel).
+  - **$Y$ Axis**: **Medio-lateral** (oriented toward the left for whole body / medial aspect of right foot).
+  - **$Z$ Axis**: **Longitudinal / Vertical** (oriented upward, measuring **$+1.0\,g$** at static rest under gravity).
+- **Gyroscope Rules (Right-hand rule)**:
+  - **$g_x$ (GX)**: Roll (Inversion / Eversion).
+  - **$g_y$ (GY)**: Pitch (Dorsiflexion / Plantarflexion).
+  - **$g_z$ (GZ)**: Yaw (Internal / External rotation).
+- **Dedicated reference**: [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
 
-1. **Absence d'horloge calendaire sauvegardée (RTC)** : Le firmware embarqué ne dispose ni de pile de sauvegarde RTC ni d'accès Internet autonome pour synchroniser l'heure NTP.
-2. **Odomètre monotone matériel** : Le compteur embarqué (`StepDetector`) accumule les pas de manière strictement croissante depuis son initialisation (`totalSteps`, `walkSteps`, `runSteps`, `stairsSteps`, `unclassifiedSteps`).
-3. **Comportement à minuit et au reboot** :
-   - L'odomètre matériel **ne se remet jamais à zéro à minuit**.
-   - En cas de coupure batterie, reboot matériel, mise en veille profonde ou mise à jour OTA, l'odomètre matériel **retombe à zéro**.
+---
 
-### B. Table d'État SQLite Mobile (`device_odometer_state`)
+## 6. Differential Odometry & Temporal Step Continuity on Mobile
 
-Pour garantir qu'aucun pas de la veille ne vienne polluer le compteur du jour suivant, et qu'aucun pas ne soit perdu après un redémarrage de la chaussure, l'application Flutter maintient un état odométrique par dispositif :
+Step counting and aggregation between the embedded hardware, the mobile app, and the cloud backend follow a strict differential algorithm:
+
+### A. ESP32-S3 Hardware Constraints
+
+1. **No Battery-Backed Calendar Clock (RTC)**: The embedded firmware lacks an RTC backup battery and autonomous internet access for NTP time synchronization.
+2. **Monotonic Hardware Odometer**: The embedded counter (`StepDetector`) accumulates steps monotonically from initialization (`totalSteps`, `walkSteps`, `runSteps`, `stairsSteps`, `unclassifiedSteps`).
+3. **Midnight & Reboot Behavior**:
+   - The hardware odometer **never resets to zero at midnight**.
+   - Upon battery depletion, hardware reboot, deep sleep, or OTA update, the hardware odometer **resets to zero**.
+
+### B. Mobile SQLite State Table (`device_odometer_state`)
+
+To ensure that steps from the previous day do not leak into the next, and that no steps are lost after a shoe reboot, the Flutter application maintains per-device odometer state:
 
 ```sql
 CREATE TABLE IF NOT EXISTS device_odometer_state (
@@ -135,22 +135,22 @@ CREATE TABLE IF NOT EXISTS device_odometer_state (
 );
 ```
 
-### C. Algorithme de Calcul Différentiel (`recordOdometerSnapshot`)
+### C. Differential Calculation Algorithm (`recordOdometerSnapshot`)
 
-Pour chaque flux de télémétrie BLE reçu et pour chaque catégorie d'activité $k \in \{\text{walk, run, stairs, unclassified}\}$ :
+For every incoming BLE telemetry stream and for each activity category $k \in \{\text{walk, run, stairs, unclassified}\}$:
 
-1. **Détection de Redémarrage Matériel** :
-   Si la lecture brute courante $R_t$ est inférieure à la dernière lecture mémorisée $R_{t-1}$ ($R_t < R_{t-1}$), un reboot du microcontrôleur est avéré :
+1. **Hardware Reboot Detection**:
+   If the current raw reading $R_t$ is strictly less than the last stored reading $R_{t-1}$ ($R_t < R_{t-1}$), a microcontroller reboot occurred:
    $$\Delta_k = R_t$$
-2. **Progression Nominale** :
-   Si $R_t \ge R_{t-1}$ :
+2. **Nominal Progression**:
+   If $R_t \ge R_{t-1}$:
    $$\Delta_k = R_t - R_{t-1}$$
-3. **Partitionnement Calendaire Local & Transition de Minuit** :
-   - La date calendaire locale de l'utilisateur (`YYYY-MM-DD`) régit l'agrégation quotidienne.
-   - Au franchissement de minuit, la date locale bascule à $J+1$ :
-     - Les totaux du jour $J$ restent figés dans `local_daily_steps`.
-     - L'incrément $\Delta_k$ calculé par rapport à la dernière lecture de la veille est imputé au jour $J+1$.
-     - L'odomètre matériel continu ne "bave" ainsi jamais sur les jours suivants.
-4. **Persistance et Synchronisation Cloud** :
-   - Si $\Delta_k > 0$, la valeur est ajoutée au cumul de la journée dans `local_daily_steps` et l'enregistrement est marqué `sync_status = 0` (à synchroniser).
-   - `device_odometer_state` est mis à jour avec les nouvelles valeurs $R_t$ et l'horodatage UTC courant.
+3. **Local Calendar Partitioning & Midnight Transition**:
+   - The user's local calendar date (`YYYY-MM-DD`) dictates daily aggregation.
+   - At midnight, the local date shifts to $D+1$:
+     - Day $D$ totals remain frozen in `local_daily_steps`.
+     - The increment $\Delta_k$ computed relative to the previous day's last reading is attributed to Day $D+1$.
+     - The monotonic hardware odometer never contaminates subsequent days.
+4. **Persistence & Cloud Synchronization**:
+   - If $\Delta_k > 0$, the value is added to the daily total in `local_daily_steps` and marked `sync_status = 0` (pending synchronization).
+   - `device_odometer_state` is updated with the new $R_t$ readings and the current UTC timestamp.

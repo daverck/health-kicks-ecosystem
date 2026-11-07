@@ -1,32 +1,32 @@
-# Manifeste de Gouvernance Multi-Agents - HealthKicks Ecosystem
+# Multi-Agent Governance Manifesto - HealthKicks Ecosystem
 
-Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce document définit le cadre opérationnel, les responsabilités de l'agent orchestrateur racine, ainsi que les règles non négociables s'appliquant à tous les sous-agents spécialisés.
+Welcome to the multi-agent architecture of the **HealthKicks** ecosystem. This document defines the operational framework, responsibilities of the root orchestrator agent, and the non-negotiable rules applying to all specialized subagents.
 
 ---
 
-## 0. Contexte Métier & Architecture Globale
+## 0. Business Context & Global Architecture
 
-**HealthKicks** est un écosystème connecté de surveillance et d'analyse biomécanique en temps réel combinant intelligence embarquée à la source (*Firmware ESP32-S3*), passerelle mobile de terrain (*Mobile Flutter*), centralisation analytique (*Backend FastAPI*) et restitution clinique (*Frontend Angular*).
+**HealthKicks** is a real-time connected biomechanical monitoring and analysis ecosystem combining edge embedded intelligence (*ESP32-S3 Firmware*), field mobile gateway (*Flutter Mobile*), centralized analytics (*FastAPI / PostgreSQL / DynamoDB Backend*), and clinical visualization (*Angular 22 Frontend*).
 
-#### Pipeline de données
+#### Data Pipeline
 ```text
-[ Chaussure Connectée ESP32-S3 ]
-         │ (BLE GATT LESC Chiffré / Fast Burst)
+[ Connected Footwear ESP32-S3 ]
+         │ (LESC Encrypted BLE GATT / Fast Burst)
          ▼
-[ health-kicks-mobile ] ──(REST / MQTT WebSockets SigV4)──┬──► [ health-kicks ] (API FastAPI / PostgreSQL / DynamoDB)
+[ health-kicks-mobile ] ──(REST / MQTT WebSockets SigV4)──┬──► [ health-kicks ] (FastAPI API / PostgreSQL / DynamoDB)
   (Flutter / Dart UI)                                     │           │
                                                           │           │ (REST OpenAPI / WebSockets)
                                                           ▼           ▼
                                                  [ health-kicks-frontend ] (Angular 22 UI)
 ```
 
-### Périmètre des sous-projets indépendants
-* **`health-kicks-esp32-s3/` (Firmware)** : Firmware embarqué FreeRTOS / PlatformIO (ESP32-S3), acquisition MPU-6050 19 Hz, inférence locale d'activité et de chute multiclasse en C++, serveur BLE GATT LESC sécurisé, contrôle haptique PWM et bootloader OTA avec rollback automatique.
-* **`health-kicks-mobile/` (Mobile)** : Application mobile Flutter / Dart, acquisition directe des données capteurs via client BLE GATT, déclenchement de commandes haptiques, odométrie différentielle SQLite, synchronisation REST et passerelle MQTT AWS IoT Core (WebSockets SigV4).
-* **`health-kicks/` (Backend)** : API REST FastAPI, persistance relationnelle PostgreSQL (Aurora) et séries temporelles DynamoDB, gestion des comptes/profils, RBAC, négociation de jetons AWS STS et pipeline ML d'entraînement / génération de modèles C.
-* **`health-kicks-frontend/` (Frontend)** : Application web Angular 22 (Signals, Standalone), tableaux de bord de suivi clinique, visualisation des signaux IMU en direct et requalification Studio.
+### Scope of Independent Subprojects
+* **`health-kicks-esp32-s3/` (Firmware)**: FreeRTOS / PlatformIO embedded firmware (ESP32-S3), 19 Hz MPU-6050 acquisition, local C++ multiclass activity and fall inference, secure LESC BLE GATT server, PWM haptics, and OTA bootloader with automated rollback.
+* **`health-kicks-mobile/` (Mobile)**: Flutter / Dart companion application, direct sensor acquisition via BLE GATT client, haptic commands, SQLite differential odometry, REST synchronization, and AWS IoT Core MQTT gateway (WebSockets SigV4).
+* **`health-kicks/` (Backend)**: FastAPI REST API, relational persistence via PostgreSQL (Aurora) and time-series via DynamoDB, account/profile management, RBAC, AWS STS token broker, and MLOps training / C model transpilation pipelines.
+* **`health-kicks-frontend/` (Frontend)**: Angular 22 web application (Signals, Standalone), clinical monitoring dashboards, live IMU signal visualization, and Studio relabeling.
 
-### Références documentaires partagées
+### Shared Documentation References
 * `docs/architecture/system_overview.md`
 * `docs/architecture/invariants.md`
 * `contracts/ble_gatt_specs.md`
@@ -34,55 +34,55 @@ Bienvenue dans l'architecture multi-agents de l'écosystème **HealthKicks**. Ce
 
 ---
 
-## 1. Rôle de l'Orchestrateur Racine
+## 1. Role of the Root Orchestrator
 
-L'**Orchestrateur Racine** supervise l'écosystème dans sa globalité. Il a pour mandat :
-1. De maintenir l'intégrité de l'arborescence, des sous-modules Git et de la configuration du workspace multi-racines.
-2. De déléguer les tâches d'implémentation aux sous-agents spécialisés selon leur domaine d'expertise.
-3. D'arbitrer les évolutions de contrats dans le répertoire `contracts/` selon le protocole Spec-First.
-4. De garantir la cohérence inter-projets et le respect des invariants d'architecture (`docs/architecture/invariants.md`).
-
----
-
-## 2. Les Trois Règles d'Or (Non Négociables)
-
-### Règle d'Or 1 : Approche Contract-Driven & Spec-First
-* Tout changement impactant la communication entre deux sous-projets (BLE GATT, REST API, payload MQTT, format de fichier de modèle ML, types partagés) **doit obligatoirement débuter par la mise à jour ou la validation du contrat dans `contracts/`**.
-* Aucun agent spécialisé ne peut unilatéralement modifier une signature d'API ou un payload sans accord de contrat validé par l'orchestrateur.
-
-### Règle d'Or 2 : Confinement Strict du Périmètre de Modification
-* Chaque sous-agent est confiné dans le sous-dossier de son projet :
-  * `firmware-dev` : modifications autorisées **uniquement** dans `health-kicks-esp32-s3/`.
-  * `mobile-dev` : modifications autorisées **uniquement** dans `health-kicks-mobile/`.
-  * `backend-dev` : modifications autorisées **uniquement** dans `health-kicks/`.
-  * `frontend-dev` : modifications autorisées **uniquement** dans `health-kicks-frontend/`.
-* **Interdiction formelle** d'éditer le code source d'un sous-projet voisin ou les fichiers racine sans délégation explicite de l'orchestrateur.
-* L'accès au répertoire `contracts/` et `docs/` est autorisé **en lecture seule** pour les agents spécialisés (les modifications de contrat sont pilotées ou arbitrées par l'orchestrateur).
-
-### Règle d'Or 3 : Validation Systématique des Tests Locaux Avant Tout Commit
-* Aucun sous-agent ne peut déclarer une tâche terminée ou commiter des modifications si les suites de tests unitaires et d'intégration de son périmètre ne sont pas 100% au vert :
-  * `health-kicks-esp32-s3` : `uv tool run --from platformio pio run`
-  * `health-kicks-mobile` : `flutter analyze && flutter test`
-  * `health-kicks` : `uv run pytest` (ou `python -m pytest`)
-  * `health-kicks-frontend` : `pnpm test` (ou `pnpm test:ci` / `ng test --watch=false`)
-* Tout échec de test bloque immédiatement le workflow et impose une correction prioritaire.
-
-### Règle d'Or 4 : Commits Granulaires Systématiques à Chaque Étape Significative
-* Dès qu'une sous-tâche, refactorisation ou fonctionnalité est validée et que les tests associés sont 100% au vert, l'agent **doit impérativement créer un commit Git atomique** avec un message Conventionnel précis (`feat(...)`, `refactor(...)`, `fix(...)`, `test(...)`, `chore(...)`).
-* Ne jamais accumuler plusieurs étapes ou composants indépendants dans un seul commit monolithique.
-* Les commits doivent être effectués dans le sous-dépôt du projet concerné (puis le pointeur de sous-module mis à jour à la racine). Ne jamais exécuter `git push` sans demande explicite de l'utilisateur.
-
-### Règle d'Or 5 : Rédaction Systématique des Commentaires de Code en Anglais
-* **Tous les commentaires de code, docstrings, annotations techniques et TODOs** au sein des codebases (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`, `contracts`) **doivent être rédigés en anglais exclusivement**.
-* Les communications avec l'utilisateur dans le chat restent dans la langue choisie par l'utilisateur (français ou anglais), mais le code source et sa documentation intégrée demeurent strictement en anglais pour garantir la maintenabilité internationale.
+The **Root Orchestrator** supervises the ecosystem globally. Its mandate is to:
+1. Maintain the integrity of directory trees, Git submodules, and multi-root workspace configuration.
+2. Delegate implementation tasks to specialized subagents according to their domain expertise.
+3. Arbitrate contract evolutions in `contracts/` following the Spec-First protocol.
+4. Guarantee cross-project consistency and adherence to architecture invariants (`docs/architecture/invariants.md`).
 
 ---
 
-## 3. Cartographie des Sous-Agents (Emplacement Officiel Antigravity)
+## 2. The Five Golden Rules (Non-Negotiable)
 
-Les sous-agents personnalisés sont déclarés sous `.agents/agents/<nom>.md` selon le format standard Antigravity (`subagent: true`, `mainAgent: false`) :
+### Golden Rule 1: Contract-Driven & Spec-First Approach
+* Any change affecting communication between two subprojects (BLE GATT, REST API, MQTT payload, ML model file format, shared types) **must begin by updating and validating the contract in `contracts/`**.
+* No specialized agent may unilaterally alter an API signature or payload without prior contract agreement approved by the orchestrator.
 
-| Agent | Rôle | Répertoire Assigné | Commande de Validation | Fichier de Spécification |
+### Golden Rule 2: Strict Scope Confinement
+* Each subagent is confined to its project subfolder:
+  * `firmware-dev`: write access permitted **strictly** within `health-kicks-esp32-s3/`.
+  * `mobile-dev`: write access permitted **strictly** within `health-kicks-mobile/`.
+  * `backend-dev`: write access permitted **strictly** within `health-kicks/`.
+  * `frontend-dev`: write access permitted **strictly** within `health-kicks-frontend/`.
+* **Strict prohibition** against editing source code of neighboring subprojects or root files without explicit delegation from the orchestrator.
+* Access to `contracts/` and `docs/` is permitted in **read-only** mode for specialized subagents (contract changes are steered or arbitrated by the orchestrator).
+
+### Golden Rule 3: Systematic Local Test Validation Before Any Commit
+* No subagent may declare a task complete or commit changes unless all unit and integration test suites within its scope are 100% green:
+  * `health-kicks-esp32-s3`: `uv tool run --from platformio pio run`
+  * `health-kicks-mobile`: `flutter analyze && flutter test`
+  * `health-kicks`: `uv run pytest` (or `python -m pytest`)
+  * `health-kicks-frontend`: `pnpm test` (or `pnpm test:ci` / `ng test --watch=false`)
+* Any test failure blocks the workflow immediately and requires priority remediation.
+
+### Golden Rule 4: Granular Atomic Commits at Every Significant Milestone
+* As soon as a subtask, refactoring, or feature is validated and associated tests are 100% green, the agent **must create an atomic Git commit** with an accurate Conventional message (`feat(...)`, `refactor(...)`, `fix(...)`, `test(...)`, `chore(...)`).
+* Never accumulate multiple unrelated steps or components into a single monolithic commit.
+* Commits must be performed in the corresponding submodule repository (then the submodule pointer updated at the root). Never execute `git push` without explicit user request.
+
+### Golden Rule 5: Systematic Code Comments in English
+* **All code comments, docstrings, technical annotations, and TODOs** across all codebases (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`, `contracts`) **must be written in English exclusively**.
+* Chat communication with the user follows the user's preferred language (French or English), but source code and integrated technical documentation remain strictly in English for global maintainability.
+
+---
+
+## 3. Subagent Mapping (Official Antigravity Location)
+
+Custom subagents are declared under `.agents/agents/<name>.md` following standard Antigravity format (`subagent: true`, `mainAgent: false`):
+
+| Agent | Role | Assigned Directory | Validation Command | Specification File |
 | :--- | :--- | :--- | :--- | :--- |
 | **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
 | **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
@@ -91,30 +91,30 @@ Les sous-agents personnalisés sont déclarés sous `.agents/agents/<nom>.md` se
 
 ---
 
-## 4. Matrice d'Interaction et Protocole de Synchronisation
+## 4. Interaction Matrix and Synchronization Protocol
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Développeur / Utilisateur
-    participant Orch as Orchestrateur Racine
+    actor User as Developer / User
+    participant Orch as Root Orchestrator
     participant Contract as contracts/
-    participant FW as Agent Firmware
-    participant Mobile as Agent Mobile
-    participant Backend as Agent Backend
-    participant Frontend as Agent Frontend
+    participant FW as Firmware Agent
+    participant Mobile as Mobile Agent
+    participant Backend as Backend Agent
+    participant Frontend as Frontend Agent
 
-    User->>Orch: Demande de feature transverse (ex: Nouveau type d'alerte / Télémétrie)
-    Orch->>Contract: Rédige / Valide le contrat d'échange (BLE / REST / MQTT)
-    par Délégation Confinée
-        Orch->>FW: Adapte capture, inférence et services BLE (health-kicks-esp32-s3/)
-        Orch->>Mobile: Adapte client BLE, odométrie & synchronisation MQTT/API (health-kicks-mobile/)
-        Orch->>Backend: Implémente endpoints, persistance & STS (health-kicks/)
+    User->>Orch: Cross-cutting feature request (e.g. New Alert / Telemetry)
+    Orch->>Contract: Drafts / Validates exchange contract (BLE / REST / MQTT)
+    par Confined Delegation
+        Orch->>FW: Adapts capture, inference, and BLE services (health-kicks-esp32-s3/)
+        Orch->>Mobile: Adapts BLE client, odometry & MQTT/API sync (health-kicks-mobile/)
+        Orch->>Backend: Implements endpoints, persistence & STS (health-kicks/)
     end
-    FW-->>Orch: Build firmware validé (pio run)
-    Mobile-->>Orch: Tests mobile validés (flutter analyze && flutter test)
-    Backend-->>Orch: Tests backend validés (uv run pytest)
-    Orch->>Frontend: Implémente affichage clinique & alertes (health-kicks-frontend/)
-    Frontend-->>Orch: Tests frontend validés (pnpm test)
-    Orch->>User: Rapport de synchronisation & intégration réussie
+    FW-->>Orch: Firmware build validated (pio run)
+    Mobile-->>Orch: Mobile tests validated (flutter analyze && flutter test)
+    Backend-->>Orch: Backend tests validated (uv run pytest)
+    Orch->>Frontend: Implements clinical UI & alerts (health-kicks-frontend/)
+    Frontend-->>Orch: Frontend tests validated (pnpm test)
+    Orch->>User: Synchronization and integration success report
 ```

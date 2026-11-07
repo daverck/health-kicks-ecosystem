@@ -1,46 +1,46 @@
-# Référentiel Biomécanique & Standardisation des Axes IMU (Standard ISB)
+# Biomechanical Reference Frame & IMU Axis Standardization (ISB Standard)
 
-## 1. Contexte et Standard International ISB
+## 1. Context & International ISB Standard
 
-Dans l'écosystème **HealthKicks**, l'analyse biomécanique en temps réel (détection de chute, classification de l'activité, suivi clinique de la marche) repose sur une standardisation rigoureuse des repères spatiaux.
+In the **HealthKicks** ecosystem, real-time biomechanical analysis (fall detection, activity classification, clinical gait monitoring) relies on strict spatial coordinate standardization.
 
-Pour éliminer toute ambiguïté d'axes entre les capteurs inertiels embarqués (MPU-6050 / centrales inertielles), les pipelines Edge AI, le backend cloud et la restitution graphique aux praticiens, **l'écosystème HealthKicks adhère strictement aux recommandations de l'International Society of Biomechanics (ISB)**.
+To eliminate axis ambiguity across embedded inertial sensors (MPU-6050 / IMUs), Edge AI pipelines, cloud backend services, and clinician graphical dashboards, **the HealthKicks ecosystem strictly adheres to the recommendations of the International Society of Biomechanics (ISB)**.
 
-### Référence Bibliographique
+### Bibliographic Reference
 
 > **Wu, G., & Cavanagh, P. R. (1995).**
 > _ISB recommendations for standardization in the reporting of kinematic data._
 > **Journal of Biomechanics**, 28(10), 1257–1261.
-> DOI: [10.1016/0021-9290(95)00017-C](<https://doi.org/10.1016/0021-9290(95)00017-C>)
+> DOI: [10.1016/0021-9290(95)00017-C](https://doi.org/10.1016/0021-9290(95)00017-C)
 
 ---
 
-## 2. Définition du Repère Cartésien Direct (Dextrorsum)
+## 2. Right-Handed Cartesian Frame Definition
 
-Le repère anatomique local lié à la chaussure / au pied est un **repère cartésien orthogonal direct** ($\vec{X}, \vec{Y}, \vec{Z}$) orienté comme suit :
+The anatomical local frame attached to the footwear/foot is a **right-handed orthogonal Cartesian frame** ($\vec{X}, \vec{Y}, \vec{Z}$) oriented as follows:
 
 ```text
-                  +Z (Longitudinal / Vertical : Haut)
+                  +Z (Longitudinal / Vertical: Upward)
                    ▲
-                   │     +X (Antéro-postérieur : Avant / Marche)
+                   │     +X (Antero-posterior: Forward / Travel)
                    │    ▲
                    │   /
                    │  /
                    │ /
-                   └───────────► +Y (Médio-latéral : Gauche / Interne)
+                   └───────────► +Y (Medio-lateral: Left / Medial)
 ```
 
 ```mermaid
 flowchart TD
-    subgraph ISB["Repère Cartésien Orthogonal Direct ISB (Wu & Cavanagh, 1995)"]
+    subgraph ISB["ISB Right-Handed Orthogonal Cartesian Frame (Wu & Cavanagh, 1995)"]
         direction TB
-        X["Axe X : Antéro-postérieur\n(Orienté vers l'avant)"]
-        Y["Axe Y : Médio-latéral\n(Orienté vers la gauche)"]
-        Z["Axe Z : Longitudinal / Vertical\n(Orienté vers le haut)"]
+        X["X Axis: Antero-posterior\n(Oriented forward)"]
+        Y["Y Axis: Medio-lateral\n(Oriented to the left)"]
+        Z["Z Axis: Longitudinal / Vertical\n(Oriented upward)"]
     end
-    subgraph IMU["Données Capteurs IMU (100 Hz / 50 Hz)"]
-        Acc["Accélération linéaire (g)\nax, ay, az + Magnitude"]
-        Gyro["Vitesse angulaire (rad/s)\ngx, gy, gz"]
+    subgraph IMU["IMU Sensor Data (100 Hz / 50 Hz)"]
+        Acc["Linear acceleration (g)\nax, ay, az + Magnitude"]
+        Gyro["Angular velocity (rad/s)\ngx, gy, gz"]
     end
     X --> Acc
     Y --> Acc
@@ -52,49 +52,49 @@ flowchart TD
 
 ---
 
-## 3. Matrice de Correspondance des Axes
+## 3. Axis Correspondence Matrix
 
-### A. Accélérométrie Linéaire ($a_x, a_y, a_z$) en unité $g$ ($1\,g \approx 9.81\,\text{m/s}^2$)
+### A. Linear Acceleration ($a_x, a_y, a_z$) in Units of $g$ ($1\,g \approx 9.81\,\text{m/s}^2$)
 
-| Axe               | Dénomination ISB            | Orientation Physique                               | Mouvements Biomécaniques Associés                     | Valeur au Repos Statique          |
-| :---------------- | :-------------------------- | :------------------------------------------------- | :---------------------------------------------------- | :-------------------------------- |
-| **AX ($a_x$)**    | **Antéro-postérieur**       | Pointé vers l'**Avant** (sens de la marche)        | Propulsion (+) / Freinage (-) lors de la foulée       | $\approx 0.0\,g$                  |
-| **AY ($a_y$)**    | **Médio-latéral**           | Pointé vers la **Gauche** (médial pour pied droit) | Déplacements latéraux, transferts de charge, appuis   | $\approx 0.0\,g$                  |
-| **AZ ($a_z$)**    | **Longitudinal / Vertical** | Pointé vers le **Haut** (crânial / proximal)       | Impacts au sol (+) / Phase de vol ou suspension (-)   | **$+1.0\,g$** (gravité terrestre) |
-| **Mag ($\|a\|$)** | **Magnitude / Norme**       | $\|a\| = \sqrt{a_x^2 + a_y^2 + a_z^2}$             | Norme scalaire invariante par rotation (chocs/chutes) | $\approx 1.0\,g$                  |
+| Axis | ISB Name | Physical Orientation | Associated Biomechanical Movements | Static Rest Value |
+| :--- | :--- | :--- | :--- | :--- |
+| **AX ($a_x$)** | **Antero-posterior** | Pointing **Forward** (direction of travel) | Propulsion (+) / Braking (-) during stride | $\approx 0.0\,g$ |
+| **AY ($a_y$)** | **Medio-lateral** | Pointing to the **Left** (medial for right foot) | Lateral shifts, weight transfers, stance stabilization | $\approx 0.0\,g$ |
+| **AZ ($a_z$)** | **Longitudinal / Vertical** | Pointing **Upward** (cranial / proximal) | Ground impacts (+) / Flight phase or suspension (-) | **$+1.0\,g$** (Earth's gravity) |
+| **Mag ($\|a\|$)** | **Magnitude / Norm** | $\|a\| = \sqrt{a_x^2 + a_y^2 + a_z^2}$ | Rotationally invariant scalar norm (impacts/falls) | $\approx 1.0\,g$ |
 
 > [!IMPORTANT]
-> **Signature Statique au Repos** : Lorsque la chaussure est posée à plat sur le sol au repos, l'accéléromètre mesure la réaction du sol face à l'attraction terrestre, soit **$+1.0\,g$ sur l'axe $Z$** et **$0.0\,g$ sur les axes $X$ et $Y$**.
+> **Static Rest Signature**: When the shoe rests flat on the ground at standstill, the accelerometer measures the reaction of the floor countering gravity: **$+1.0\,g$ on the $Z$ axis** and **$0.0\,g$ on the $X$ and $Y$ axes**.
 
 ---
 
-### B. Gyroscope / Vitesses Angulaires ($g_x, g_y, g_z$) en $\text{rad/s}$ (ou $^\circ/\text{s}$)
+### B. Gyroscope / Angular Velocities ($g_x, g_y, g_z$) in $\text{rad/s}$ (or $^\circ/\text{s}$)
 
-Les vitesses de rotation suivent la **règle de la main droite** autour des axes directeurs ISB :
+Rotation velocities follow the **right-hand rule** around the ISB cardinal axes:
 
-| Axe            | Dénomination        | Axe de Rotation ISB                              | Mouvements Physiologiques du Pied                                           |
-| :------------- | :------------------ | :----------------------------------------------- | :-------------------------------------------------------------------------- |
-| **GX ($g_x$)** | **Roulis (Roll)**   | Rotation autour de l'axe $X$ (Antéro-postérieur) | **Inversion** (+) / **Éversion** (-) (Pronation / Supination)               |
-| **GY ($g_y$)** | **Tangage (Pitch)** | Rotation autour de l'axe $Y$ (Médio-latéral)     | **Flexion dorsale** (+) / **Flexion plantaire** (-)                         |
-| **GZ ($g_z$)** | **Lacet (Yaw)**     | Rotation autour de l'axe $Z$ (Vertical)          | **Rotation interne / Adduction** (+) / **Rotation externe / Abduction** (-) |
+| Axis | Designation | ISB Rotation Axis | Physiological Foot Movements |
+| :--- | :--- | :--- | :--- |
+| **GX ($g_x$)** | **Roll** | Rotation around $X$ axis (Antero-posterior) | **Inversion** (+) / **Eversion** (-) (Pronation / Supination) |
+| **GY ($g_y$)** | **Pitch** | Rotation around $Y$ axis (Medio-lateral) | **Dorsiflexion** (+) / **Plantarflexion** (-) |
+| **GZ ($g_z$)** | **Yaw** | Rotation around $Z$ axis (Vertical) | **Internal rotation / Adduction** (+) / **External rotation / Abduction** (-) |
 
 ---
 
-## 4. Alignement Matériel & Chaîne de Traitement
+## 4. Hardware Alignment & Processing Pipeline
 
-1. **Firmware Embarqué (Arduino / ESP32-S3)** :
-   - Lecture du capteur IMU MPU-6050 configuré en pleine échelle $\pm 8\,g$ (4096 LSB/g) et $\pm 1000^\circ/\text{s}$ (32.8 LSB/dps).
-   - Application directe de la matrice de transformation géométrique pour délivrer des signaux nativement alignés sur le standard ISB.
+1. **Embedded Firmware (Arduino / ESP32-S3)**:
+   - Reads MPU-6050 IMU configured for $\pm 8\,g$ full scale (4096 LSB/g) and $\pm 1000^\circ/\text{s}$ (32.8 LSB/dps).
+   - Direct application of coordinate transformation matrix to provide native ISB aligned signals.
 
-2. **Protocole de Communication BLE GATT & MQTT** :
-   - Caractéristique _Studio Data Burst_ (`0x7a5a0005-...`) : Trame binaire compacte 14 octets ordonnée en $[a_x, a_y, a_z, g_x, g_y, g_z]$.
+2. **BLE GATT & MQTT Communication Protocols**:
+   - _Studio Data Burst_ characteristic (`0x7a5a0005-...`): Compact 14-byte binary frame ordered as $[a_x, a_y, a_z, g_x, g_y, g_z]$.
 
-3. **Pipeline Edge AI & Cloud Machine Learning** :
-   - Extraction de features spatiales et calcul des normes invariantes ($SVM$, $Jerk$, $SMA$) préservant la compatibilité mathématique entre modèles entraînés et inférence temps réel.
+3. **Edge AI & Cloud Machine Learning Pipeline**:
+   - Feature extraction and rotation-invariant norm computation ($SVM$, $Jerk$, $SMA$) preserving mathematical compatibility between trained models and real-time edge inference.
 
-4. **Visualisation Frontend (Angular / Chart.js)** :
-   - Restitution explicite des légendes et courbes avec repérage couleur standardisé :
-     - **Rouge** : Axe $X$ (Antéro-postérieur)
-     - **Émeraude / Vert** : Axe $Y$ (Médio-latéral)
-     - **Bleu** : Axe $Z$ (Longitudinal / Vertical)
-     - **Violet** : Magnitude $\|a\|$
+4. **Frontend Visualization (Angular / Chart.js)**:
+   - Explicit curve labels and standardized color coding:
+     - **Red**: $X$ Axis (Antero-posterior)
+     - **Emerald / Green**: $Y$ Axis (Medio-lateral)
+     - **Blue**: $Z$ Axis (Longitudinal / Vertical)
+     - **Purple**: Magnitude $\|a\|$

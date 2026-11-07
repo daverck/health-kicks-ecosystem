@@ -1,477 +1,468 @@
-# Spécification du Profil BLE GATT - HealthKicks Footwear Service
+# BLE GATT Profile Specification - HealthKicks Footwear Service
 
-Ce document constitue la **spécification contractuelle officielle** pour la communication Bluetooth Low Energy (BLE) entre la chaussure connectée **HealthKicks** (serveur GATT hébergé sur Raspberry Pi / ESP32-S3) et le smartphone (client GATT / passerelle BLE-to-MQTT vers AWS IoT Core).
+This document constitutes the **official contractual specification** for Bluetooth Low Energy (BLE) communications between the **HealthKicks** connected shoe (GATT server running on ESP32-S3 / Raspberry Pi) and the smartphone (GATT client / BLE-to-MQTT gateway to AWS IoT Core).
 
 ---
 
-## 1. Architecture & Rôle des Acteurs
+## 1. Architecture & Actors
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Footwear as Chaussure (Serveur GATT / Edge)
-    participant Mobile as Smartphone (Client BLE / Passerelle MQTT)
+    participant Footwear as Connected Shoe (GATT Server / Edge)
+    participant Mobile as Smartphone (BLE Client / MQTT Gateway)
     participant Cloud as AWS IoT Core & FastAPI Backend
 
-    Note over Footwear,Mobile: Connexion BLE & Négociation MTU (ex: 247 octets)
+    Note over Footwear,Mobile: BLE Connection & MTU Negotiation (e.g. 247 bytes)
 
     rect rgb(240, 248, 255)
-    Note over Footwear,Mobile: Flux 1 : Alertes de Détection d'Activité
-    Footwear->>Mobile: Notification BLE (Caractéristique Activity Detection)
-    Mobile->>Cloud: Publication MQTT QoS 1 (healthkicks/v1/{device_id}/events/detection)
+    Note over Footwear,Mobile: Flow 1: Activity Detection Alerts
+    Footwear->>Mobile: BLE Notification (Activity Detection Characteristic)
+    Mobile->>Cloud: MQTT QoS 1 Publish (healthkicks/v1/{device_id}/events/detection)
     end
 
     rect rgb(255, 245, 245)
-    Note over Cloud,Footwear: Flux 2 : Commandes Haptiques Distantes
-    Cloud->>Mobile: Message MQTT (healthkicks/v1/{device_id}/commands/haptic)
-    Mobile->>Footwear: Écriture BLE (Caractéristique Haptic Command)
-    Footwear->>Footwear: Activation Actionneur Vibrotactile (GPIO / UART)
+    Note over Cloud,Footwear: Flow 2: Remote Haptic Commands
+    Cloud->>Mobile: MQTT Message (healthkicks/v1/{device_id}/commands/haptic)
+    Mobile->>Footwear: BLE Write (Haptic Command Characteristic)
+    Footwear->>Footwear: Trigger Vibrotactile Actuator (GPIO / PWM)
     end
 
     rect rgb(245, 255, 245)
-    Note over Footwear,Cloud: Flux 3 : Session Studio & Burst Transfer
-    Mobile->>Footwear: Écriture BLE (Studio Control: START <label> <sec> <id>)
-    Footwear->>Mobile: Notification BLE (Studio Control: RECORDING <sec>)
-    Note over Footwear: Bufferisation RAM 50Hz (aucune émission BLE pendant la capture)
-    opt Fin manuelle avant la durée demandée, après 2 secondes minimum
-        Mobile->>Footwear: Écriture BLE (Studio Control: FINISH)
+    Note over Footwear,Cloud: Flow 3: Studio Session & Burst Transfer
+    Mobile->>Footwear: BLE Write (Studio Control: START <label> <sec> <id>)
+    Footwear->>Mobile: BLE Notification (Studio Control: RECORDING <sec>)
+    Note over Footwear: 50Hz RAM Buffering (no BLE emissions during capture)
+    opt Manual finish before configured duration, after 2 seconds minimum
+        Mobile->>Footwear: BLE Write (Studio Control: FINISH)
     end
-    Footwear->>Mobile: Notification BLE (Studio Control: FINISHED <count> <id> <duration_sec>)
-    loop Paquets Découpés (Burst Transfer)
-        Footwear->>Mobile: Notification BLE (Studio Data Burst: CHUNK seq_num)
+    Footwear->>Mobile: BLE Notification (Studio Control: FINISHED <count> <id> <duration_sec>)
+    loop Sliced Packets (Burst Transfer)
+        Footwear->>Mobile: BLE Notification (Studio Data Burst: CHUNK seq_num)
     end
-    Footwear->>Mobile: Notification BLE (Studio Data Burst: END crc32)
-    Mobile->>Cloud: Ingestion Télémétrie Raw DynamoDB (via MQTT ou REST)
+    Footwear->>Mobile: BLE Notification (Studio Data Burst: END crc32)
+    Mobile->>Cloud: Raw Telemetry Ingestion to DynamoDB (via MQTT or REST)
     end
 ```
 
 ---
 
-## 2. Identifiants UUID du Service et des Caractéristiques
+## 2. Service and Characteristic UUIDs
 
-Le service utilise des UUIDs 128-bit dérivés de la base HealthKicks `7a5a0000-c529-4d64-8848-18e5904de22a` :
+The service uses 128-bit UUIDs derived from the HealthKicks base `7a5a0000-c529-4d64-8848-18e5904de22a`:
 
-| Élément                        | UUID 128-bit                                      | Propriétés                        | Description                                                        |
-| :----------------------------- | :------------------------------------------------ | :-------------------------------- | :----------------------------------------------------------------- |
-| **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Service principal de la chaussure connectée                        |
-| **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Événements d'activité et alertes de chute                          |
-| **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Commande de vibration vibrotactile                                 |
-| **Device & Studio Control**    | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle d'état, étalonnage assiette, réglages et protocole Studio |
-| **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | Déversement binaire haute vitesse des trames IMU                   |
-| **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Compteur de pas déterministe, ventilation par activité et cadence  |
-| **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Service dédié à la mise à jour firmware Over-The-Air               |
-| **OTA Control**                | `7a5a0011-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | Contrôle du cycle de flash OTA (start, end, abort, status)         |
-| **OTA Data**                   | `7a5a0012-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Transfert haute vitesse par chunks du binaire firmware (.bin)      |
-| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service                  | Service standard Bluetooth SIG d'identification matérielle         |
-| **Firmware Revision String**   | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ`                            | Version sémantique du firmware installé (ex: `v1.2.1-esp32s3`)     |
-| **Software Revision String**   | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ`                            | Date/heure de compilation ou de release du binaire embarqué        |
-
----
-
-## 3. Spécification Détaillée des Caractéristiques
-
-### A. Caractéristique 1 : Activity Detection (`7a5a0002-...`)
-
-- **Propriétés** : `READ`, `NOTIFY`
-- **Rôle** : Transmettre au smartphone les changements d'état d'activité et les alertes critiques de chute calculées par le moteur ML embarqué.
-- **Règle d'anti-rebond (Debounce)** : Une fois une chute détectée (`fall_*`), un délai de cooldown configurable (par défaut **5.0 secondes** / `5000 ms`, ajustable de `1000` à `60000 ms` via `SET_FALL_COOLDOWN`) est imposé avant toute nouvelle notification de chute.
-
-#### Format Binaire Compact (7 octets)
-
-Endianness : **Big-Endian** (réseau standard).
-
-| Offset | Champ        | Type   | Plage / Valeurs  | Description                                                                                                                                           |
-| :----- | :----------- | :----- | :--------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0      | `state_code` | uint8  | Table ci-dessous | Code de l'état ou de l'événement détecté                                                                                                              |
-| 1      | `confidence` | uint8  | `0` – `100`      | Niveau de confiance du modèle en %                                                                                                                    |
-| 2..5   | `timestamp`  | uint32 | Epoch Unix (sec) | Horodatage UTC de détection                                                                                                                           |
-| 6      | `flags`      | uint8  | Bitfield         | Bit 0 : Détection critique (chute)<br>Bit 1 : Déclenchement haptique local autonome effectué<br>Bit 2 : Alerte différée / historisée hors-ligne (NVS) |
-
-#### Table des `state_code` :
-
-- `0x00` : `idle` (immobile / assis)
-- `0x01` : `walk` (marche normale)
-- `0x02` : `run` (course / foulée rapide)
-- `0x03` : `stairs_up` (montée d'escaliers)
-- `0x04` : `stairs_down` (descente d'escaliers)
-- `0x05` : `sit_down` (transition assise / s'asseoir)
-- `0x06` : `stand_up` (transition debout / se lever d'une chaise)
-- `0x07` : `lying_supine` (posture immobile couchée sur le dos / décubitus dorsal)
-- `0x08` : `lying_prone` (posture immobile couchée sur le ventre / décubitus ventral)
-- `0x09` : `lying_lateral` (posture immobile couchée sur le côté / décubitus latéral)
-- `0x0A` : `jump` (saut / impulsion verticale)
-- `0x0B` : `lie_down` (transition allongée / s'allonger)
-- `0x10` : `fall_forward` (chute avant)
-- `0x11` : `fall_backward` (chute arrière)
-- `0x12` : `fall_lateral` (chute latérale)
-- `0x13` : `fall_recovery` (relevage après chute)
-- `0x1E` : `stumble_recover` (trébuchement rattrapé)
-- `0x1F` : `fall_generic` (chute non spécifiée)
-- `0x20` : `inactivity_alert` (rappel d'inactivité prolongée / sédentarité)
-
-#### Capacité Actuelle (256 Classes) & Feuille de Route d'Évolution
-
-- **Capacité Actuelle (`uint8`)** : Le champ `state_code` est encodé sur 1 octet (`uint8`), ce qui permet d'adresser jusqu'à **256 classes distinctes** (`0x00` à `0xFF`). Avec 13 classes allouées actuellement, le système dispose d'une marge de **243 identifiants disponibles (> 94% de réserve)**.
-- **Évolution Future si > 256 Classes** :
-  - **Option A (Extension `uint16`)** : Si le catalogue de mouvements ou d'exercices dépasse 256 classes, le champ `state_code` peut être étendu à 2 octets (`uint16`, 65 536 classes). Le payload passerait de 7 à 8 octets, restant **largement en deçà du plafond de 20 octets** de la payload ATT MTU standard (23 octets) sans provoquer aucune fragmentation radio BLE.
-  - **Option B (Structuration Hiérarchique sur 2 octets)** : Découpage en `category_id` (1 octet : 0x01 Locomotion, 0x02 Postures, 0x03 Chutes, 0x04 Pathologies/Boiteries, 0x05 Sports...) + `sub_activity_id` (1 octet au sein de la catégorie), garantissant un routage et un filtrage macro instantanés côté smartphone et Cloud.
+| Element | 128-bit UUID | Properties | Description |
+| :--- | :--- | :--- | :--- |
+| **HealthKicks Service** | `7a5a0001-c529-4d64-8848-18e5904de22a` | Primary Service | Primary connected shoe service |
+| **Activity Detection** | `7a5a0002-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Activity events and fall alerts |
+| **Haptic Command** | `7a5a0003-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | Vibrotactile feedback command |
+| **Device & Studio Control** | `7a5a0004-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | State control, attitude calibration, settings, and Studio protocol |
+| **Studio Data Burst** | `7a5a0005-c529-4d64-8848-18e5904de22a` | `NOTIFY` | High-speed binary offloading of raw IMU frames |
+| **Step Counter** | `7a5a0006-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Deterministic step counter, activity breakdown, and cadence |
+| **OTA Update Service** | `7a5a0010-c529-4d64-8848-18e5904de22a` | Secondary Service | Dedicated Over-The-Air firmware update service |
+| **OTA Control** | `7a5a0011-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | OTA flashing lifecycle control (start, end, abort, status) |
+| **OTA Data** | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | High-speed chunk transfer of the firmware binary (.bin) |
+| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service | Standard Bluetooth SIG hardware identification service |
+| **Firmware Revision String** | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ` | Semantic version string of installed firmware (e.g. `v1.2.1-esp32s3`) |
+| **Software Revision String** | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ` | Compilation date/time or build release date of embedded binary |
 
 ---
 
-### B. Caractéristique 2 : Haptic Command (`7a5a0003-...`)
+## 3. Detailed Characteristic Specifications
 
-- **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
-- **Rôle** : Piloter immédiatement le vibreur présent dans la semelle de la chaussure ou configurer les paramètres haptiques/inactivité.
+### A. Characteristic 1: Activity Detection (`7a5a0002-...`)
 
-#### 1. Commandes Haptiques Directes (4 octets)
+- **Properties**: `READ`, `NOTIFY`
+- **Role**: Transmits activity state changes and critical fall alerts calculated by the embedded ML engine to the smartphone.
+- **Debounce Rule**: Once a fall is detected (`fall_*`), a configurable cooldown delay (default **3.0 seconds** / `3000 ms`, adjustable from `500` to `60000 ms` via `SET_FALL_COOLDOWN`) is enforced before any subsequent fall notification can be emitted.
 
-Endianness : **Big-Endian**.
+#### Compact Binary Format (7 Bytes)
 
-| Offset | Champ         | Type   | Plage / Valeurs                                                                                                               | Description                                       |
-| :----- | :------------ | :----- | :---------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------ |
-| 0      | `pattern_id`  | uint8  | `0` = impulsion continue<br>`1` = double pulse<br>`2` = pulsation d'alerte<br>`0x05` = déclenchement calibration assiette IMU | Profil vibratoire ou commande de contrôle         |
-| 1      | `intensity`   | uint8  | `0` – `255`                                                                                                                   | Puissance PWM (`0` = stop, `255` = puissance max) |
-| 2..3   | `duration_ms` | uint16 | `50` – `10000`                                                                                                                | Durée totale de la stimulation en millisecondes   |
+Endianness: **Big-Endian** (standard network byte order).
 
-_Exemple_ : `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Impulsion continue, intensité 200/255, durée 500 ms.
-_Exemple calibration_ : `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Déclenchement immédiat de la calibration d'assiette IMU (4s d'immobilité).
+| Offset | Field | Type | Range / Values | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| 0 | `state_code` | uint8 | Table below | Code of detected state or event |
+| 1 | `confidence` | uint8 | `0` – `100` | Model confidence level in % |
+| 2..5 | `timestamp` | uint32 | Unix Epoch (sec) | UTC timestamp of detection |
+| 6 | `flags` | uint8 | Bitfield | Bit 0: Critical detection (fall)<br>Bit 1: Autonomous local haptic trigger executed<br>Bit 2: Deferred / stored offline alert (NVS) |
 
-#### 2. Configuration du Rappel d'Inactivité Prolongée (Opcode `0x06` - 6 octets)
+#### `state_code` Table:
 
-Endianness : **Big-Endian**.
+- `0x00`: `idle` (still / seated)
+- `0x01`: `walk` (normal walking)
+- `0x02`: `run` (running / fast stride)
+- `0x03`: `stairs_up` (ascending stairs)
+- `0x04`: `stairs_down` (descending stairs)
+- `0x05`: `sit_down` (sitting transition / sitting down)
+- `0x06`: `stand_up` (standing transition / standing up from chair)
+- `0x07`: `lying_supine` (still posture lying on back / dorsal decubitus)
+- `0x08`: `lying_prone` (still posture lying on stomach / ventral decubitus)
+- `0x09`: `lying_lateral` (still posture lying on side / lateral decubitus)
+- `0x0A`: `jump` (vertical jump / impulse)
+- `0x0B`: `lie_down` (lying transition / lying down)
+- `0x10`: `fall_forward` (forward fall)
+- `0x11`: `fall_backward` (backward fall)
+- `0x12`: `fall_lateral` (lateral fall)
+- `0x13`: `fall_recovery` (recovery / standing back up after fall)
+- `0x1E`: `stumble_recover` (stumble and recover)
+- `0x1F`: `fall_generic` (unspecified fall)
+- `0x20`: `inactivity_alert` (prolonged inactivity / sedentary reminder)
 
-| Offset | Champ                      | Type   | Plage / Valeurs                                     | Description                                      |
-| :----- | :------------------------- | :----- | :-------------------------------------------------- | :----------------------------------------------- |
-| 0      | `opcode`                   | uint8  | `0x06`                                              | Commande de configuration du rappel d'inactivité |
-| 1      | `is_enabled`               | uint8  | `0` = désactivé, `1` = activé                       | Activation / désactivation de la surveillance    |
-| 2..3   | `inactivity_threshold_sec` | uint16 | `600` – `7200` (10 à 120 min, déf: `3000` / 50 min) | Durée continue sans pas avant l'alerte           |
-| 4..5   | `cooldown_duration_sec`    | uint16 | `300` – `1800` (5 à 30 min, déf: `600` / 10 min)    | Délai de répétition / cooldown après une alerte  |
+#### Current Capacity (256 Classes) & Evolution Roadmap
+
+- **Current Capacity (`uint8`)**: The `state_code` field is encoded on 1 byte (`uint8`), enabling addressing up to **256 distinct classes** (`0x00` to `0xFF`). With 18 classes currently allocated, the system preserves a reserve of **238 unallocated identifiers (> 92% headroom)**.
+- **Future Extension for > 256 Classes**:
+  - **Option A (`uint16` Extension)**: If the catalogue of physical movements or rehabilitation exercises exceeds 256 classes, `state_code` can be expanded to 2 bytes (`uint16`, 65,536 classes). Payload size increases from 7 to 8 bytes, remaining **well below the 20-byte payload limit** of standard 23-byte ATT MTU without causing radio packet fragmentation.
+  - **Option B (2-Byte Hierarchical Partitioning)**: Split into `category_id` (1 byte: 0x01 Locomotion, 0x02 Postures, 0x03 Falls, 0x04 Pathologies/Gait Disorders, 0x05 Sports...) + `sub_activity_id` (1 byte within category), enabling instant macro-level filtering on mobile and Cloud.
 
 ---
 
-### C. Caractéristique 3 : Device & Studio Control (`7a5a0004-...`)
+### B. Characteristic 2: Haptic Command (`7a5a0003-...`)
 
-- **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Centraliser l'ensemble du pilotage applicatif, le cycle de vie des captures Studio, l'étalonnage d'assiette IMU et les configurations fonctionnelles de la chaussure en format textuel ASCII UTF-8.
+- **Properties**: `WRITE`, `WRITE WITHOUT RESPONSE`
+- **Role**: Directly triggers the in-sole vibration motor or configures haptic/inactivity parameters.
 
-#### 1. Commandes Écrites par le Smartphone (`WRITE`)
+#### 1. Direct Haptic Commands (4 Bytes)
 
-Format textuel ASCII encodé en UTF-8 :
+Endianness: **Big-Endian**.
 
-1. **Démarrage d'enregistrement** :
+| Offset | Field | Type | Range / Values | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| 0 | `pattern_id` | uint8 | `0` = continuous pulse<br>`1` = double pulse<br>`2` = alert pulse<br>`0x05` = trigger IMU attitude calibration | Vibration profile or control command |
+| 1 | `intensity` | uint8 | `0` – `255` | PWM power (`0` = stop, `255` = max power) |
+| 2..3 | `duration_ms` | uint16 | `50` – `10000` | Total duration of stimulation in milliseconds |
 
+_Example_: `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Continuous pulse, intensity 200/255, duration 500 ms.
+_Calibration Example_: `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Immediate trigger of IMU attitude calibration (4s stillness).
+
+#### 2. Prolonged Inactivity Reminder Configuration (Opcode `0x06` - 6 Bytes)
+
+Endianness: **Big-Endian**.
+
+| Offset | Field | Type | Range / Values | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| 0 | `opcode` | uint8 | `0x06` | Inactivity reminder configuration opcode |
+| 1 | `is_enabled` | uint8 | `0` = disabled, `1` = enabled | Enable / disable monitoring |
+| 2..3 | `inactivity_threshold_sec` | uint16 | `600` – `7200` (10 to 120 min, def: `3000` / 50 min) | Continuous duration without steps before alert |
+| 4..5 | `cooldown_duration_sec` | uint16 | `300` – `1800` (5 to 30 min, def: `600` / 10 min) | Repetition delay / cooldown after alert |
+
+---
+
+### C. Characteristic 3: Device & Studio Control (`7a5a0004-...`)
+
+- **Properties**: `WRITE`, `NOTIFY`
+- **Role**: Centralizes application control, Studio recording lifecycle, IMU calibration, and functional device configuration using ASCII UTF-8 text strings.
+
+#### 1. Commands Written by Smartphone (`WRITE`)
+
+ASCII UTF-8 format:
+
+1. **Start Recording**:
    ```text
    START <label> <duration_sec> <session_id>
    ```
-   - _Exemple_ : `START walk 5.0 7b8e9f01-2345-6789-abcd-ef0123456789`
-   - Contraintes : `duration_sec` entre `2.0` et `30.0` secondes.
+   - _Example_: `START walk 5.0 7b8e9f01-2345-6789-abcd-ef0123456789`
+   - Constraints: `duration_sec` between `2.0` and `30.0` seconds.
 
-2. **Annulation** :
-
+2. **Cancel**:
    ```text
    CANCEL
    ```
 
-3. **Fin anticipée d'un enregistrement** :
-
+3. **Early Finish of Recording**:
    ```text
    FINISH
    ```
-   - Valide uniquement après au moins 2 secondes d'échantillonnage ; la chaussure émet alors `FINISHED` et transmet le burst IMU.
+   - Valid only after at least 2.0 seconds of sampling; shoe emits `FINISHED` and transmits the burst.
 
-4. **Déclenchement de Calibration d'Assiette IMU** :
-
+4. **Trigger IMU Attitude Calibration**:
    ```text
    CALIBRATE
    ```
 
-5. **Configuration du Rappel d'Inactivité** :
-
+5. **Configure Inactivity Reminder**:
    ```text
    SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
    ```
-   - _Exemple_ : `SET_INACTIVITY 1 3000 600`
+   - _Example_: `SET_INACTIVITY 1 3000 600`
 
-6. **Activation / Désactivation du Mode Human-in-the-Loop (HITL)** :
-
+6. **Enable / Disable Human-in-the-Loop (HITL) Mode**:
    ```text
    SET_HITL <enabled:0|1>
    ```
-   - _Paramètre_ : `0` pour désactiver, `1` pour activer.
-   - _Valeur par défaut_ : `0` (désactivé).
-   - _Exemple_ : `SET_HITL 1`
-   - _Comportement_ :
-     - La chaussure maintient en permanence un buffer circulaire de 76 trames brutes IMU à 19 Hz (~4,0 secondes).
-     - À chaque notification d'activité sur `0002` (changement d'état d'activité ou détection de chute) à l'instant $T$, la chaussure continue d'enregistrer pendant 1,5 seconde (28 trames post-événement).
-     - À $T + 1.5\,\text{s}$, la chaussure notifie `FINISHED 76 hitl-<timestamp> 4.0` sur `0004` puis transmet la salve de 76 trames IMU (~2,5 s avant et ~1,5 s après la détection) sur la caractéristique Studio Data Burst `0005`.
+   - _Parameter_: `0` to disable, `1` to enable.
+   - _Default_: `0` (disabled).
+   - _Example_: `SET_HITL 1`
+   - _Behavior_:
+     - Shoe continuously maintains a circular buffer of 76 raw IMU frames at 19 Hz (~4.0 seconds).
+     - Upon an activity notification on `0002` (state change or fall detection) at time $T$, the shoe continues recording for 1.5 seconds (28 post-event frames).
+     - At $T + 1.5\,\text{s}$, the shoe notifies `FINISHED 76 hitl-<timestamp> 4.0` on `0004` and transmits the 76 IMU frames (~2.5s pre-event and ~1.5s post-event) over Studio Data Burst `0005`.
 
-7. **Configuration du Seuil de Confiance de Chute** :
-
+7. **Configure Fall Confidence Threshold**:
    ```text
    SET_FALL_CONFIDENCE <threshold:0.30..0.90>
    ```
-   - _Paramètre_ : Seuil de confiance probabiliste du modèle ML pour les détections de chute (float).
-   - _Plage valide_ : `0.30` (ultra-permissif) à `0.90` (ultra-robuste).
-   - _Valeur par défaut_ : `0.65`.
-   - _Exemple_ : `SET_FALL_CONFIDENCE 0.75`
-   - _Notification retour_ : `FALL_CONFIDENCE_OK <valeur>` ou `FALL_CONFIDENCE_ERROR <raison>`.
+   - _Parameter_: Probabilistic confidence threshold for fall detections (float).
+   - _Valid Range_: `0.30` (ultra-sensitive) to `0.90` (ultra-robust).
+   - _Default_: `0.65`.
+   - _Example_: `SET_FALL_CONFIDENCE 0.75`
+   - _Return Notification_: `FALL_CONFIDENCE_OK <value>` or `FALL_CONFIDENCE_ERROR <reason>`.
 
-8. **Configuration du Cooldown de Détection de Chute** :
+8. **Configure Fall Detection Cooldown**:
+   ```text
+   SET_FALL_COOLDOWN <cooldown_ms:500..60000>
+   ```
+   - _Parameter_: Minimum debounce delay in milliseconds (uint32) between consecutive fall alerts (`_fallCooldownMs`).
+   - _Valid Range_: `500` (0.5 s) to `60000` (60 s).
+   - _Default_: `3000` (3 s).
+   - _Example_: `SET_FALL_COOLDOWN 3000`
+   - _Return Notification_: `FALL_COOLDOWN_OK <cooldown_ms>` or `FALL_COOLDOWN_ERROR <reason>`.
 
-   `	ext
-SET_FALL_COOLDOWN <cooldown_ms:500..60000>
-`
-   - _Paramètre_ : Délai d'anti-rebond minimal en millisecondes (uint32) entre deux alertes de chute consécutives (_fallCooldownMs).
-   - _Plage valide_ : 500 (0.5 s) à 60000 (60 s).
-   - _Valeur par défaut_ : 3000 (3 s).
-   - _Exemple_ : SET_FALL_COOLDOWN 3000
-   - _Notification retour_ : FALL_COOLDOWN_OK <cooldown_ms> ou FALL_COOLDOWN_ERROR <raison>.
-
-9. **Synchronisation d'Horloge (Time Sync & Clock Calibration)** :
-
+9. **Clock Synchronization (Time Sync & Clock Calibration)**:
    ```text
    SYNC_TIME <unix_epoch_sec>
    ```
-   - _Paramètre_ : Timestamp Unix UTC actuel du smartphone en secondes (`uint32`).
-   - _Exemple_ : `SYNC_TIME 1762354800`
-   - _Comportement_ :
-     - L'ESP32 calcule l'heure exacte de son boot : $\text{boot\_epoch\_sec} = \text{unix\_epoch\_sec} - \text{uptime\_sec}$.
-     - Cette heure de référence est persistée en `RTC_DATA_ATTR` et conservée à travers les réveils de Deep Sleep.
-     - L'ESP32 notifie `TIME_SYNC_OK <boot_count> <uptime_sec>`.
-     - Si des tranches horaires de pas ont été enregistrées hors-ligne, l'ESP32 transmet chaque tranche résolue via une ou plusieurs notifications `STEP_HIST <boot_count> <bucket_epoch_sec> <walk> <run> <stairs> <unclassified>`.
+   - _Parameter_: Current UTC Unix epoch timestamp from smartphone in seconds (`uint32`).
+   - _Example_: `SYNC_TIME 1762354800`
+   - _Behavior_:
+     - The ESP32 computes its exact boot epoch: $\text{boot\_epoch\_sec} = \text{unix\_epoch\_sec} - \text{uptime\_sec}$.
+     - This reference epoch is persisted in `RTC_DATA_ATTR` and preserved across Deep Sleep wakeups.
+     - The ESP32 notifies `TIME_SYNC_OK <boot_count> <uptime_sec>`.
+     - If offline hourly step buckets were recorded, the ESP32 transmits each resolved bucket via one or more `STEP_HIST <boot_count> <bucket_epoch_sec> <walk> <run> <stairs> <unclassified>` notifications.
 
-#### 2. Notifications Émises par la Chaussure (`NOTIFY`)
+#### 2. Notifications Emitted by Connected Shoe (`NOTIFY`)
 
-Format textuel ASCII encodé en UTF-8 :
+ASCII UTF-8 format:
 
-| Notification                                          | Déclencheur                          | Description                                                                |
-| :---------------------------------------------------- | :----------------------------------- | :------------------------------------------------------------------------- |
-| `COUNTDOWN <pulse>/<total>`                           | Début de session                     | Impulsion haptique de préparation sensorielle (ex: `COUNTDOWN 1/3`)        |
-| `RECORDING <duration_sec>`                            | Fin du compte à rebours              | La capture démarre en RAM à 50 Hz                                          |
-| `FINISHED <sample_count> <session_id> <duration_sec>` | Fenêtre expirée ou commande `FINISH` | Capture terminée, prête pour le déversement burst ; durée réelle transmise |
-| `CALIBRATING <duration_sec>`                          | Commande `CALIBRATE` ou `0x05`       | Début de l'échantillonnage d'immobilité pour réaligner l'assiette          |
-| `CALIBRATION_OK`                                      | 4.0s immobiles atteintes             | Calibration réussie, matrice de rotation persistée en NVS                  |
-| `CALIBRATION_ERROR <reason>`                          | Mouvement / instabilité              | Échec de calibration (ex: `CALIBRATION_ERROR motion_detected`)             |
-| `HITL_OK <0                                           | 1>`                                  | Commande `SET_HITL`                                                        | Mode HITL activé (1) ou désactivé (0) avec succès |
-| `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
-| `FALL_CONFIDENCE_OK <valeur>`                         | Commande `SET_FALL_CONFIDENCE`       | Seuil de confiance de chute mis à jour avec succès                         |
-| `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`       | Rejet de la commande (ex: `out_of_range`, `invalid_params`)                |
-| FALL_COOLDOWN_OK <cooldown_ms>                        | Commande SET_FALL_COOLDOWN           | Cooldown de détection de chute mis à jour avec succès (en ms)              |
-| FALL_COOLDOWN_ERROR <raison>                          | Commande SET_FALL_COOLDOWN           | Rejet de la commande (ex: out_of_range, invalid_params)                    |
-| `TIME_SYNC_OK <boot_count> <uptime_sec>`              | Commande `SYNC_TIME`                 | Horloge calibrée, renvoie cycle de boot matériel et uptime courant         |
-| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>`  | Post `SYNC_TIME` (si pas hors-ligne) | Restitution d'une tranche horaire de pas enregistrée hors-ligne            |
-| `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
-| `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
+| Notification | Trigger | Description |
+| :--- | :--- | :--- |
+| `COUNTDOWN <pulse>/<total>` | Session start | Sensory preparatory haptic pulse (e.g. `COUNTDOWN 1/3`) |
+| `RECORDING <duration_sec>` | Countdown completion | Capture starts in RAM at 50 Hz |
+| `FINISHED <sample_count> <session_id> <duration_sec>` | Window expired or `FINISH` command | Capture complete, ready for burst offload; actual duration transmitted |
+| `CALIBRATING <duration_sec>` | `CALIBRATE` command or `0x05` | Beginning of stillness sampling to realign attitude |
+| `CALIBRATION_OK` | 4.0s stillness achieved | Calibration successful, rotation matrix persisted in NVS |
+| `CALIBRATION_ERROR <reason>` | Movement / instability detected | Calibration failed (e.g. `CALIBRATION_ERROR motion_detected`) |
+| `HITL_OK <0\|1>` | `SET_HITL` command | HITL mode enabled (1) or disabled (0) successfully |
+| `HITL_ERROR <reason>` | `SET_HITL` command | Command rejected (e.g. invalid arguments) |
+| `FALL_CONFIDENCE_OK <value>` | `SET_FALL_CONFIDENCE` command | Fall confidence threshold updated successfully |
+| `FALL_CONFIDENCE_ERROR <reason>` | `SET_FALL_CONFIDENCE` command | Command rejected (e.g. `out_of_range`, `invalid_params`) |
+| `FALL_COOLDOWN_OK <cooldown_ms>` | `SET_FALL_COOLDOWN` command | Fall detection cooldown updated successfully (in ms) |
+| `FALL_COOLDOWN_ERROR <reason>` | `SET_FALL_COOLDOWN` command | Command rejected (e.g. `out_of_range`, `invalid_params`) |
+| `TIME_SYNC_OK <boot_count> <uptime_sec>` | `SYNC_TIME` command | Clock calibrated, returns hardware boot count and current uptime |
+| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>` | Post `SYNC_TIME` (if offline steps) | Transmission of offline recorded step bucket |
+| `CANCELLED` | Command received | Session aborted |
+| `ERROR <reason>` | Hardware/RAM fault or rejection | Error (e.g. `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
 ---
 
-### D. Caractéristique 4 : Studio Data Burst (`7a5a0005-...`)
+### D. Characteristic 4: Studio Data Burst (`7a5a0005-...`)
 
-- **Propriétés** : `NOTIFY`
-- **Rôle** : Transférer l'ensemble des trames IMU acquises pendant la session Studio à vitesse maximale vers le smartphone.
+- **Properties**: `NOTIFY`
+- **Role**: Transfers all raw IMU frames acquired during a Studio session at maximum throughput to the smartphone.
 
-#### Protocole de Tramage par Paquets (Burst Transfer)
+#### Burst Packet Framing Protocol
 
-Dès que `FINISHED` est notifié sur Studio Control, le serveur GATT commence l'émission des paquets de données sur cette caractéristique.
+As soon as `FINISHED` is notified on Studio Control, the GATT server begins streaming data packets on this characteristic.
 
-#### Structure de l'En-Tête de Paquet (4 octets)
+#### Packet Header Structure (4 Bytes)
 
-| Offset | Champ         | Type   | Description                                                                                                                                                                                    |
-| :----- | :------------ | :----- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Compression Delta sans perte)<br>`0x05` = RLE_CHUNK (Run-Length Encoding statique sans perte) |
-| 1..2   | `seq_num`     | uint16 | Numéro de séquence séquentiel (0, 1, 2...)                                                                                                                                                     |
-| 3      | `payload_len` | uint8  | Nombre d'octets de charge utile contenue dans ce paquet                                                                                                                                        |
+| Offset | Field | Type | Description |
+| :--- | :--- | :--- | :--- |
+| 0 | `packet_type` | uint8 | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Lossless Delta Compression)<br>`0x05` = RLE_CHUNK (Lossless Static Run-Length Encoding) |
+| 1..2 | `seq_num` | uint16 | Sequential packet number (0, 1, 2...) |
+| 3 | `payload_len` | uint8 | Byte count of payload contained in this packet |
 
-#### Structure d'un Paquet `DELTA_CHUNK` (`packet_type = 0x04`)
+#### `DELTA_CHUNK` Packet Structure (`packet_type = 0x04`)
 
-Permet de doubler le débit lors de variations continues.
+Doubles throughput during continuous kinematic variations.
 
-- `header` (4 octets) : `[0x04, seq_num_hi, seq_num_lo, payload_len]`
-- `total_frames` (1 octet uint8) : Nombre total de trames contenues dans le paquet ($1 + \text{delta\_count}$).
-- `keyframe` (14 octets) : Première trame IMU absolue complète (14 octets standard).
-- `deltas` ($K \times 7$ octets) : Pour chaque trame suivante ($k \in [1, \text{delta\_count}]$) :
-  - `diff_ms` (1 octet uint8) : Écart de temps avec la trame précédente ($\le 255$ ms).
-  - `diff_ax, diff_ay, diff_az` (3 octets int8) : Écarts d'accélération ($-127$ à $+127$ milli-$g$).
-  - `diff_gx, diff_gy, diff_gz` (3 octets int8) : Écarts de vitesse angulaire ($-127$ à $+127$ dixièmes de deg/s).
+- `header` (4 bytes): `[0x04, seq_num_hi, seq_num_lo, payload_len]`
+- `total_frames` (1 byte uint8): Total number of frames in packet ($1 + \text{delta\_count}$).
+- `keyframe` (14 bytes): First absolute IMU frame (standard 14 bytes).
+- `deltas` ($K \times 7$ bytes): For each successive frame ($k \in [1, \text{delta\_count}]$):
+  - `diff_ms` (1 byte uint8): Time difference from previous frame ($\le 255$ ms).
+  - `diff_ax, diff_ay, diff_az` (3 bytes int8): Acceleration differences ($-127$ to $+127$ milli-$g$).
+  - `diff_gx, diff_gy, diff_gz` (3 bytes int8): Angular velocity differences ($-127$ to $+127$ tenths of deg/s).
 
-#### Structure d'un Paquet `RLE_CHUNK` (`packet_type = 0x05`)
+#### `RLE_CHUNK` Packet Structure (`packet_type = 0x05`)
 
-Compresse massivement les séquences stationnaires / statiques (immobilité, posture assise, repos) où les signaux IMU sont identiques ou quasi-constants.
-Taille de charge utile fixe : **16 octets** (soit un paquet BLE de 20 octets) pouvant représenter jusqu'à **255 trames consécutives** (gain jusqu'à $\times 178$ sur la bande passante radio).
+Massively compresses stationary/static sequences (stillness, seated posture, resting) where IMU signals are constant or quasi-constant.
+Fixed payload size: **16 bytes** (yielding a 20-byte BLE packet) capable of representing up to **255 consecutive frames** (up to $\times 178$ reduction in radio bandwidth).
 
-- `header` (4 octets) : `[0x05, seq_num_hi, seq_num_lo, 0x10]` (`payload_len` = 16)
-- `run_count` (1 octet uint8, offset 4) : Nombre de trames successives répétées ($2 \le N \le 255$).
-- `start_delta_ms` (2 octets uint16 big-endian, offset 5..6) : Horodatage relatif de la première trame.
-- `step_ms` (1 octet uint8, offset 7) : Pas de temps constant entre chaque trame (ex: 20 ms à 50 Hz).
-- $a_x, a_y, a_z$ (6 octets int16 big-endian, offset 8..13) : Accélérations constantes (milli-$g$).
-- $g_x, g_y, g_z$ (6 octets int16 big-endian, offset 14..19) : Vitesses angulaires constantes (dixièmes de deg/s).
+- `header` (4 bytes): `[0x05, seq_num_hi, seq_num_lo, 0x10]` (`payload_len` = 16)
+- `run_count` (1 byte uint8, offset 4): Number of successive repeated frames ($2 \le N \le 255$).
+- `start_delta_ms` (2 bytes uint16 big-endian, offset 5..6): Relative timestamp of the first frame.
+- `step_ms` (1 byte uint8, offset 7): Constant time step between frames (e.g. 20 ms at 50 Hz).
+- $a_x, a_y, a_z$ (6 bytes int16 big-endian, offset 8..13): Constant accelerations (milli-$g$).
+- $g_x, g_y, g_z$ (6 bytes int16 big-endian, offset 14..19): Constant angular velocities (tenths of deg/s).
 
-_Reconstruction côté client_ : Pour chaque index $i \in [0, \text{run\_count} - 1]$ :
+_Client Reconstruction_: For each index $i \in [0, \text{run\_count} - 1]$:
 $$\text{delta\_ms}_i = \text{start\_delta\_ms} + i \times \text{step\_ms}$$
-avec des grandeurs physiques $(a_x, a_y, a_z, g_x, g_y, g_z)$ identiques.
+with identical physical values $(a_x, a_y, a_z, g_x, g_y, g_z)$.
 
-#### Structure d'une Trame IMU Découpée (14 octets)
+#### IMU Frame Structure (14 Bytes)
 
-Chaque échantillon sensoriel à 50 Hz est encodé sous forme de 14 octets entiers signés pour optimiser la compacité :
+Each 50 Hz sensor sample is encoded as 14 signed integer bytes for maximum compactness:
 
-| Offset Relatif | Grandeur   | Type   | Facteur d'Échelle | Unité Physique                              | Standard ISB (Wu & Cavanagh, 1995)                      |
-| :------------- | :--------- | :----- | :---------------- | :------------------------------------------ | :------------------------------------------------------ |
-| 0..1           | `delta_ms` | uint16 | 1                 | Millisecondes écoulées depuis début session | Temps relatif                                           |
-| 2..3           | $a_x$      | int16  | $\times 1000$     | milli-$g$ ($1 g = 1000$)                    | **Antéro-postérieur** (Avant / Propulsion)              |
-| 4..5           | $a_y$      | int16  | $\times 1000$     | milli-$g$ ($1 g = 1000$)                    | **Médio-latéral** (Gauche / Appuis)                     |
-| 6..7           | $a_z$      | int16  | $\times 1000$     | milli-$g$ ($1 g = 1000$)                    | **Longitudinal / Vertical** (Haut / $+1.0\,g$ au repos) |
-| 8..9           | $g_x$      | int16  | $\times 10$       | dixièmes de deg/s ($1^\circ/s = 10$)        | **Roulis** (Inversion / Éversion)                       |
-| 10..11         | $g_y$      | int16  | $\times 10$       | dixièmes de deg/s ($1^\circ/s = 10$)        | **Tangage** (Flexion dorsale / plantaire)               |
-| 12..13         | $g_z$      | int16  | $\times 10$       | dixièmes de deg/s ($1^\circ/s = 10$)        | **Lacet** (Rotation interne / externe)                  |
+| Relative Offset | Variable | Type | Scale Factor | Physical Unit | ISB Standard (Wu & Cavanagh, 1995) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 0..1 | `delta_ms` | uint16 | 1 | Elapsed ms since session start | Relative time |
+| 2..3 | $a_x$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Antero-posterior** (Forward / Propulsion) |
+| 4..5 | $a_y$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Medio-lateral** (Lateral / Stride support) |
+| 6..7 | $a_z$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Longitudinal / Vertical** (Upward / $+1.0\,g$ at rest) |
+| 8..9 | $g_x$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Roll** (Inversion / Eversion) |
+| 10..11 | $g_y$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Pitch** (Dorsiflexion / Plantarflexion) |
+| 12..13 | $g_z$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Yaw** (Internal / External rotation) |
 
-#### Paquet Spécial `END_OF_BURST` (`packet_type = 0x03`)
+#### Special Packet `END_OF_BURST` (`packet_type = 0x03`)
 
-Taille fixe : 12 octets :
+Fixed size: 12 bytes:
 
-- `header` (4 octets) : `[0x03, seq_num_hi, seq_num_lo, 0x00]`
-- `total_samples` (4 octets uint32 big-endian) : Nombre total d'échantillons envoyés.
-- `crc32` (4 octets uint32 big-endian) : Somme de contrôle CRC32 calculée sur l'ensemble des octets utiles de trames IMU transmises.
+- `header` (4 bytes): `[0x03, seq_num_hi, seq_num_lo, 0x00]`
+- `total_samples` (4 bytes uint32 big-endian): Total count of transmitted samples.
+- `crc32` (4 bytes uint32 big-endian): CRC32 checksum computed over all transmitted payload bytes of IMU frames.
 
-#### Dimensionnement & Négociation ATT MTU
+#### ATT MTU Dimensioning & Negotiation
 
-- **MTU standard (23 octets, payload 20 octets)** : 1 trame par paquet (14 octets utiles + 4 octets header = 18 octets).
-- **MTU négociée (247 octets, payload 244 octets)** : Jusqu'à **17 trames IMU par paquet** ($17 \times 14 + 4 = 242$ octets).
-- **Performance** : Pour une session Studio de 5,0 secondes à 50 Hz (250 échantillons $\approx 3,5$ Ko de données brutes) :
-  - Nombre de paquets BLE : $\approx 15$ paquets.
-  - Durée de transmission : **inférieure à 250 millisecondes** à un intervalle de connexion BLE standard (15 ms).
-
----
-
-### E. Caractéristique 5 : Step Counter / Pedometer (`7a5a0006-...`)
-
-- **Propriétés** : `READ`, `NOTIFY`
-- **Rôle** : Transmettre en temps réel le cumul des pas détectés par l'algorithme déterministe embarqué, leur ventilation par type d'activité (gating ML) et la cadence instantanée.
-
-#### Format Binaire Compact (15 octets)
-
-Endianness : **Big-Endian** (réseau standard).
-
-| Offset   | Champ                | Type   | Plage / Valeurs       | Description                                                                     |
-| :------- | :------------------- | :----- | :-------------------- | :------------------------------------------------------------------------------ |
-| `0..3`   | `total_steps`        | uint32 | `0` – `4 294 967 295` | Nombre total de pas valides cumulés depuis le démarrage ou le dernier reset     |
-| `4..5`   | `walk_steps`         | uint16 | `0` – `65 535`        | Pas validés sous l'état d'activité Marche (`0x01`)                              |
-| `6..7`   | `run_steps`          | uint16 | `0` – `65 535`        | Pas validés sous l'état d'activité Course (`0x02`)                              |
-| `8..9`   | `stairs_steps`       | uint16 | `0` – `65 535`        | Pas validés sous l'état d'activité Escaliers (`0x03`)                           |
-| `10..11` | `unclassified_steps` | uint16 | `0` – `65 535`        | Pas validés sous d'autres activités non-exclues                                 |
-| `12`     | `cadence_spm`        | uint8  | `0` – `255`           | Cadence instantanée en pas/minute (calculée sur fenêtre glissante de 5 s)       |
-| `13..14` | `current_gct_ms`     | uint16 | `0` – `65 535`        | Temps de contact au sol moyen récent (GCT) en ms (moyenne lissée EMA sur 5 pas) |
-| `15..16` | `boot_count`         | uint16 | `0` – `65 535`        | Identifiant incrémental du cycle de boot matériel (persistance NVS)             |
-| `17..20` | `uptime_sec`         | uint32 | `0` – `4 294 967 295` | Temps écoulé en secondes depuis le démarrage matériel (uptime cumulé)           |
-
-#### Règle d'Émission des Notifications
-
-- Notification immédiate lors de chaque détection d'un nouveau pas validé (si un client BLE y a souscrit avec le descripteur CCCD `BLE2902`).
-- Notification périodique (battement de cœur à 1 Hz) pour rafraîchir la cadence et garantir la synchronisation même en phase d'arrêt.
+- **Standard MTU (23 bytes, payload 20 bytes)**: 1 frame per packet (14 payload bytes + 4 header bytes = 18 bytes).
+- **Negotiated MTU (247 bytes, payload 244 bytes)**: Up to **17 IMU frames per packet** ($17 \times 14 + 4 = 242$ bytes).
+- **Performance**: For a 5.0s Studio session at 50 Hz (250 samples $\approx 3.5$ KB raw data):
+  - BLE packet count: $\approx 15$ packets.
+  - Transmission duration: **under 250 milliseconds** at standard BLE connection interval (15 ms).
 
 ---
 
-### F. Service OTA Firmware Update (`7a5a0010-...`)
+### E. Characteristic 5: Step Counter / Pedometer (`7a5a0006-...`)
 
-Le service OTA permet de mettre à jour le firmware de l'ESP32-S3 sans fil, via une architecture dual-slot (`ota_0`, `ota_1`) gérée par le sous-système natif ESP-IDF OTA.
+- **Properties**: `READ`, `NOTIFY`
+- **Role**: Transmits in real time the cumulative count of steps detected by the embedded algorithm, activity gating breakdown, and cadence.
 
-#### 1. Caractéristique OTA Control (`7a5a0011-...`)
+#### Compact Binary Format (21 Bytes)
 
-- **Propriétés** : `WRITE`, `NOTIFY`
-- **Rôle** : Piloter le protocole de mise à jour, valider l'état du flashage et basculer la partition active.
+Endianness: **Big-Endian** (standard network byte order).
 
-##### Commandes émises par l'application cliente (`WRITE`) :
+| Offset | Field | Type | Range / Values | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `0..3` | `total_steps` | uint32 | `0` – `4 294 967 295` | Total valid steps accumulated since boot or last reset |
+| `4..5` | `walk_steps` | uint16 | `0` – `65 535` | Steps validated under Walking activity (`0x01`) |
+| `6..7` | `run_steps` | uint16 | `0` – `65 535` | Steps validated under Running activity (`0x02`) |
+| `8..9` | `stairs_steps` | uint16 | `0` – `65 535` | Steps validated under Stairs activity (`0x03`) |
+| `10..11` | `unclassified_steps` | uint16 | `0` – `65 535` | Steps validated under other unclassified activities |
+| `12` | `cadence_spm` | uint8 | `0` – `255` | Instantaneous cadence in steps/minute (computed over 5s sliding window) |
+| `13..14` | `current_gct_ms` | uint16 | `0` – `65 535` | Recent average ground contact time (GCT) in ms (smoothed EMA over 5 steps) |
+| `15..16` | `boot_count` | uint16 | `0` – `65 535` | Hardware boot cycle count (NVS persistence) |
+| `17..20` | `uptime_sec` | uint32 | `0` – `4 294 967 295` | Elapsed seconds since hardware boot (cumulative uptime) |
 
-- `0x01` (`OTA_BEGIN`) : Début du transfert OTA. Suivi immédiatement de 4 octets Big-Endian représentant la taille totale du binaire `.bin` en octets :
-  `[0x01, size_b3, size_b2, size_b1, size_b0]` (5 octets au total).
-- `0x02` (`OTA_END`) : Clôture du transfert. Demande la validation d'intégrité, le contrôle cryptographique SHA-256 et la bascule du slot de boot :
-  - Format obligatoire (33 octets) : `[0x02, sha256_0, ..., sha256_31]` (opcode `0x02` suivi des 32 octets du condensat SHA-256 binaire du fichier `.bin`).
-  - Tout paquet `OTA_END` de taille inférieure à 33 octets est **immédiatement rejeté** avec `OTA_ERROR` (`0x07` : `OTA_ERR_CHECKSUM_MISMATCH`) et annulation (`Update.abort()`).
-  - De plus, le tout premier bloc reçu sur `OTA Data` doit obligatoirement débuter par l'octet magique d'image ESP-IDF `0xE9` (sinon rejet immédiat avec `0x05` : `OTA_ERR_VALIDATION_FAILED`).
-- `0x03` (`OTA_ABORT`) : Annulation d'urgence. Abandonne la transaction OTA courante, efface les handles de flash et réactive les services nominaux (IMU/Edge AI) :
-  `[0x03]` (1 octet).
+#### Notification Rules
 
-##### Réponses & Notifications émises par l'ESP32 (`NOTIFY`) :
+- Immediate notification upon every new validated step (if a BLE client subscribed with CCCD descriptor `BLE2902`).
+- Periodic notification (1 Hz heartbeat) to refresh cadence and guarantee synchronization even during rest phases.
 
-- `0x10` (`OTA_READY`) : L'ESP32 est prêt à recevoir les blocs de données sur `OTA Data` :
+---
+
+### F. OTA Firmware Update Service (`7a5a0010-...`)
+
+The OTA service enables wireless ESP32-S3 firmware updates across a dual-slot partition layout (`ota_0`, `ota_1`) managed by the native ESP-IDF OTA subsystem.
+
+#### 1. OTA Control Characteristic (`7a5a0011-...`)
+
+- **Properties**: `WRITE`, `NOTIFY`
+- **Role**: Drives the update protocol, validates flashing state, and switches the active boot partition.
+
+##### Client Commands (`WRITE`):
+
+- `0x01` (`OTA_BEGIN`): Start OTA transfer. Followed immediately by 4 Big-Endian bytes representing total binary file size in bytes:
+  `[0x01, size_b3, size_b2, size_b1, size_b0]` (5 bytes total).
+- `0x02` (`OTA_END`): Finalize transfer. Requests integrity validation, SHA-256 cryptographic check, and boot slot switch:
+  - Mandatory format (33 bytes): `[0x02, sha256_0, ..., sha256_31]` (opcode `0x02` followed by 32 bytes of the binary SHA-256 hash).
+  - Any `OTA_END` packet shorter than 33 bytes is **immediately rejected** with `OTA_ERROR` (`0x07`: `OTA_ERR_CHECKSUM_MISMATCH`) and aborted (`Update.abort()`).
+  - Furthermore, the very first chunk received on `OTA Data` must begin with the ESP-IDF magic byte `0xE9` (otherwise immediately rejected with `0x05`: `OTA_ERR_VALIDATION_FAILED`).
+- `0x03` (`OTA_ABORT`): Emergency abort. Cancels current OTA transaction, clears flash handles, and restores nominal services (IMU/Edge AI):
+  `[0x03]` (1 byte).
+
+##### ESP32 Responses & Notifications (`NOTIFY`):
+
+- `0x10` (`OTA_READY`): ESP32 is ready to receive data blocks on `OTA Data`:
   `[0x10]`.
-- `0x11` (`OTA_CHUNK_ACK`) : Accusé de réception périodique ou optionnel :
+- `0x11` (`OTA_CHUNK_ACK`): Periodic or optional block acknowledgment:
   `[0x11, bytes_written_b3, bytes_written_b2, bytes_written_b1, bytes_written_b0]`.
-- `0x12` (`OTA_SUCCESS`) : Image validée avec succès, partition active basculée. Redémarrage automatique programmé sous 500 ms :
+- `0x12` (`OTA_SUCCESS`): Image validated successfully, active partition switched. Automatic reboot scheduled within 500 ms:
   `[0x12]`.
-- `0xFF` (`OTA_ERROR`) : Notification d'échec suivie du code d'erreur (2 octets) :
+- `0xFF` (`OTA_ERROR`): Failure notification followed by error code (2 bytes):
   `[0xFF, error_code]`
-  Codes d'erreur :
-  - `0x01` : `OTA_ERR_PARTITION_NOT_FOUND` (aucune partition OTA inactive disponible).
-  - `0x02` : `OTA_ERR_BEGIN_FAILED` (échec d'initialisation du descripteur `esp_ota_begin`).
-  - `0x03` : `OTA_ERR_WRITE_FAILED` (échec d'écriture dans la mémoire flash `esp_ota_write`).
-  - `0x04` : `OTA_ERR_SIZE_MISMATCH` (le volume d'octets écrits ne correspond pas à la taille déclarée).
-  - `0x05` : `OTA_ERR_VALIDATION_FAILED` (image binaire invalide, octet magique `0xE9` absent ou signature/CRC incorrect au `esp_ota_end`).
-  - `0x06` : `OTA_ERR_SET_BOOT_FAILED` (impossible de désigner la partition cible comme bootable).
-  - `0x07` : `OTA_ERR_CHECKSUM_MISMATCH` (condensat SHA-256 absent ou non conforme à l'empreinte transmise).
+  Error codes:
+  - `0x01`: `OTA_ERR_PARTITION_NOT_FOUND` (no inactive OTA partition available).
+  - `0x02`: `OTA_ERR_BEGIN_FAILED` (descriptor initialization failure `esp_ota_begin`).
+  - `0x03`: `OTA_ERR_WRITE_FAILED` (flash memory write failure `esp_ota_write`).
+  - `0x04`: `OTA_ERR_SIZE_MISMATCH` (written byte count does not match declared size).
+  - `0x05`: `OTA_ERR_VALIDATION_FAILED` (invalid binary image, missing magic byte `0xE9` or bad signature/CRC at `esp_ota_end`).
+  - `0x06`: `OTA_ERR_SET_BOOT_FAILED` (cannot set target partition as bootable).
+  - `0x07`: `OTA_ERR_CHECKSUM_MISMATCH` (missing or mismatched SHA-256 hash).
 
-#### 2. Caractéristique OTA Data (`7a5a0012-...`)
+#### 2. OTA Data Characteristic (`7a5a0012-...`)
 
-- **Propriétés** : `WRITE`, `WRITE WITHOUT RESPONSE`
-- **Rôle** : Acheminement en flux continu des paquets bruts constituant le binaire firmware `.bin`.
-- **Dimensionnement du payload** : La taille maximale d'un chunk est fixée à `ATT_MTU - 3` octets (ex: 244 octets pour une MTU de 247).
-- **Paramètres de débit** : Le mobile demande une MTU de 247 et utilise jusqu'à 244 octets par écriture, selon la MTU effectivement négociée. Pendant le transfert, le serveur demande un intervalle de connexion de 15 à 20 ms, puis restaure l'intervalle nominal de 100 à 125 ms à la fin ou à l'annulation.
-- **Régulation de flux (Pacing)** : Le mobile attend la fin de chaque écriture `WRITE WITHOUT RESPONSE` mais n'ajoute pas de délai fixe entre les paquets. La stack BLE conserve la régulation du transport ; un délai configurable peut être réintroduit pour les appareils qui satureraient leurs buffers.
-- **Priorité Système** : Dès l'émission de `OTA_BEGIN`, l'échantillonnage IMU et les inférences Edge AI sont suspendus afin d'allouer l'intégralité du temps CPU et de la bande passante Flash à l'écriture OTA.
+- **Properties**: `WRITE`, `WRITE WITHOUT RESPONSE`
+- **Role**: Continuous streaming transmission of raw binary chunks comprising the firmware `.bin`.
+- **Payload Sizing**: Maximum chunk size is set to `ATT_MTU - 3` bytes (e.g. 244 bytes for a 247 MTU).
+- **Throughput Parameters**: The mobile app requests an MTU of 247 and writes up to 244 bytes per packet based on negotiated MTU. During transfer, the server requests a 15–20 ms connection interval, reverting to the nominal 100–125 ms interval on completion or cancellation.
+- **Pacing**: Mobile waits for each `WRITE WITHOUT RESPONSE` write completion without adding artificial delay. The BLE transport stack maintains pacing; configurable delay can be introduced for devices that overflow local buffers.
+- **System Priority**: As soon as `OTA_BEGIN` is issued, IMU sampling and Edge AI inferences are suspended to dedicate 100% CPU time and Flash bus bandwidth to OTA flashing.
 
-#### 3. Sécurité BLE GATT (LE Secure Connections & Appairage par Bouton Physique) & Sûreté Anti-Bricking
+#### 3. BLE GATT Security (LE Secure Connections & Hardware Button Pairing) & Anti-Bricking Safety
 
-- **Chiffrement BLE LE Secure Connections & Verrouillage d'Appairage par Bouton Physique (`GPIO 14`)** :
-  - Le serveur NimBLE initialise le Security Manager avec `Bonding = true`, `MITM = false`, `SC (Secure Connections) = true` et `IOCap = BLE_HS_IO_NO_INPUT_OUTPUT`.
-  - **Mode Nominal (Verrouillé aux appareils déjà appairés)** :
-    - Lorsqu'au moins un smartphone est déjà appairé en mémoire NVS (`NimBLEDevice::getNumBonds() > 0`) et que la fenêtre d'appairage est fermée, **seul un smartphone déjà appairé (`NimBLEDevice::isBonded`)** est autorisé à se connecter et à interagir avec la chaussure.
-    - Tout téléphone inconnu tentant de se connecter ou de s'appairer sans appui préalable sur le bouton physique est **immédiatement rejeté et déconnecté**, et les clés existantes ne sont jamais effacées.
-  - **Mode Appairage sur Action Physique (`GPIO 14` - Fenêtre de 60 secondes)** :
-    - Un appui court sur le bouton physique de la chaussure (`GPIO 14`) ouvre une **fenêtre d'appairage de 60 secondes** (`openPairingWindow(60000)`).
-    - Uniquement pendant ces 60 secondes (ou lors du tout premier démarrage si `getNumBonds() == 0`), la chaussure accepte d'appairer un nouveau smartphone (`startSecurity`) ou de renouveler une clé de bonding obsolète (`deleteBond` puis ré-appairage).
-- **État Initial de Démarrage & Rollback Automatique** :
-  - À l'issue d'une mise à jour OTA réussie, le bootloader ESP-IDF configure la partition cible dans l'état `ESP_OTA_IMG_PENDING_VERIFY`.
-  - Dès l'amorçage dans `setup()`, le firmware interroge `esp_ota_get_state_partition()`.
-  - S'il détecte l'état `ESP_OTA_IMG_PENDING_VERIFY`, il exécute un diagnostic matériel (vérification I2C MPU-6050 `WHO_AM_I`, intégrité mémoire et serveur BLE).
-  - Si l'ESP32 plante, part en panique ou si l'IMU échoue avant la fin des 15 secondes, le bootloader ESP-IDF effectue un rollback automatique vers l'ancien slot opérationnel (`ota_0` $\leftrightarrow$ `ota_1`).
-  - Si l'ESP32 maintient une exécution nominale pendant 15 secondes consécutives avec acquisition IMU et pile BLE initialisée, il valide définitivement la version en ROM via `esp_ota_mark_app_valid_cancel_rollback()`.
+- **LE Secure Connections BLE Encryption & Physical Button Pairing Lock (`GPIO 14`)**:
+  - The NimBLE server initializes the Security Manager with `Bonding = true`, `MITM = false`, `SC (Secure Connections) = true`, and `IOCap = BLE_HS_IO_NO_INPUT_OUTPUT`.
+  - **Nominal Mode (Locked to bonded devices)**:
+    - When at least one smartphone is bonded in NVS (`NimBLEDevice::getNumBonds() > 0`) and the pairing window is closed, **only bonded smartphones (`NimBLEDevice::isBonded`)** are permitted to connect and interact.
+    - Any unknown device attempting to connect without prior push of the physical button is **immediately rejected and disconnected**, and existing keys are never deleted.
+  - **Physical Button Pairing Mode (`GPIO 14` - 60-Second Window)**:
+    - A short press on the physical button (`GPIO 14`) opens a **60-second pairing window** (`openPairingWindow(60000)`).
+    - Only during these 60 seconds (or on first boot if `getNumBonds() == 0`), the shoe accepts pairing a new phone (`startSecurity`) or refreshing an obsolete bond key (`deleteBond` then re-pair).
+- **Initial Boot State & Automatic Rollback**:
+  - Upon successful OTA update, the ESP-IDF bootloader marks the target partition as `ESP_OTA_IMG_PENDING_VERIFY`.
+  - At startup in `setup()`, the firmware checks `esp_ota_get_state_partition()`.
+  - If `ESP_OTA_IMG_PENDING_VERIFY` is detected, it runs hardware diagnostics (MPU-6050 I2C `WHO_AM_I`, memory integrity, BLE server).
+  - If the ESP32 panics, crashes, or the IMU fails before 15 seconds elapse, the ESP-IDF bootloader automatically rolls back to the previous operational partition (`ota_0` $\leftrightarrow$ `ota_1`).
+  - If the ESP32 maintains continuous nominal operation for 15 seconds with active IMU sampling and initialized BLE stack, it marks the firmware permanently valid via `esp_ota_mark_app_valid_cancel_rollback()`.
 
 ---
 
-### G. Service Standard Device Information (DIS `0x180A`)
+### G. Standard Device Information Service (DIS `0x180A`)
 
-Le service Device Information Service standard Bluetooth SIG permet au client mobile d'inspecter l'identité matérielle et la version du firmware actuellement actif sur l'ESP32 sans recourir à des protocoles propriétaires.
+The standard Bluetooth SIG Device Information Service enables mobile clients to inspect hardware identity and active firmware version without proprietary protocols.
 
 #### 1. Firmware Revision String (`0x2A26`)
 
-- **Propriétés** : `READ`
-- **Format** : Chaîne ASCII UTF-8 (ex: `"v1.2.1-esp32s3"`).
+- **Properties**: `READ`
+- **Format**: ASCII UTF-8 string (e.g. `"v1.2.1-esp32s3"`).
 
 #### 2. Software Revision String (`0x2A28`)
 
-- **Propriétés** : `READ`
-- **Format** : Chaîne ASCII UTF-8 contenant la date/heure de compilation du binaire ou son timestamp UTC ISO (ex: `"2026-10-11T10:24:36Z"` ou `__DATE__ " " __TIME__`).
-- **Usage Mobile** : Permet à l'application mobile de comparer instantanément la date du firmware installé avec la date de publication d'une release Cloud (`release_date`) avant tout téléchargement.
+- **Properties**: `READ`
+- **Format**: ASCII UTF-8 string containing build timestamp or ISO UTC release date (e.g. `"2026-10-11T10:24:36Z"` or `__DATE__ " " __TIME__`).
+- **Mobile Usage**: Enables instant comparison between installed firmware date and Cloud release date (`release_date`) before triggering downloads.
 
 ---
 
-### H. Gestion Dynamique de l'Intervalle de Connexion BLE (Dynamic Connection Interval)
+### H. Dynamic BLE Connection Interval Management
 
-Afin de maximiser l'autonomie sur batterie en usage quotidien tout en garantissant un débit instantané optimal lors des sessions de calibration Studio, la chaussure implémente une négociation adaptative des paramètres de connexion BLE (`GAP Connection Parameters Update`) :
+To maximize battery lifetime during normal usage while guaranteeing optimal throughput during Studio calibration sessions, the shoe negotiates BLE connection parameters adaptively (`GAP Connection Parameters Update`):
 
-#### 1. Mode Nominal (Veille Active & Podométrie Continue)
+#### 1. Nominal Mode (Active Idle & Continuous Step Counting)
 
-- **Intervalle Min** : 100 ms (`min_conn_interval = 80` unités de 1.25 ms).
-- **Intervalle Max** : 125 ms (`max_conn_interval = 100` unités de 1.25 ms).
-- **Latence Esclave** : 0 événement (`latency = 0`).
-- **Supervision Timeout** : 4000 ms (`supervision_timeout = 400` unités de 10 ms).
-- **Bénéfice** : Réduit les réveils radio périodiques, maintenant la consommation de veille active à moins de 15 mA tout en assurant une latence imperceptible pour le comptage de pas (19 Hz) et les alertes d'activité ou de chute.
+- **Min Interval**: 100 ms (`min_conn_interval = 80` in 1.25 ms units).
+- **Max Interval**: 125 ms (`max_conn_interval = 100` in 1.25 ms units).
+- **Slave Latency**: 0 events (`latency = 0`).
+- **Supervision Timeout**: 4000 ms (`supervision_timeout = 400` in 10 ms units).
+- **Benefit**: Reduces periodic radio wakeups, maintaining idle power consumption below 15 mA while ensuring negligible latency for step counting (19 Hz) and fall alerts.
 
-#### 2. Mode Burst Haute Vitesse (Session Studio Active)
+#### 2. High-Speed Burst Mode (Active Studio Session)
 
-- **Intervalle Min** : 15 ms (`min_conn_interval = 12` unités de 1.25 ms).
-- **Intervalle Max** : 20 ms (`max_conn_interval = 16` unités de 1.25 ms).
-- **Latence Esclave** : 0 événement (`latency = 0`).
-- **Supervision Timeout** : 4000 ms (`supervision_timeout = 400` unités de 10 ms).
-- **Déclenchement** : Automatique dès la réception de la commande Studio `START` sur `Studio Control` (`0004`).
-- **Rétablissement Nominal** : Automatique dès la fin du transfert (`END_OF_BURST`), l'annulation (`CANCEL`) ou la déconnexion.
-- **Bénéfice** : Vitesse de transfert multipliée par un facteur de 6 à 8, ramenant la synchronisation de 1500 trames IMU (30 s à 50 Hz) à moins de 2.5 secondes.
+- **Min Interval**: 15 ms (`min_conn_interval = 12` in 1.25 ms units).
+- **Max Interval**: 20 ms (`max_conn_interval = 16` in 1.25 ms units).
+- **Slave Latency**: 0 events (`latency = 0`).
+- **Supervision Timeout**: 4000 ms (`supervision_timeout = 400` in 10 ms units).
+- **Trigger**: Automatic upon receiving Studio `START` command on `Studio Control` (`0004`).
+- **Nominal Reset**: Automatic upon `END_OF_BURST`, cancellation (`CANCEL`), or disconnect.
+- **Benefit**: Multiplies transfer speed by 6x to 8x, synchronizing 1500 IMU frames (30s at 50 Hz) in under 2.5 seconds.

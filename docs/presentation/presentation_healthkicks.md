@@ -14,15 +14,15 @@ color: #f8fafc
 
 # **HealthKicks**
 
-### Chaussure Intelligente : Podométrie Haute Précision & Détection de Chute Autonome
+### Smart Footwear: High-Precision Step Tracking & Autonomous Fall Detection
 
-**IoT Embarqué (ESP32-S3)** | **Edge AI (TinyML)** | **Passerelle Mobile & AWS IoT Core**
+**Embedded IoT (ESP32-S3)** | **Edge AI (TinyML)** | **Mobile Gateway & AWS IoT Core**
 
-- **ACTIVITÉ & SPORT** : Podomètre | Rappel d'inactivité haptique | Centré sur le mouvement des pieds
+- **ACTIVITY & SPORTS**: Pedometer | Haptic inactivity reminder | Centered on foot kinematics
 
-- **SÉCURITÉ & PROCHES** : Détection de chute | Alerte par SMS et email
+- **SAFETY & CAREGIVERS**: Fall detection | SMS & email alerting
 
-- **EDGE AI & SOBRIÉTÉ** : Composants standard grand public (coût relativement faible) | Edge AI
+- **EDGE AI & EFFICIENCY**: Consumer-grade components (cost-effective) | On-chip Edge AI
 
 ---
 
@@ -36,31 +36,31 @@ _color: #0f172a
 
 ![bg right:33% w:260px](qr-code.png)
 
-# **Qui suis-je ? — Mon Parcours**
+# **About Me — Background**
 
-### David Serck | Développeur Full-Stack, Cloud & IoT
+### David Serck | Full-Stack, Cloud & IoT Developer
 
-- **Parcours & Expérience Professionnelle (3 Entreprises)** :
+- **Background & Professional Experience (3 Companies)**:
 
-  - **Bachelier en Informatique de Gestion** — Conception logicielle, bases de données relationnelles et vision produit.
+  - **Bachelor's in Business Informatics** — Software engineering, relational databases, and product vision.
 
-  - **Fiduciaire (Gestion & Finance)** — Rigueur de modélisation, traitement de flux critiques et automatisation métier.
+  - **Fiduciary / Accounting & Finance** — Strict domain modeling, processing critical data streams, and business automation.
 
-  - **Opérateur Télécom (Réseaux)** — Protocoles de connectivité, tolérance aux coupures et architectures distribuées.
+  - **Telecom Operator / Networks** — Connectivity protocols, network fault tolerance, and distributed architectures.
 
-  - **ESN (Services Numériques)** — Développement agile full-stack, intégration continue et industrialisation.
+  - **IT Consulting Firm** — Agile full-stack engineering, continuous integration, and product industrialization.
 
-- **Compétences Clés mobilisées sur ce projet** :
+- **Key Competencies Applied to this Project**:
 
-  - **Embarqué & Edge AI** : C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
+  - **Embedded & Edge AI**: C/C++, ESP32-S3, FreeRTOS, BLE GATT, TinyML (`scikit-learn` / `m2cgen`).
 
-  - **Backend, Cloud & Frontend** : Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
+  - **Backend, Cloud & Frontend**: Python (FastAPI), AWS (IoT Core, DynamoDB, Aurora, STS), Angular & Flutter.
 
-- **Portfolio & CV en ligne** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) _(ou scannez le QR code ci-contre)_.
+- **Online Portfolio & Resume**: [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio) _(or scan the QR code alongside)_.
 
-<!-- Notes orateur :
+<!-- Speaker Notes:
 
-Me présenter brièvement : mon parcours, mon appétence pour les projets complets alliant matériel et logiciel, et inviter le jury/public à consulter mon portfolio en ligne via le lien ou le QR code.
+Briefly introduce myself: background, passion for end-to-end projects combining hardware and software, and invite the jury/audience to visit the online portfolio via the link or QR code.
 
 -->
 
@@ -74,49 +74,24 @@ _color: #0f172a
 
 -->
 
-# **1. Architecture Globale : Du Capteur au Multi-Cloud**
+# **1. System Architecture: From Sensor to Multi-Cloud**
 
-### Pipeline Hybride Temps Réel & Ségrégation des Responsabilités
+### Hybrid Real-Time Pipeline & Separation of Concerns
 
 ```mermaid
 flowchart LR
-    A["Chaussure (ESP32-S3)<br/>• Dual-Core FreeRTOS<br/>• IMU MPU-6050 19 Hz<br/>• Edge AI C++ (~12 µs)<br/>• Haptique & BLE LESC"] -->|BLE GATT LESC<br/>Chiffré / Fast Burst| B["Mobile (Flutter)<br/>• SQLite Sandbox OS<br/>• Hardware Keystore<br/>• MQTT SigV4 & REST"]
-    B -->|MQTT WSS SigV4<br/>REST OpenAPI| C["Cloud AWS<br/>• IoT Core QoS 1 & Lambdas<br/>• S3 Firmware OTA<br/>• EC2 (FastAPI + Angular)<br/>• Aurora PG & DynamoDB"]
-    C -->|SMTP STARTTLS<br/>Port 587| D["Cloud OVH (Mail)<br/>• Serveur SMTP Dédié<br/>• SPF / DKIM / DMARC<br/>• Alertes Aidants & Proches"]
+    A["Connected Shoe (ESP32-S3)<br/>• Dual-Core FreeRTOS<br/>• MPU-6050 IMU 19 Hz<br/>• Edge AI C++ (~12 µs)<br/>• Haptics & LESC BLE"] -->|LESC Encrypted<br/>BLE GATT / Fast Burst| B["Mobile App (Flutter)<br/>• SQLite OS Sandbox<br/>• Hardware Keystore<br/>• SigV4 MQTT & REST"]
+    B -->|SigV4 WSS MQTT<br/>OpenAPI REST| C["AWS Cloud<br/>• QoS 1 IoT Core & Lambdas<br/>• S3 OTA Firmware Releases<br/>• EC2 (FastAPI + Angular)<br/>• Aurora PG & DynamoDB"]
+    C -->|SMTP STARTTLS<br/>Port 587| D["OVH Cloud (Mail)<br/>• Dedicated SMTP Server<br/>• SPF / DKIM / DMARC<br/>• Caregiver Alert Dispatch"]
 ```
 
-- **Chaussure (ESP32-S3)** : Dual-core FreeRTOS (Cœur 0 Réseau/OTA/Power, Cœur 1 IMU 19 Hz/Inférence TinyML ~12 µs/PWM Haptique), serveur BLE GATT LESC chiffré.
-- **Passerelle Mobile (Flutter)** : Base locale SQLite isolée dans la sandbox OS privée (podométrie locale hors-ligne), chiffrement matériel des tokens OAuth2/STS via Keystore/Keychain, passerelle hybride MQTT SigV4 (chutes en temps réel & télémétrie capteur) et REST OpenAPI.
-- **Cloud AWS** : Ingestion broker IoT Core QoS 1 & Lambdas (DynamoDB NoSQL & Aurora PG 16), Bucket S3 de releases firmware OTA (GitHub Actions OIDC), serveur EC2 Docker (Backend FastAPI REST & Frontend Angular 22 Signals).
-- **Cloud OVH** : Serveur de messagerie dédié pour l'envoi asynchrone des alertes de chute critiques aux proches par SMTP sécurisé (STARTTLS port 587, signatures cryptographiques DKIM, SPF et politique DMARC).
+- **Footwear (ESP32-S3)**: Dual-core FreeRTOS (Core 0: Network/OTA/Power, Core 1: 19 Hz IMU/TinyML ~12 µs inference/Haptic PWM), encrypted LESC BLE GATT server.
+- **Mobile Gateway (Flutter)**: Local SQLite database isolated within the private OS sandbox (offline step tracking), hardware encryption for OAuth2/STS tokens via Keystore/Keychain, hybrid gateway with SigV4 MQTT (real-time falls & sensor telemetry) and OpenAPI REST.
+- **AWS Cloud**: IoT Core QoS 1 broker ingestion & Lambdas (DynamoDB NoSQL & Aurora PG 16), S3 OTA firmware release bucket (GitHub Actions OIDC), EC2 Docker host (FastAPI REST Backend & Angular 22 Signals Frontend).
+- **OVH Cloud**: Dedicated mail server for asynchronous critical fall alerts dispatched to caregivers via secured SMTP (STARTTLS port 587, cryptographic DKIM, SPF, and DMARC enforcement).
 
-<!-- Notes orateur :
-Souligner la séparation stricte : le capteur est autonome pour la sécurité critique (chute en ~12 µs), le mobile isole les clés en Keystore et fait le pont réseau, AWS assure l'ingestion temps réel, l'OTA firmware et l'hébergement web, et OVH garantit la délivrabilité immédiate des alertes email aux aidants.
--->
-
----
-
-<!--
-_backgroundColor: #f8fafc
-_color: #0f172a
--->
-
-# **2. Cœur IoT : Chaussure Instrumentée & ESP32-S3**
-
-### Matériel, Référentiel Biomécanique & Maintenance Sécurisée
-
-- **Hardware & Capteurs** : ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), vibreur haptique PWM 10 kHz (étage MOSFET & diode de roue libre).
-
-- **Référentiel Biomécanique ISB** : Axe Z vertical (+1g repos), Axe X propulsion/freinage, Axe Y médio-latéral.
-
-- **Sécurité & Rollback OTA** : Double partition Flash A/B avec digest SHA-256 (32 octets), probation 15s avec rollback automatique en cas d'erreur IMU.
-
-- **Chiffrement BLE LESC** : Appairage sécurisé Just Works avec échange de clés ECDH.
-
-<!-- Notes orateur :
-
-L'ESP32-S3 offre les extensions vectorielles DSP idéales pour le calcul de magnitude euclidienne. L'OTA est sécurisé pour éviter tout bricking d'un équipement scellé dans la semelle.
-
+<!-- Speaker Notes:
+Highlight the strict separation: the sensor is autonomous for safety-critical tasks (fall detection in ~12 µs), mobile isolates keys in Keystore and bridges networks, AWS manages real-time ingestion, firmware OTA and web hosting, while OVH guarantees instant email deliverability to caregivers.
 -->
 
 ---
@@ -129,51 +104,21 @@ _color: #0f172a
 
 -->
 
-# **3. Edge Machine Learning : Classification & Sécurité**
+# **2. IoT Core: Instrumented Footwear & ESP32-S3**
 
-### Indicateurs Canoniques & Forêt d'Arbres Décisionnels (Random Forest)
+### Hardware, Biomechanical Reference & Safe Firmware Maintenance
 
-- **Pourquoi l'Edge AI ?** Réaction d'urgence immédiate (< 1 ms), fonctionnement autonome sans réseau, confidentialité totale des données brutes.
+- **Hardware & Sensors**: ESP32-S3-N16R8 (240 MHz dual-core), MPU-6050 I2C Fast-Mode (400 kHz), 10 kHz PWM haptic motor (MOSFET power stage & flyback diode).
 
-- **Features Biomécaniques & Temporelles (19 Hz)** :
+- **ISB Biomechanical Reference Frame**: Vertical Z axis (+1g at rest), X axis forward propulsion/braking, Y axis medio-lateral.
 
-  - _Magnitudes spatiales invariantes en rotation_ : $\Vert a \Vert$, $\Vert \omega \Vert$, min, max, moyenne, écart-type, pic-à-pic (P2P), énergies cinétiques.
+- **Security & OTA Rollback**: Dual A/B flash partitions with mandatory 32-byte SHA-256 digest, 15s probation period with automatic rollback on IMU boot failure.
 
-  - _Dispersions axiales & posture_ : moyennes et écarts-types $a_x, a_y, a_z, g_x, g_y, g_z$ (distinction immobile assis vs couché).
+- **LESC BLE Encryption**: Just Works secure pairing with ECDH key exchange.
 
-  - _Directionnalité temporelle_ : différentiel $\Delta a_y$ (fin - début), asymétrie d'énergie 1ère/2nde moitié de fenêtre (distinction assis $\leftrightarrow$ debout).
+<!-- Speaker Notes:
 
-  - _Dynamique de transition & Jerk_ : jerk maximal d'accélération (choc violent de chute vs allongement calme) et profil de queue de fenêtre.
-
-- **Classifieur Random Forest Équilibré** : Ensemble de 40 arbres décisionnels multiclasse avec pondération dynamique (`class_weight="balanced"` : pénalise proportionnellement les erreurs sur les classes rares comme les chutes).
-
-- **Filtrage Temporel Anti-Rebond** : Inférence ML directe sans verrou rigide d'impact physique + debouncing temporel (5000 ms).
-
----
-
-<!--
-
-_backgroundColor: #f8fafc
-
-_color: #0f172a
-
--->
-
-# **4. Boucle MLOps : Du Terrain au Code C Embarqué**
-
-### Collecte Studio, Stratified 5-Fold & Transpilation sans Runtime
-
-1. **Mode Studio** : Enregistrement de données IMU brutes (54/100 Hz), transfert burst BLE avec contrôle CRC32 vers DynamoDB.
-
-2. **Évaluation Stratified 5-Fold** : Cache local incrémental pour accélérer l'entraînement. Équilibrage strict des classes rares (chutes). Optimisation sur le Macro F1.
-
-3. **Transpilation C Pure (m2cgen)** : Modèle scikit-learn converti en C standard (`activity_model_generated.h`). 0 Ko d'allocation dynamique en RAM.
-
-4. **Validation Automatique & CI** : Seuil éliminatoire Macro F1 ≥ 85% avant tout déploiement. Compilation de contrôle PlatformIO (`pio run`).
-
-<!-- Notes orateur :
-
-Cycle complet sans framework d'inférence lourd (pas de TensorFlow Lite Micro). Du code C pur, ultra-léger, inféré en quelques microsecondes.
+The ESP32-S3 offers vector DSP extensions ideal for computing euclidean vector magnitudes. Wireless OTA is hardened to avoid bricking footwear permanently sealed in the sole.
 
 -->
 
@@ -187,29 +132,51 @@ _color: #0f172a
 
 -->
 
-# **5. Réseau & Podométrie Différentielle Nette**
+# **3. Edge Machine Learning: Classification & Safety**
 
-### Odométrie SQLite, Ventilation Horaire Réelle & AWS IoT Core
+### Canonical Features & Decision Forest (Random Forest)
 
-- **Podométrie Différentielle Mobile** :
+- **Why Edge AI?** Immediate emergency reaction (< 1 ms), autonomous offline operation, complete raw data privacy.
 
-  - Odomètre matériel monotone sur ESP32 (sans horloge RTC).
+- **Biomechanical & Temporal Features (19 Hz)**:
 
-  - Calcul différentiel SQLite local : `delta = current - previous`.
+  - _Rotationally-invariant spatial magnitudes_: $\Vert a \Vert$, $\Vert \omega \Vert$, min, max, mean, standard deviation, peak-to-peak (P2P), kinetic energies.
 
-  - Résilience totale aux reboots matériels et bascule nette à minuit sans pertes.
+  - _Axial distributions & posture_: means and standard deviations of $a_x, a_y, a_z, g_x, g_y, g_z$ (distinguishing still sitting vs lying down).
 
-  - Ventilation horaire 100% réelle (`hourly_steps`), aucune extrapolation artificielle.
+  - _Temporal directionality_: differential $\Delta a_y$ (end - start), energy asymmetry between 1st and 2nd half of window (distinguishing sitting $\leftrightarrow$ standing).
 
-- **Passerelle Cloud Sécurisée (AWS IoT Core)** :
+  - _Transition dynamics & Jerk_: maximum acceleration jerk (sharp fall impact shock vs gentle lying down) and window tail profile.
 
-  - Session WebSockets MQTT signée cryptographiquement en SigV4 via jetons STS temporaires.
+- **Balanced Random Forest Classifier**: Ensemble of 40 multiclass decision trees with dynamic weighting (`class_weight="balanced"`: proportionately penalizes errors on rare classes such as falls).
 
-  - Alertes transmises en QoS 1 vers `healthkicks/v1/{deviceId}/events/detection`.
+- **Temporal Debounce Filtering**: Direct ML inference without rigid physical impact lock-out + temporal debouncing (5000 ms).
 
-<!-- Notes orateur :
+---
 
-Architecture hors-ligne par conception. Si le téléphone perd le réseau, la podométrie continue d'être accumulée localement et synchronisée dès reconnexion.
+<!--
+
+_backgroundColor: #f8fafc
+
+_color: #0f172a
+
+-->
+
+# **4. MLOps Loop: From Field to Embedded C Code**
+
+### Studio Ingestion, Stratified 5-Fold CV & Runtime-Free Transpilation
+
+1. **Studio Mode**: Raw IMU data recording (54/100 Hz), BLE burst offloading with CRC32 integrity check to DynamoDB.
+
+2. **Stratified 5-Fold Evaluation**: Incremental local cache accelerating training. Strict balancing of rare classes (falls). Optimized on Macro F1 score.
+
+3. **Pure C Transpilation (m2cgen)**: scikit-learn model converted directly to standard C (`activity_model_generated.h`). Zero dynamic RAM allocations.
+
+4. **Automated Quality Gate & CI**: Strict gate requiring Macro F1 ≥ 85% prior to deployment. PlatformIO automated firmware build verification (`pio run`).
+
+<!-- Speaker Notes:
+
+Complete loop without heavy runtime inference engines (no TensorFlow Lite Micro). Pure, ultra-lightweight C code executing inference in microseconds.
 
 -->
 
@@ -223,27 +190,31 @@ _color: #0f172a
 
 -->
 
-# **6. Performances Mesurées & Validation**
+# **5. Networking & Net Differential Step Tracking**
 
-### Métriques Clés d'Exécution & Suivi Studio en Direct
+### SQLite Odometry, 100% Real Hourly Buckets & AWS IoT Core
 
-| Métrique Clé | Valeur Mesurée | Implication Système |
+- **Mobile Differential Step Tracking**:
 
-| :-------------------------- | :------------- | :---------------------------- |
+  - Monotonic hardware odometer on ESP32 (without battery-backed RTC clock).
 
-| **Temps d'inférence C** | **~12 µs** | 0.02% du CPU ESP32-S3 |
+  - Local SQLite differential calculation: `delta = current - previous`.
 
-| **Précision ML (Macro F1)** | **91.3%** | Détection multi-allure fiable |
+  - Complete resilience to hardware reboots and clean midnight boundary rollover without step loss.
 
-| **Exactitude Globale** | **92.2%** | Robustesse toutes allures |
+  - 100% real hourly breakdown (`hourly_steps`), zero artificial extrapolation.
 
-| **Rappel des Chutes** | **95.5%** | 95.8% F1 sur chute arrière |
+- **Secured Cloud Gateway (AWS IoT Core)**:
 
-- **Validation & Benchmark Live** : Matrice de confusion et métriques détaillées consultables en direct sur [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
+  - WebSockets MQTT session cryptographically signed with SigV4 via temporary STS tokens.
 
-- **Rappel d'Inactivité Paramétrable** : Seuil configurable de 10 à 120 min avec impulsion haptique périodique.
+  - Alerts published at QoS 1 to `healthkicks/v1/{deviceId}/events/detection`.
 
-- **Rigueur & Tests Automatisés** : 324 tests backend FastAPI et 312 tests mobile Flutter validant l'odométrie SQLite, l'auth et la synchronisation.
+<!-- Speaker Notes:
+
+Offline-first by design. If the smartphone loses cell reception, steps continue to accumulate locally and synchronize automatically once connectivity resumes.
+
+-->
 
 ---
 
@@ -255,27 +226,54 @@ _color: #0f172a
 
 -->
 
-# **7. Conclusion & Perspectives**
+# **6. Measured Performance & Validation**
 
-### Les Piliers d'un Écosystème Connecté et Autonome
+### Key Runtime Metrics & Live Studio Tracking
 
-- **Ce que nous avons démontré** :
+| Key Metric | Measured Value | System Implication |
+| :--- | :--- | :--- |
+| **C Inference Time** | **~12 µs** | 0.02% of ESP32-S3 CPU |
+| **ML Precision (Macro F1)** | **91.3%** | Reliable multi-activity detection |
+| **Overall Accuracy** | **92.2%** | Robustness across all gaits |
+| **Fall Recall** | **95.5%** | 95.8% F1 on backward falls |
 
-  - TinyML frugal & performant : inférence en code C pur sans runtime lourd, 0 Ko d'allocation RAM dynamique.
+- **Live Benchmark & Validation**: Detailed confusion matrix and class metrics available live on [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
 
-  - Chaîne IoT sécurisée : chiffrement BLE LESC, mise à jour OTA avec rollback, auth OAuth2 PKCE et STS temporaire.
+- **Configurable Inactivity Reminder**: Threshold adjustable from 10 to 120 min with periodic haptic vibration pulse.
 
-  - Podométrie nette & vérifiable : élimination des faux pas et restitution fidèle heure par heure.
+- **Rigorous Automated Testing**: 324 FastAPI backend tests and 312 Flutter mobile tests validating SQLite odometry, auth, and synchronization.
 
-  - Sérénité pour les proches : alerte fiable lors d'un accident par SMS et email.
+---
 
-- **Feuille de Route Technologique & Améliorations** :
+<!--
 
-  - **Amélioration MLOps** : Versioning systématique des modèles entraînés, registre d'artefacts et traçabilité des hyperparamètres.
+_backgroundColor: #f8fafc
 
-  - **Adaptation continue** : Ajustement fin des prédictions à la foulée propre de l'utilisateur.
+_color: #0f172a
 
-  - **Connectivité cellulaire** : Module NB-IoT optionnel pour une autonomie totale en extérieur sans smartphone.
+-->
+
+# **7. Conclusion & Roadmap**
+
+### Pillars of a Connected & Autonomous Ecosystem
+
+- **Key Achievements**:
+
+  - Frugal & high-performance TinyML: pure C inference with zero runtime engine, 0 KB dynamic RAM allocation.
+
+  - Secure IoT pipeline: LESC BLE encryption, safe OTA updates with rollback, OAuth2 PKCE auth, and temporary STS credentials.
+
+  - Clean & verifiable pedometry: elimination of false steps and faithful hour-by-hour reporting.
+
+  - Peace of mind for loved ones: reliable accident alerting via SMS and email.
+
+- **Technological Roadmap & Next Steps**:
+
+  - **MLOps Enhancement**: Systematic model versioning, artifact registry, and hyperparameter tracking.
+
+  - **Continuous Adaptation**: Fine-tuning predictions to individual user gait signatures.
+
+  - **Cellular Connectivity**: Optional NB-IoT module for full outdoor autonomy without a smartphone.
 
 ---
 
@@ -289,20 +287,20 @@ color: #f8fafc
 
 -->
 
-# **Merci pour votre attention !**
+# **Thank you for your attention!**
 
-### Questions & Échanges Techniques
+### Technical Q&A & Discussion
 
-- **Portfolio & Profil** : [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio)
+- **Portfolio & Profile**: [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio)
 
-- **Démonstrateur Web Live** : [https://healthkicks.duckdns.org](https://healthkicks.duckdns.org)
+- **Live Web Demonstrator**: [https://healthkicks.duckdns.org](https://healthkicks.duckdns.org)
 
-- **Studio & Benchmark des Modèles** : [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
+- **Studio & Model Benchmarks**: [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
 
-- **Thèmes d'échange** :
+- **Key Topics for Discussion**:
 
-  - Algorithmes de podométrie nette & odométrie différentielle SQLite.
+  - Net pedometry algorithms & SQLite differential odometry.
 
-  - Sécurité Zero Trust, courtage STS et MQTT WebSockets SigV4.
+  - Zero Trust security, STS brokering, and SigV4 MQTT WebSockets.
 
-  - Démarche MLOps, transpilation C et réentraînement de modèles.
+  - MLOps lifecycle, C transpilation, and model retraining.

@@ -1,35 +1,35 @@
-# Guide de Démarrage Rapide - HealthKicks Ecosystem
+# Quick Start Guide - HealthKicks Ecosystem
 
-Bienvenue dans l'environnement de développement de **HealthKicks**. Ce guide détaille les prérequis, l'initialisation de l'infrastructure locale et le lancement de chaque composant de l'écosystème.
+Welcome to the **HealthKicks** development environment. This guide outlines prerequisites, local infrastructure initialization, and how to run each component of the ecosystem.
 
 ---
 
-## 1. Prérequis Système
+## 1. System Prerequisites
 
-Pour développer sur l'écosystème complet, installez les outils suivants sur votre poste :
+To develop across the complete ecosystem, install the following tools:
 
 - **Git** 2.40+
-- **Python** 3.11 avec l'outil de gestion de paquets [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh` ou via winget/brew).
-- **Node.js** 22+ avec [pnpm](https://pnpm.io/) 9+ (`corepack enable && corepack prepare pnpm@latest --activate`).
-- **Flutter SDK** 3.19+ et **Dart SDK** 3.3+.
-- **PlatformIO Core** (`uv tool install platformio` ou via extension VS Code).
-- **Docker & Docker Compose** (pour l'infrastructure de développement locale).
+- **Python** 3.11 with [uv](https://docs.astral.sh/uv/) package manager (`curl -LsSf https://astral.sh/uv/install.sh | sh` or via winget/brew).
+- **Node.js** 22+ with [pnpm](https://pnpm.io/) 9+ (`corepack enable && corepack prepare pnpm@latest --activate`).
+- **Flutter SDK** 3.19+ and **Dart SDK** 3.3+.
+- **PlatformIO Core** (`uv tool install platformio` or via VS Code extension).
+- **Docker & Docker Compose** (for local development infrastructure).
 
 ---
 
-## 2. Clonant le Monorepo
+## 2. Cloning the Repository
 
-L'écosystème utilise des sous-modules Git pour chaque brique logicielle indépendante :
+The ecosystem uses Git submodules for each independent software project:
 
 ```bash
 git clone --recursive https://github.com/daverck/healthkicks-ecosystem.git
 cd healthkicks-ecosystem
 
-# Si déjà cloné sans les sous-modules :
+# If already cloned without submodules:
 git submodule update --init --recursive
 ```
 
-Installez les hooks pre-commit pour certifier les contrats d'échange avant chaque commit :
+Install pre-commit hooks to validate exchange contracts before each commit:
 
 ```bash
 uv tool run pre-commit install
@@ -37,19 +37,19 @@ uv tool run pre-commit install
 
 ---
 
-## 3. Lancement de l'Infrastructure Locale (Docker)
+## 3. Launching Local Infrastructure (Docker)
 
-Le fichier [`docker-compose.yml`](file:///f:/Programmation/healthkicks-ecosystem/docker-compose.yml) à la racine démarre les services d'infrastructure requis en local :
+The [`docker-compose.yml`](file:///f:/Programmation/healthkicks-ecosystem/docker-compose.yml) file at the repository root starts the required local infrastructure services:
 
 - **PostgreSQL 16** (port `5432`)
 - **LocalStack / DynamoDB Local** (port `4566`)
-- **Eclipse Mosquitto MQTT Broker** (port `1883` et WebSocket `9001`)
+- **Eclipse Mosquitto MQTT Broker** (port `1883` and WebSocket `9001`)
 
 ```bash
 docker compose up -d
 ```
 
-Vérifiez que les conteneurs sont sains :
+Verify that containers are healthy:
 
 ```bash
 docker compose ps
@@ -57,55 +57,53 @@ docker compose ps
 
 ---
 
-## 4. Démarrage des Sous-Systèmes
+## 4. Starting Subsystems
 
-### A. Backend FastAPI (`health-kicks/`)
+### A. FastAPI Backend (`health-kicks/`)
 
-1. Naviguez dans le répertoire backend :
+1. Navigate to the backend directory:
    ```bash
    cd health-kicks
    ```
-2. Installez l'environnement virtuel et les dépendances avec `uv` :
+2. Install the virtual environment and dependencies with `uv`:
    ```bash
    uv sync
    ```
-3. Exécutez les migrations de base de données Alembic :
+3. Run Alembic database migrations:
    ```bash
    uv run alembic upgrade head
    ```
-4. Lancez le serveur de développement FastAPI :
-
+4. Start the FastAPI development server:
    ```bash
    uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
-   - Documentation Swagger interactive : [http://localhost:8000/docs](http://localhost:8000/docs)
-   - Santé de l'API : [http://localhost:8000/health](http://localhost:8000/health)
+   - Interactive Swagger documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
+   - API health check: [http://localhost:8000/health](http://localhost:8000/health)
 
-5. Exécutez la suite de tests :
+5. Run the test suite:
    ```bash
    uv run pytest
    ```
 
 ---
 
-### B. Frontend Angular 22 (`health-kicks-frontend/`)
+### B. Angular 22 Frontend (`health-kicks-frontend/`)
 
-1. Naviguez dans le répertoire frontend :
+1. Navigate to the frontend directory:
    ```bash
    cd health-kicks-frontend
    ```
-2. Installez les dépendances avec `pnpm` :
+2. Install dependencies with `pnpm`:
    ```bash
    pnpm install
    ```
-3. Lancez le serveur Angular en mode développement :
-
+3. Start the Angular development server:
    ```bash
    pnpm start
    ```
-   - Application accessible sur : [http://localhost:4200](http://localhost:4200)
+   - Application accessible at: [http://localhost:4200](http://localhost:4200)
 
-4. Exécutez les tests unitaires Vitest et le build :
+4. Run Vitest unit tests and production build:
    ```bash
    pnpm test:ci
    pnpm run build
@@ -113,54 +111,54 @@ docker compose ps
 
 ---
 
-### C. Application Mobile Flutter (`health-kicks-mobile/`)
+### C. Flutter Mobile Application (`health-kicks-mobile/`)
 
-1. Naviguez dans le répertoire mobile :
+1. Navigate to the mobile directory:
    ```bash
    cd health-kicks-mobile
    ```
-2. Récupérez les paquets Flutter :
+2. Fetch Flutter packages:
    ```bash
    flutter pub get
    ```
-3. Exécutez l'analyse statique et les tests unitaires :
+3. Run static analysis and unit tests:
    ```bash
    flutter analyze
    flutter test
    ```
-4. Lancez sur émulateur ou appareil connecté :
+4. Launch on an emulator or connected device:
    ```bash
    flutter run
    ```
 
 ---
 
-### D. Firmware ESP32-S3 (`health-kicks-esp32-s3/`)
+### D. ESP32-S3 Firmware (`health-kicks-esp32-s3/`)
 
-1. Naviguez dans le répertoire firmware :
+1. Navigate to the firmware directory:
    ```bash
    cd health-kicks-esp32-s3
    ```
-2. Compilez le firmware pour la cible ESP32-S3 :
+2. Compile firmware for the ESP32-S3 target:
    ```bash
    uv tool run --from platformio pio run
    ```
-3. Flashez l'appareil connecté par port USB (ou préparez le binaire OTA) :
+3. Flash the device connected via USB (or prepare the OTA binary):
    ```bash
    uv tool run --from platformio pio run --target upload
    ```
 
 ---
 
-## 5. Vérification Globale de l'Écosystème
+## 5. Global Ecosystem Verification
 
-Avant de soumettre une modification, exécutez la validation des contrats et des hooks à la racine du monorepo :
+Before submitting changes, run contract verification and pre-commit checks at the repository root:
 
 ```bash
-# Vérification des contrats BLE GATT et OpenAPI
+# Verify BLE GATT and OpenAPI contracts
 python scripts/verify_ble_contracts.py
 python scripts/verify_openapi_drift.py
 
-# Exécution de l'ensemble des hooks pre-commit
+# Run all pre-commit hooks
 uv tool run pre-commit run --all-files
 ```

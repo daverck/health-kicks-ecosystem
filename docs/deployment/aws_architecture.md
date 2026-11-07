@@ -1,45 +1,45 @@
-# Guide d'Architecture Cloud & Déploiement AWS
+# Cloud Architecture & AWS Deployment Guide
 
-Ce document décrit l'architecture de déploiement cloud de l'écosystème **HealthKicks** sur **Amazon Web Services (AWS)**, assurant haute disponibilité, scalabilité élastique et conformité aux exigences de sécurité des données biomécaniques et cliniques.
+This document describes the cloud deployment architecture of the **HealthKicks** ecosystem on **Amazon Web Services (AWS)**, ensuring high availability, elastic scalability, and compliance with biomechanical and clinical data security requirements.
 
 ---
 
-## 1. Schéma d'Architecture Globale
+## 1. Global Architecture Diagram
 
 ```mermaid
 flowchart TD
-    subgraph Clients["Clients Connectés"]
-        Shoe["Chaussure Connectée<br/>(ESP32-S3 Firmware)"]
-        Mobile["Application Mobile<br/>(Flutter / Dart)"]
-        Web["Navigateur Praticien<br/>(Angular 22 SPA)"]
+    subgraph Clients["Connected Clients"]
+        Shoe["Connected Shoe<br/>(ESP32-S3 Firmware)"]
+        Mobile["Mobile Companion App<br/>(Flutter / Dart)"]
+        Web["Clinician Browser<br/>(Angular 22 SPA)"]
     end
 
-    subgraph AWSCloud["Infrastructure Cloud AWS (Région eu-north-1 / eu-west-3)"]
-        subgraph Ingestion["Ingestion & Messagerie Temps Réel"]
+    subgraph AWSCloud["AWS Cloud Infrastructure (Region eu-north-1 / eu-west-3)"]
+        subgraph Ingestion["Ingestion & Real-Time Messaging"]
             IoTCore["AWS IoT Core<br/>(MQTT WSS SigV4 - Port 443)"]
-            STS["AWS Security Token Service<br/>(Génération credentials temporaires)"]
+            STS["AWS Security Token Service<br/>(Temporary credentials generation)"]
         end
 
-        subgraph Compute["Couche Applicative & API"]
+        subgraph Compute["Application Layer & API"]
             ALB["Application Load Balancer<br/>(HTTPS 443 / TLS 1.3)"]
-            ECS["Amazon ECS Fargate<br/>(Conteneurs FastAPI / Python 3.11)"]
+            ECS["Amazon ECS Fargate<br/>(FastAPI / Python 3.11 Containers)"]
         end
 
-        subgraph Storage["Persistance Hybride"]
+        subgraph Storage["Hybrid Persistence"]
             Aurora["Amazon Aurora Serverless v2<br/>(PostgreSQL 16 Multi-AZ)"]
-            Dynamo["Amazon DynamoDB<br/>(Séries temporelles IMU & Télémétrie)"]
-            S3_Firmware["Amazon S3<br/>(Binaires firmware OTA signés)"]
+            Dynamo["Amazon DynamoDB<br/>(IMU Time Series & Telemetry)"]
+            S3_Firmware["Amazon S3<br/>(Signed OTA firmware binaries)"]
         end
 
-        subgraph FrontendHosting["Hébergement Frontend"]
+        subgraph FrontendHosting["Frontend Hosting"]
             CF["Amazon CloudFront CDN"]
-            S3_Web["Amazon S3 Bucket (SPA Angular)"]
+            S3_Web["Amazon S3 Bucket (Angular SPA)"]
         end
     end
 
-    Shoe -->|BLE GATT LESC| Mobile
+    Shoe -->|LESC BLE GATT| Mobile
     Mobile -->|MQTT WSS SigV4| IoTCore
-    Mobile -->|REST HTTPS| ALB
+    Mobile -->|HTTPS REST| ALB
     Web -->|HTTPS| CF
     CF --> S3_Web
     CF -->|/api/*| ALB
@@ -53,68 +53,68 @@ flowchart TD
 
 ---
 
-## 2. Description des Composants d'Infrastructure
+## 2. Infrastructure Components Description
 
-### A. AWS IoT Core & Messagerie Temps Réel
+### A. AWS IoT Core & Real-Time Messaging
 
-- **Protocole** : MQTT sur WebSockets sécurisés (SigV4, port 443), permettant de traverser les pare-feux d'entreprise et les réseaux cellulaires mobiles.
-- **Autorisation STS** : Les identifiants temporaires de connexion sont négociés via l'endpoint API `/api/v1/auth/iot-credentials` de FastAPI.
-- **Politique de Session à Moindre Privilège** :
-  - `iot:Connect` restreint strictement aux identifiants clients `healthkicks-mobile-{user_id}-*`.
-  - `iot:Subscribe` et `iot:Receive` confinés aux topics de l'utilisateur et de ses dispositifs appairés (`healthkicks/v1/{device_id}/*` et `healthkicks/v1/users/{user_id}/*`).
+- **Protocol**: MQTT over secure WebSockets (SigV4, port 443), traversing enterprise firewalls and mobile cellular carriers without port blocking.
+- **STS Authorization**: Temporary connection credentials are negotiated via the FastAPI endpoint `/api/v1/auth/iot-credentials`.
+- **Least Privilege Session Policy**:
+  - `iot:Connect` strictly limited to client IDs matching `healthkicks-mobile-{user_id}-*`.
+  - `iot:Subscribe` and `iot:Receive` confined to topics belonging to the authenticated user and paired footwear (`healthkicks/v1/{device_id}/*` and `healthkicks/v1/users/{user_id}/*`).
 
-### B. Amazon ECS Fargate (Backend FastAPI)
+### B. Amazon ECS Fargate (FastAPI Backend)
 
-- **Modèle serverless de conteneurs** : Pas de gestion de serveurs EC2, allocation dynamique de vCPU et RAM (0.5 vCPU, 1 GB par tâche en nominal).
-- **Auto-scaling** : Basé sur l'utilisation CPU ($\ge 70\%$) et le nombre de requêtes concurrentes par tâche.
-- **Exécution Lifespan & Migrations** :
-  - Au démarrage du conteneur, FastAPI déclenche automatiquement les migrations de schéma Alembic (`alembic upgrade head`) avec un mécanisme de reprise sur panne (jusqu'à 3 tentatives avec backoff exponentiel).
-  - En mode multi-tâches, l'exécution des migrations est protégée par un verrou d'avis PostgreSQL (`pg_advisory_lock`).
+- **Serverless Container Model**: No EC2 instances to manage, dynamic allocation of vCPU and RAM (0.5 vCPU, 1 GB per task nominally).
+- **Auto-scaling**: Triggered on CPU utilization ($\ge 70\%$) and concurrent request counts per task.
+- **Lifespan Execution & Migrations**:
+  - Upon container boot, FastAPI automatically executes Alembic schema migrations (`alembic upgrade head`) with retry and exponential backoff (up to 3 attempts).
+  - In multi-task mode, migration execution is protected by a PostgreSQL advisory lock (`pg_advisory_lock`).
 
-### C. Amazon Aurora Serverless v2 (Base de Données Relationnelle)
+### C. Amazon Aurora Serverless v2 (Relational Database)
 
-- **Moteur** : PostgreSQL 16 compatible.
-- **Scalabilité instantanée** : Ajustement de 0.5 ACU (Aurora Capacity Units) à 16 ACU selon la charge sans interruption de service.
-- **Périmètre des Données** :
-  - Comptes utilisateurs, profils cliniciens et RBAC.
-  - Registre des dispositifs appairés et dates de calibration.
-  - Résumés quotidiens de pas partitionnés par date et activité (`local_daily_steps`).
-  - Métadonnées des sessions d'enregistrement Studio (`studio_sessions`).
+- **Engine**: PostgreSQL 16 compatible.
+- **Instant Elasticity**: Automatic scaling from 0.5 ACU (Aurora Capacity Units) up to 16 ACU according to workload without downtime.
+- **Data Scope**:
+  - User accounts, clinician profiles, and RBAC roles.
+  - Paired device registry and calibration timestamps.
+  - Daily step summaries partitioned by date and activity (`local_daily_steps`).
+  - Studio recording session metadata (`studio_sessions`).
 
-### D. Amazon DynamoDB (Séries Temporelles IMU)
+### D. Amazon DynamoDB (IMU Time Series)
 
-- **Modèle de données** : Clé de partition `device_id` (String) et clé de tri `timestamp_epoch_us` (Number).
-- **Mode On-Demand** : Tolère les pics d'ingestion massive lors des déchargements Burst Studio (jusqu'à 100 Hz).
-- **Expiration Automatique (TTL)** : Les lectures brutes de télémétrie peuvent expirer automatiquement après 90 jours (sauvegarde froide S3 via DynamoDB Streams).
+- **Data Model**: Partition Key `device_id` (String) and Sort Key `timestamp_epoch_us` (Number).
+- **On-Demand Mode**: Absorbs high-throughput ingestion spikes during high-frequency Studio Burst offloads (up to 100 Hz).
+- **Automated TTL Expiration**: Raw telemetry readings can automatically expire after 90 days (with cold archiving to S3 via DynamoDB Streams).
 
-### E. Amazon CloudFront & S3 (Frontend Angular 22)
+### E. Amazon CloudFront & S3 (Angular 22 Frontend)
 
-- **Hébergement SPA** : Les artefacts générés par `pnpm build` (`dist/health-kicks-app/browser`) sont déployés sur un bucket S3 privé avec accès restreint via Origin Access Control (OAC).
-- **Performance & Cache** :
-  - Mise en cache globale sur le réseau de bordure AWS CloudFront.
-  - Compression Brotli / Gzip automatique des bundles JavaScript et CSS Tailwind v4.
-  - Politique de fallback SPA : redirection des routes HTML5 vers `index.html`.
-
----
-
-## 3. Sécurité, Chiffrement & Conformité
-
-1. **Chiffrement de Bout en Bout** :
-   - En transit : TLS 1.3 obligatoire sur CloudFront et l'ALB ; MQTT encapsulé dans WSS (TLS).
-   - Au repos : Chiffrement AWS KMS (AES-256) sur Aurora, DynamoDB et S3.
-2. **Authentification & PKCE** :
-   - Flux SSO Google et Microsoft Azure Entra ID durcis par RFC 7636 (PKCE S256).
-   - Les jetons JWT ne transitent jamais dans les URLs de redirection : échange sécurisé via ticket éphémère à usage unique (`POST /api/v1/auth/token/exchange`).
-3. **Traçabilité Distribuée** :
-   - En-tête `X-Correlation-ID` systématiquement propagé du client Mobile / Frontend vers l'API FastAPI et les logs CloudWatch.
+- **SPA Hosting**: Artifacts built by `pnpm build` (`dist/health-kicks-app/browser`) are deployed to a private S3 bucket with Origin Access Control (OAC).
+- **Performance & Caching**:
+  - Global edge caching on AWS CloudFront.
+  - Automatic Brotli / Gzip compression for JavaScript bundles and Tailwind CSS v4 assets.
+  - SPA fallback policy redirecting HTML5 client routes to `index.html`.
 
 ---
 
-## 4. Stratégie de Déploiement Continu (CI/CD)
+## 3. Security, Encryption & Compliance
 
-Le déploiement en production s'appuie sur GitHub Actions (`.github/workflows/deploy.yml`) selon une stratégie zéro interruption (_Zero-Downtime Rolling Update_) :
+1. **End-to-End Encryption**:
+   - In transit: Mandatory TLS 1.3 on CloudFront and ALB; MQTT wrapped in WSS (TLS).
+   - At rest: AWS KMS encryption (AES-256) on Aurora, DynamoDB, and S3.
+2. **Authentication & PKCE**:
+   - Google and Microsoft Azure Entra ID SSO flows hardened via RFC 7636 (PKCE S256).
+   - JWT tokens never transit in redirect URLs: secure exchange via one-time ephemeral tickets (`POST /api/v1/auth/token/exchange`).
+3. **Distributed Traceability**:
+   - `X-Correlation-ID` header systematically forwarded from Mobile / Frontend to FastAPI and CloudWatch logs.
 
-1. **Étape de Build & Test** : Validation stricte des tests unitaires et intégration (100% de réussite requise).
-2. **Construction de l'Image Conteneur** : Push de l'image Docker étiquetée avec le SHA du commit vers Amazon ECR.
-3. **Mise à Jour du Service ECS** : Déploiement progressif des nouvelles tâches avec vérification de santé (`GET /health`), puis arrêt des anciens conteneurs.
-4. **Invalidation du Cache CDN** : Invalidation ciblée sur CloudFront (`aws cloudfront create-invalidation --paths "/*"`).
+---
+
+## 4. Continuous Deployment Strategy (CI/CD)
+
+Production deployment is driven by GitHub Actions (`.github/workflows/deploy.yml`) utilizing a zero-downtime rolling update strategy:
+
+1. **Build & Test Stage**: Strict validation of unit and integration test suites (100% pass required).
+2. **Container Build**: Push of Docker image tagged with commit SHA to Amazon ECR.
+3. **ECS Service Update**: Progressive rollout of new tasks with health verification (`GET /health`), followed by graceful termination of obsolete tasks.
+4. **CDN Cache Invalidation**: Targeted CloudFront invalidation (`aws cloudfront create-invalidation --paths "/*"`).

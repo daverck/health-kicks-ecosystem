@@ -1,165 +1,165 @@
-# Vue d'Ensemble du Système HealthKicks
+# HealthKicks System Overview
 
-L'écosystème **HealthKicks** est une solution connectée temps réel de prévention des chutes, d'analyse biomécanique de la marche et de stimulation haptique plantaire. Il intègre de l'intelligence embarquée à la source (_Edge AI_ sur microcontrôleur ESP32-S3 ou Raspberry Pi), une passerelle mobile Flutter/Dart, une API Cloud FastAPI élastique, et une interface clinique réactive sous Angular 21.
+The **HealthKicks** ecosystem is a connected real-time solution for fall prevention, biomechanical gait analysis, and plantar haptic stimulation. It combines edge intelligence at the sensor source (_Edge AI_ on ESP32-S3 microcontroller or Raspberry Pi), a Flutter/Dart mobile companion gateway, an elastic FastAPI cloud API, and a reactive Angular 22 clinical dashboard.
 
 ---
 
-## 1. Cartographie Globale des Composants
+## 1. Global Component Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Footwear["1. Chaussure Instrumentée (health-kicks-esp32-s3)"]
-        ESP32["ESP32-S3 (240MHz, FreeRTOS)\n• IMU 6-axes MPU-6050 (19 Hz / 100 Hz)\n• Inférence C++ transpiled (m2cgen)\n• Compteur de pas (podomètre matériel)\n• Alerte d'inactivité & calibration 0g\n• Actuateur vibrotactile PWM (10 kHz)\n• Serveur NimBLE GATT (LESC Encrypted)\n• Moteur OTA avec SHA-256 & Rollback"]
+    subgraph Footwear["1. Instrumented Shoe (health-kicks-esp32-s3)"]
+        ESP32["ESP32-S3 (240MHz, FreeRTOS)\n• 6-axis IMU MPU-6050 (19 Hz / 100 Hz)\n• Transpiled C++ inference (m2cgen)\n• Hardware pedometer & step counter\n• Inactivity reminder & 0g calibration\n• 10 kHz PWM vibrotactile actuator\n• LESC Encrypted NimBLE GATT Server\n• OTA Flashing Engine with SHA-256 & Rollback"]
     end
 
-    subgraph Mobile["2. Passerelle Mobile (health-kicks-mobile)"]
-        FlutterApp["Application Flutter / Dart\n• Client BLE GATT chiffré & Bouton d'appairage\n• Passerelle MQTT AWS IoT Core (WebSockets SigV4)\n• Négociation STS éphémère (Scoped Policy)\n• Authentification OAuth2 PKCE (S256 + Ticket)\n• Odomètre différentiel net (SQLite)\n• Mise à jour OTA avec vérification SHA-256 & SemVer"]
+    subgraph Mobile["2. Mobile Gateway (health-kicks-mobile)"]
+        FlutterApp["Flutter / Dart Mobile App\n• Encrypted BLE GATT client & Pairing Button\n• AWS IoT Core MQTT Gateway (WebSockets SigV4)\n• Ephemeral STS token broker (Scoped Policy)\n• OAuth2 PKCE Authentication (S256 + Ticket)\n• Net differential odometry (SQLite)\n• Secure OTA update with SHA-256 & SemVer"]
     end
 
-    subgraph Cloud["3. Backend & Données Cloud (health-kicks)"]
-        IoTCore["AWS IoT Core (Broker MQTT v1)"]
-        FastAPI["API REST FastAPI / Uvicorn\n• Courtier de jetons AWS STS\n• Échange de tickets OAuth2 PKCE\n• Historique activités & podométrie\n• Gestionnaire de sessions Studio\n• S3 Firmware Release Manager\n• Probes /health & métriques opérationnelles"]
-        Postgres[("Aurora PostgreSQL 16\nVérité Relationnelle & Audit")]
-        DynamoDB[("DynamoDB\nTélémétrie brute haute fréquence")]
+    subgraph Cloud["3. Cloud Backend & Storage (health-kicks)"]
+        IoTCore["AWS IoT Core (MQTT v1 Broker)"]
+        FastAPI["FastAPI / Uvicorn REST API\n• AWS STS Token Broker\n• OAuth2 PKCE ticket exchange\n• Activity history & step metrics\n• Studio session manager\n• S3 Firmware Release Manager\n• Operational /health & Prometheus metrics"]
+        Postgres[("Aurora PostgreSQL 16\nRelational Source of Truth & Audit")]
+        DynamoDB[("DynamoDB\nHigh-frequency raw telemetry")]
     end
 
-    subgraph Client["4. Restitution Clinique (health-kicks-frontend)"]
-        AngularUI["Tableau de Bord Web (Angular 22)\n• Angular Signals & Standalone Components\n• Visualisation temps réel & alertes chutes\n• Requalification et validation Studio (is_validated)\n• Déclencheur haptique & calibration à distance\n• Calendrier d'activité & rapports cliniques"]
+    subgraph Client["4. Clinical Dashboard (health-kicks-frontend)"]
+        AngularUI["Web Dashboard (Angular 22)\n• Angular Signals & Standalone Components\n• Real-time visualization & fall alerts\n• Studio review & relabeling (is_validated)\n• Remote haptic triggers & calibration\n• Activity calendar & clinical reports"]
     end
 
-    ESP32 <-->|BLE GATT LESC Chiffré| FlutterApp
-    FlutterApp <-->|MQTT WebSockets SigV4| IoTCore
-    FlutterApp <-->|REST HTTPS / JWT| FastAPI
+    ESP32 <-->|LESC Encrypted BLE GATT| FlutterApp
+    FlutterApp <-->|WebSockets SigV4 MQTT| IoTCore
+    FlutterApp <-->|HTTPS REST / JWT| FastAPI
     IoTCore -->|Rule Engine / Ingestion| FastAPI
     IoTCore -->|Rule Engine| DynamoDB
     FastAPI <-->|SQLAlchemy 2.0 / Alembic| Postgres
     FastAPI <-->|Boto3 SDK| DynamoDB
-    AngularUI <-->|REST HTTPS / JWT| FastAPI
-    AngularUI -.->|WebSockets Directs| FastAPI
+    AngularUI <-->|HTTPS REST / JWT| FastAPI
+    AngularUI -.->|Direct WebSockets| FastAPI
 ```
 
 ---
 
-## 2. Rôles et Responsabilités des Sous-Projets
+## 2. Roles & Subproject Responsibilities
 
-### A. Firmware Embarqué (`health-kicks-esp32-s3/`)
+### A. Embedded Firmware (`health-kicks-esp32-s3/`)
 
-- **Technologies** : ESP32-S3-DevKitC-1 (Xtensa dual-core 240 MHz), Framework Arduino-ESP32 / PlatformIO, FreeRTOS, NimBLE-Arduino 1.4.3, MPU-6050 I2C (400 kHz).
-- **Responsabilités** :
-  - **Acquisition biomécanique** : Échantillonnage à 19 Hz (~94 échantillons sur fenêtre glissante de 5 s) aligné sur le référentiel ISB.
-  - **Classifieur Edge AI sur puce** : Inférence locale C++ pure (sans runtime externe, générée via `m2cgen`), détection de chute multiclasse (`fall_forward`, `fall_backward`, `fall_lateral`) et garde biomécanique anti-fausses alertes assises (`isSittingDownNominalPosture`).
-  - **Serveur BLE GATT sécurisé** :
-    - Service Podomètre (0005) : Odomètre matériel monotone (marche, course, escaliers, non-classifié).
-    - Service Haptique (0003) : Patterns vibratoires (0–255, 50–10000 ms), configuration du rappel d'inactivité (Opcode 0x06), calibration zéro (Opcode 0x05).
-    - Service Studio (0004 & 0005) : Burst de données télémétriques brutes calibrées.
-    - Service Device Information (0x180A) : Version firmware (0x2A26) et date de compilation UTC (0x2A28).
-    - Service OTA (0010, 0011, 0012) : Flashage différentiel over-the-air.
-  - **Sécurité & Résilience** :
-    - Chiffrement de liaison LESC (_LE Secure Connections_) Just Works + Bonding.
-    - Fenêtre d'appairage physique de 60 secondes déclenchée par appui sur bouton matériel (`GPIO 14`).
-    - Vérification d'intégrité OTA : En-tête magique ESP32 `0xE9`, empreinte cryptographique SHA-256 obligatoire de 32 octets.
-    - Fenêtre de probation de 15 secondes au redémarrage avec rollback automatique en cas de défaillance capteur.
+- **Technologies**: ESP32-S3-DevKitC-1 (Xtensa dual-core 240 MHz), Framework Arduino-ESP32 / PlatformIO, FreeRTOS, NimBLE-Arduino 1.4.3, MPU-6050 I2C (400 kHz).
+- **Responsibilities**:
+  - **Biomechanical Acquisition**: Sampling at 19 Hz (~94 samples over 5s rolling window) aligned with the ISB reference frame.
+  - **On-Chip Edge AI Classifier**: Pure C++ inference without external runtime (transpiled via `m2cgen`), multiclass fall detection (`fall_forward`, `fall_backward`, `fall_lateral`), and biomechanical guard preventing seated false positives (`isSittingDownNominalPosture`).
+  - **Secure BLE GATT Server**:
+    - Pedometer Service (0006): Monotonic hardware odometer (walk, run, stairs, unclassified).
+    - Haptic Service (0003): Vibration patterns (0–255, 50–10000 ms), inactivity reminder configuration (Opcode 0x06), zero calibration (Opcode 0x05).
+    - Studio Service (0004 & 0005): Calibrated raw telemetry data bursts.
+    - Device Information Service (0x180A): Firmware version string (0x2A26) and UTC build timestamp (0x2A28).
+    - OTA Service (0010, 0011, 0012): Over-the-air firmware flashing.
+  - **Security & Resilience**:
+    - LESC (_LE Secure Connections_) Just Works + Bonding link encryption.
+    - Physical 60-second pairing window triggered by hardware push-button (`GPIO 14`).
+    - OTA integrity checks: ESP-IDF magic byte `0xE9`, mandatory 32-byte SHA-256 cryptographic digest.
+    - 15-second probation window on reboot with automatic rollback on sensor failure.
 
-### B. Application Mobile (`health-kicks-mobile/`)
+### B. Mobile Companion Application (`health-kicks-mobile/`)
 
-- **Technologies** : Flutter 3.x, Dart 3.x, Flutter Blue Plus, MQTT Client, SQLite (sqflite), SharedPreferences.
-- **Responsabilités** :
-  - **Passerelle de terrain BLE $\leftrightarrow$ Cloud** : Maintien de la connexion Bluetooth avec la chaussure, auto-reconnexion post-reboot OTA.
-  - **Courtage d'identité & AWS STS** : Négociation de jetons AWS temporaires (15 minutes) avec politique de session restreinte par `clean_user_id`.
-  - **Passerelle MQTT SigV4** : Connexion temps réel sur `healthkicks/v1/{device_id}/*` via WebSockets signés AWS SigV4.
-  - **Odométrie différentielle SQLite** : Calcul du delta de pas journalier net à partir de l'odomètre matériel monotone pour éviter les fuites de pas entre jours calendaires ou lors de redémarrages.
-  - **Mise à jour OTA sécurisée** : Téléchargement depuis S3/Cloud, contrôle cryptographique SHA-256, comparaison par Semantic Versioning et tolérance aux décalages horaires UTC.
+- **Technologies**: Flutter 3.x, Dart 3.x, Flutter Blue Plus, MQTT Client, SQLite (sqflite), SharedPreferences.
+- **Responsibilities**:
+  - **Field Gateway BLE $\leftrightarrow$ Cloud**: Maintains Bluetooth connection with shoe, automatic reconnection post-OTA reboot.
+  - **Identity Broker & AWS STS**: Temporary AWS token negotiation (15 minutes) with scoped session policy based on `clean_user_id`.
+  - **SigV4 MQTT Gateway**: Real-time connection to `healthkicks/v1/{device_id}/*` via AWS SigV4 signed WebSockets.
+  - **SQLite Differential Odometry**: Computes net daily step deltas from the monotonic hardware odometer to prevent step leakage across calendar days or after reboot.
+  - **Secure OTA Updates**: Downloads from S3/Cloud, verifies SHA-256 hash, compares Semantic Versioning and handles UTC time skew.
 
-### C. Backend Cloud (`health-kicks/`)
+### C. Cloud Backend (`health-kicks/`)
 
-- **Technologies** : Python 3.11, FastAPI, SQLAlchemy 2.0, PostgreSQL 16 (Aurora), DynamoDB, AWS IoT Core, Alembic, Docker.
-- **Responsabilités** :
-  - **Gestion des identités & SSO** : Authentification OAuth2 Google et Azure Entra ID avec support strict de **PKCE RFC 7636 (S256)** et échange de jeton par ticket éphémère à usage unique (`POST /api/v1/auth/token/exchange`).
-  - **Contrôle d'accès & Isolation RBAC** : Rôles `user`, `clinician`, `admin`. Vérification d'appartenance des dispositifs (`verify_device_ownership`).
-  - **Courtage STS AWS IoT** : Génération de session policies strictement restreintes aux identifiants clients de l'utilisateur authentifié (`client/healthkicks-mobile-{userId}-*`).
-  - **Observabilité & Santé** : Endpoints `/health` (avec mesure de latence SQL et diagnostic du pool de connexions), `/health/liveness`, `/health/readiness` et `/metrics`.
-  - **Pipeline ML & Transpilation** : Scripts `train_detector.py` et `update_edge_model.py` pour réentraîner les modèles d'activité et générer le code C pour l'ESP32.
+- **Technologies**: Python 3.11, FastAPI, SQLAlchemy 2.0, PostgreSQL 16 (Aurora), DynamoDB, AWS IoT Core, Alembic, Docker.
+- **Responsibilities**:
+  - **Identity Management & SSO**: Google and Azure Entra ID OAuth2 authentication with strict support for **RFC 7636 PKCE (S256)** and one-time ephemeral ticket token exchange (`POST /api/v1/auth/token/exchange`).
+  - **Access Control & RBAC**: Roles `user`, `clinician`, `admin`. Device ownership verification (`verify_device_ownership`).
+  - **AWS IoT STS Broker**: Generates session policies strictly restricted to authenticated user client IDs (`client/healthkicks-mobile-{userId}-*`).
+  - **Observability & Health**: Endpoints `/health` (with SQL latency and connection pool diagnostics), `/health/liveness`, `/health/readiness`, and `/metrics`.
+  - **ML Pipeline & Transpilation**: Scripts `train_detector.py` and `update_edge_model.py` for retraining activity models and generating C++ headers for ESP32.
 
-### D. Frontend Web (`health-kicks-frontend/`)
+### D. Web Frontend (`health-kicks-frontend/`)
 
-- **Technologies** : Angular 22 (Standalone Components, Signals), Tailwind CSS 4, Angular Material, Chart.js, pnpm.
-- **Responsabilités** :
-  - **Supervision clinique** : Suivi des patients, détection des chutes en direct, analyse des cadences de marche.
-  - **Module Studio & Annotation** : Enregistrement de sessions calibrées avec compte à rebours visuel/sensoriel, visualisation des signaux 3-axes ($a_x, a_y, a_z, g_x, g_y, g_z$), requalification et validation des labels cliniques (`is_validated`).
-  - **Contrôle matériel distant** : Déclenchement de stimulations haptiques et configuration des seuils d'inactivité.
-
----
-
-## 3. Matrice de Sécurité & Protocoles
-
-| Couche                              | Protocole             | Chiffrement / Intégrité                | Mécanisme de Protection                                                                                        |
-| :---------------------------------- | :-------------------- | :------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Footwear BLE**                    | BLE 5.0 GATT          | LESC (_Just Works_ + Bonding)          | Fenêtre d'appairage physique 60s (`GPIO 14`) + Rejet des écritures non chiffrées                               |
-| **Firmware OTA**                    | BLE OTA Service       | SHA-256 + Magic Header `0xE9`          | Validation de l'octet magique à l'offset 0, contrôle SHA-256 obligatoire, rollback automatique si IMU en échec |
-| **Mobile $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3)       | JWT Bearer (HS256 $\ge 256$ bits)      | OAuth2 PKCE S256 + Ticket éphémère (aucun token en URL GET)                                                    |
-| **Mobile $\rightarrow$ AWS IoT**    | MQTT over WebSockets  | AWS SigV4 (HMAC-SHA256)                | AWS STS temporaire (15 min), Client ID scopé strictly par utilisateur                                          |
-| **Web $\rightarrow$ Cloud REST**    | HTTPS (TLS 1.3)       | JWT Bearer + Strict-Transport-Security | CSP, HSTS, X-Frame-Options DENY, Rate Limiting par IP/Token                                                    |
-| **Données Sensibles**               | PostgreSQL & DynamoDB | Chiffrement au repos (AES-256 KMS)     | Pseudonymisation déterministe via HMAC-SHA256 (`HEALTHKICKS_PSEUDONYMIZATION_PEPPER`)                          |
+- **Technologies**: Angular 22 (Standalone Components, Signals), Tailwind CSS 4, Angular Material, Chart.js, pnpm.
+- **Responsibilities**:
+  - **Clinical Supervision**: Patient monitoring, live fall detection, gait cadence analysis.
+  - **Studio & Annotation Module**: Calibrated session recording with visual/tactile countdown, 3-axis signal charts ($a_x, a_y, a_z, g_x, g_y, g_z$), clinical relabeling, and validation (`is_validated`).
+  - **Remote Hardware Control**: Haptic stimulation trigger and inactivity threshold configuration.
 
 ---
 
-## 4. Référentiel Biomécanique ISB
+## 3. Security Matrix & Protocols
 
-L'ensemble des composants respecte la norme de l'**International Society of Biomechanics** (_Wu & Cavanagh, 1995_) :
-
-- **Axe X (Antéro-postérieur)** : Positif vers l'avant (propulsion de la foulée).
-- **Axe Y (Médio-latéral)** : Positif vers la gauche de la chaussure.
-- **Axe Z (Longitudinal / Vertical)** : Positif vers le haut ($+1.0\,g$ statique au repos sur sol plat).
-- Plus d'informations : [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
+| Layer | Protocol | Encryption / Integrity | Protection Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Footwear BLE** | BLE 5.0 GATT | LESC (_Just Works_ + Bonding) | 60s physical pairing window (`GPIO 14`) + unencrypted write rejection |
+| **Firmware OTA** | BLE OTA Service | SHA-256 + Magic Header `0xE9` | Validation of magic byte at offset 0, mandatory SHA-256 check, automatic rollback on IMU failure |
+| **Mobile $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3) | JWT Bearer (HS256 $\ge 256$ bits) | OAuth2 PKCE S256 + Ephemeral ticket (no tokens in GET URLs) |
+| **Mobile $\rightarrow$ AWS IoT** | MQTT over WebSockets | AWS SigV4 (HMAC-SHA256) | Temporary AWS STS (15 min), Client ID strictly scoped per user |
+| **Web $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3) | JWT Bearer + Strict-Transport-Security | CSP, HSTS, X-Frame-Options DENY, Rate Limiting per IP/Token |
+| **Sensitive Data** | PostgreSQL & DynamoDB | Encryption at rest (AES-256 KMS) | Deterministic pseudonymization via HMAC-SHA256 (`HEALTHKICKS_PSEUDONYMIZATION_PEPPER`) |
 
 ---
 
-## 5. Cycle de Mise à Jour OTA & Reconnexion Automatique
+## 4. ISB Biomechanical Reference Frame
 
-La mise à jour logicielle de la chaussure connectée s'exécute exclusivement over-the-air (BLE OTA), le port USB physique étant réservé à l'alimentation ou sujet aux contraintes d'étanchéité mécanique.
+All components adhere to the **International Society of Biomechanics** standard (_Wu & Cavanagh, 1995_):
 
-### 5.1 Protocole de Transfert & Validation d'Intégrité
+- **X Axis (Antero-posterior)**: Positive forward (stride propulsion).
+- **Y Axis (Medio-lateral)**: Positive toward the shoe's left.
+- **Z Axis (Longitudinal / Vertical)**: Positive upward ($+1.0\,g$ static at rest on flat ground).
+- Additional details: [`docs/architecture/biomechanical_reference_frame.md`](file:///f:/Programmation/healthkicks-ecosystem/docs/architecture/biomechanical_reference_frame.md).
 
-1. **Transfert par Chunks** : L'application mobile découpe le binaire du firmware en blocs de 240 octets (adaptés au MTU négocié) et les transmet séquentiellement sur la caractéristique `CHAR_OTA_DATA_UUID`.
-2. **Contrôle Magic Byte** : À l'offset 0, l'ESP32 valide l'octet magique `0xE9` (signature de l'en-tête ESP-IDF). Tout paquet initial non conforme provoque l'avortement immédiat (`Update.abort()`) et le renvoi de l'erreur `OTA_ERR_VALIDATION_FAILED` (0x05).
-3. **Contrôle Cryptographique SHA-256** : À la fin du transfert, la commande `OTA_CMD_END` transporte obligatoirement l'empreinte SHA-256 de 32 octets. L'ESP32 compare l'empreinte calculée au vol via mbedTLS avec l'empreinte transmise. Si elles divergent ou si le condensat est absent, la mise à jour est rejetée (`OTA_ERR_CHECKSUM_MISMATCH`, 0x07).
-4. **Basculement de Partition & Reboot** : L'ESP32 valide l'image dans la partition inactive (`ota_0` ou `ota_1`), configure le bootloader pour basculer sur ce slot au prochain démarrage, et invoque `esp_restart()`.
+---
 
-### 5.2 Séquence de Reconnexion Automatique Post-Reboot
+## 5. OTA Update Cycle & Automatic Reconnection
+
+Firmware updates on the connected shoe occur exclusively over-the-air (BLE OTA), since the physical USB port is intended for charging or subjected to water resistance constraints.
+
+### 5.1 Transfer Protocol & Integrity Validation
+
+1. **Chunked Transfer**: The mobile app slices the firmware binary into 240-byte chunks (adjusted to negotiated MTU) and transmits them sequentially on `CHAR_OTA_DATA_UUID`.
+2. **Magic Byte Check**: At offset 0, the ESP32 verifies the magic byte `0xE9` (ESP-IDF image header signature). Any non-compliant initial chunk triggers immediate abort (`Update.abort()`) with error `OTA_ERR_VALIDATION_FAILED` (0x05).
+3. **SHA-256 Cryptographic Check**: At transfer completion, the `OTA_CMD_END` command carries the 32-byte SHA-256 hash. The ESP32 compares the hash calculated on-the-fly via mbedTLS with the declared hash. In case of mismatch or missing digest, the update is rejected (`OTA_ERR_CHECKSUM_MISMATCH`, 0x07).
+4. **Partition Switch & Reboot**: The ESP32 validates the image in the inactive partition (`ota_0` or `ota_1`), instructs the bootloader to boot into that slot on next reboot, and invokes `esp_restart()`.
+
+### 5.2 Post-Reboot Automatic Reconnection Sequence
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Utilisateur
-    participant Mobile as App Mobile (Flutter)
+    actor User as User
+    participant Mobile as Mobile App (Flutter)
     participant BLE as NimBLE Stack
-    participant ESP32 as Firmware ESP32-S3
-    participant IMU as Capteur IMU MPU-6050
+    participant ESP32 as ESP32-S3 Firmware
+    participant IMU as MPU-6050 IMU Sensor
 
-    Mobile->>ESP32: OTA_CMD_END + SHA-256 (32 octets)
-    ESP32->>ESP32: Vérification SHA-256 & esp_ota_set_boot_partition()
-    ESP32-->>Mobile: Statut Succès (0x00) & Déconnexion BLE
+    Mobile->>ESP32: OTA_CMD_END + SHA-256 (32 bytes)
+    ESP32->>ESP32: SHA-256 Verification & esp_ota_set_boot_partition()
+    ESP32-->>Mobile: Success Status (0x00) & BLE Disconnect
     ESP32->>ESP32: esp_restart()
-    Note over Mobile: Début temporisation sécurité (3s)
-    ESP32->>ESP32: Boot sur nouveau slot (otaPendingVerification = true)
-    ESP32->>BLE: openPairingWindow(60s) + Advertising BLE
-    ESP32->>IMU: Test initialisation & calibration (15s probation)
-    alt Défaillance IMU pendant la probation
+    Note over Mobile: Safety delay begins (3s)
+    ESP32->>ESP32: Boot into new slot (otaPendingVerification = true)
+    ESP32->>BLE: openPairingWindow(60s) + BLE Advertising
+    ESP32->>IMU: Initialization & calibration test (15s probation)
+    alt IMU Failure during probation
         ESP32->>ESP32: esp_ota_mark_app_invalid_rollback_and_reboot()
-    else IMU Opérationnel
+    else IMU Operational
         ESP32->>ESP32: esp_ota_mark_app_valid_cancel_rollback()
     end
     Mobile->>BLE: BleConnectionManager.startAutoConnect(targetDeviceId, timeout: 45s)
-    BLE->>Mobile: BleConnectionStatus.ready (Liaison LESC chiffrée)
+    BLE->>Mobile: BleConnectionStatus.ready (Encrypted LESC link)
     Mobile->>BLE: readDeviceFirmwareInfo() (DIS 0x180A)
     BLE-->>Mobile: Firmware Version (0x2A26) & Build Date (0x2A28)
     Mobile->>Mobile: FirmwareService.saveLocalInstalledFirmware(...)
-    Mobile->>User: Notification succès & mise à jour en direct (Settings & Dashboard)
+    Mobile->>User: Success notification & live UI update (Settings & Dashboard)
 ```
 
-### 5.3 Détails d'Implémentation Mobile & Firmware
+### 5.3 Implementation Details (Mobile & Firmware)
 
-- **Temporisation de Reboot (3 secondes)** : `FirmwareUpdateScreen._triggerAutoReconnectAfterReboot()` introduit un délai de garde de 3 s (`Future.delayed(const Duration(seconds: 3))`) afin de laisser à l'ESP32 le temps de redémarrer son SoC, de réinitialiser le sous-système radio Bluetooth et de recommencer à émettre ses trames d'annonce (_advertisements_).
-- **Fenêtre de Sauvetage / Appairage (60 secondes)** : Au redémarrage post-OTA, le firmware détecte le drapeau `otaPendingVerification` et ouvre automatiquement une fenêtre d'appairage physique de 60 secondes (`bleServer.openPairingWindow(60000)`). Même en cas de régénération des clés de liaison SMP ou de purge du cache côté OS mobile, la reconnexion et le ré-appairage s'exécutent de façon transparente sans blocage.
-- **Interrogation du DIS (Device Information Service)** : Dès la reconnexion confirmée (`BleConnectionStatus.ready`), l'application lit la caractéristique standard `0x2A26` (_Firmware Revision String_) et `0x2A28` (_Hardware / Build Date_).
-- **Persistance & Propagation Réactive** : La nouvelle version lue est enregistrée dans le stockage local `SharedPreferences`. Elle se propage instantanément à la modale de suivi OTA, à la tuile "INFORMATIONS SYSTÈME" de l'écran des Paramètres (`SettingsScreen`) et au widget d'état du matériel du Tableau de Bord (`_GatewayDashboardScreenState`).
+- **Reboot Delay (3 Seconds)**: `FirmwareUpdateScreen._triggerAutoReconnectAfterReboot()` introduces a 3-second guard delay (`Future.delayed(const Duration(seconds: 3))`) to allow the ESP32 to restart its SoC, reinitialize the Bluetooth radio subsystem, and resume broadcasting BLE advertisements.
+- **Rescue / Pairing Window (60 Seconds)**: Upon post-OTA reboot, the firmware detects the `otaPendingVerification` flag and automatically opens a 60-second pairing window (`bleServer.openPairingWindow(60000)`). Even if SMP keys were regenerated or OS Bluetooth caches cleared, reconnection and bonding re-negotiation proceed smoothly.
+- **DIS (Device Information Service) Query**: Once reconnection is established (`BleConnectionStatus.ready`), the app reads standard characteristics `0x2A26` (_Firmware Revision String_) and `0x2A28` (_Hardware / Build Date_).
+- **Persistence & Reactive Propagation**: The new version string is persisted to `SharedPreferences` and immediately updates the OTA modal, the "SYSTEM INFORMATION" card in Settings (`SettingsScreen`), and the device status widget on the Dashboard (`_GatewayDashboardScreenState`).

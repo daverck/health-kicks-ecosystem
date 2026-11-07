@@ -1,21 +1,21 @@
-# Architecture Mobile & Passerelle d'Arrière-Plan (HealthKicks Mobile)
+# Mobile Architecture & Background Gateway (HealthKicks Mobile)
 
-Ce document décrit l'architecture de l'application **HealthKicks Mobile** (Flutter / Android), le fonctionnement du service de premier plan persistant (_Foreground Service_), ainsi que la gestion du cycle de vie des connexions BLE et MQTT en arrière-plan.
+This document describes the architecture of the **HealthKicks Mobile** application (Flutter / Android), the operation of its persistent **Foreground Service**, and background connection lifecycle management across BLE and MQTT.
 
 ---
 
-## 1. Vue d'Ensemble de la Passerelle Mobile
+## 1. Mobile Gateway Overview
 
-L'application mobile fait office de passerelle active entre :
+The mobile application acts as an active gateway between:
 
-1. **La Chaussure Connectée (ESP32-S3)** via **Bluetooth Low Energy (BLE GATT)**.
-2. **Le Cloud AWS IoT Core** via **MQTT sur WebSockets SigV4**.
+1. **The Connected Shoe (ESP32-S3)** via **Bluetooth Low Energy (BLE GATT)**.
+2. **AWS IoT Core Cloud** via **MQTT over SigV4 WebSockets**.
 
 ```text
-[ Chaussure Connectée ESP32-S3 ]
+[ Connected Shoe ESP32-S3 ]
          │ (BLE GATT - Services 0001-0005)
          ▼
-[ HealthKicks Mobile (Flutter) ] ──(Foreground Service Android)──
+[ HealthKicks Mobile (Flutter) ] ──(Android Foreground Service)──
          │ (MQTT SigV4 WebSockets / REST HTTPS)
          ▼
 [ AWS IoT Core & FastAPI Backend ]
@@ -23,74 +23,74 @@ L'application mobile fait office de passerelle active entre :
 
 ---
 
-## 2. Mode Surveillance Active (Foreground Service Android)
+## 2. Active Surveillance Mode (Android Foreground Service)
 
-### A. Rôle et Comportement
+### A. Role & Behavior
 
-Le **Mode Surveillance Active** permet à l'application de maintenir actives la connexion Bluetooth Low Energy avec la chaussure et la session MQTT avec AWS IoT Core même lorsque :
+**Active Surveillance Mode** enables the application to maintain active Bluetooth Low Energy communication with the shoe and an MQTT session with AWS IoT Core even when:
 
-- L'écran du smartphone est éteint ou verrouillé.
-- L'utilisateur bascule sur une autre application.
+- The smartphone screen is turned off or locked.
+- The user switches to another application.
 
 > [!IMPORTANT]
-> **Compatibilité Plateforme :**
-> _Le maintien de la passerelle BLE/MQTT avec écran éteint est actuellement réservé à Android. iOS n'est pas supporté pour ce mode en raison des restrictions d'arrière-plan de l'OS (interdiction des sockets TCP/MQTT arbitraires permanents sans profil VoIP/Audio)._
+> **Platform Compatibility:**
+> _Maintaining the BLE/MQTT gateway with the screen turned off is currently supported on Android. iOS is not supported for this mode due to operating system background restrictions (disallowance of arbitrary permanent TCP/MQTT sockets without VoIP/Audio profiles)._
 
-### B. Spécifications Techniques sous Android 14+
+### B. Technical Specifications on Android 14+
 
-Conformément aux exigences strictes de Google Play et d'Android 14 (API 34+), le service d'arrière-plan est configuré avec deux types de service déclarés dans `AndroidManifest.xml` :
+In accordance with strict Google Play and Android 14 (API 34+) requirements, the background service is declared with two distinct service types in `AndroidManifest.xml`:
 
 ```xml
-<!-- Permissions requises -->
+<!-- Required permissions -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
-<!-- Déclaration avec types obligatoires -->
+<!-- Declaration with mandatory types -->
 <service
     android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
     android:foregroundServiceType="connectedDevice|dataSync"
     android:exported="false" />
 ```
 
-- **`connectedDevice` :** Justifie le maintien de la connexion continue avec un périphérique physique externe (chaussure connectée via BLE).
-- **`dataSync` :** Justifie la synchronisation en temps réel des flux de télémétrie biomécanique vers AWS IoT Core.
+- **`connectedDevice`**: Justifies continuous connectivity with an external physical peripheral (connected shoe over BLE).
+- **`dataSync`**: Justifies real-time streaming synchronization of biomechanical telemetry to AWS IoT Core.
 
 ---
 
-## 3. Notification Permanente & Actions Rapides
+## 3. Persistent Notification & Quick Actions
 
-Tant que le mode surveillance est activé :
+While surveillance mode is active:
 
-1. **Canal de Notification :** `healthkicks_surveillance_channel` (Importance: `LOW` pour éviter les bips intempestifs).
-2. **Titre :** `HealthKicks - Mode Surveillance Active`
-3. **Texte Dynamique :**
-   - _"Connecté à la chaussure (HK-2)"_
-   - _"Recherche du device HK-2... (Arrêt auto dans 5 min)"_
-4. **Bouton d'Action Rapide :**
-   - **[Arrêter]** : Permet à l'utilisateur de couper immédiatement la passerelle et la notification sans ouvrir l'application.
-
----
-
-## 4. Gestion Intelligente de la Batterie & Timeout d'Inactivité (5 Minutes)
-
-Pour éviter de décharger la batterie du smartphone si l'utilisateur s'éloigne ou éteint sa chaussure :
-
-1. Dès que le signal BLE est perdu (statut `disconnected` ou `scanning`), un compte à rebours de **5 minutes** (`AppConfig.bleDisconnectTimeout`) démarre.
-2. Si la reconnexion réussit avant l'échéance : le timer est immédiatement annulé et le service reste actif.
-3. Si le timer de 5 minutes expire sans reconnexion :
-   - Le Foreground Service s'arrête automatiquement.
-   - Le toggle _Mode Surveillance Active_ repasse à `false` dans les réglages.
-   - La session MQTT est clôturée proprement.
+1. **Notification Channel**: `healthkicks_surveillance_channel` (Importance: `LOW` to avoid spurious chimes).
+2. **Title**: `HealthKicks - Active Surveillance Mode`
+3. **Dynamic Text**:
+   - _"Connected to shoe (HK-2)"_
+   - _"Searching for device HK-2... (Auto-stop in 5 min)"_
+4. **Quick Action Button**:
+   - **[Stop]**: Allows the user to stop the gateway and dismiss the notification immediately without launching the app.
 
 ---
 
-## 5. Interface Utilisateur & Activation
+## 4. Intelligent Battery Management & Inactivity Timeout (5 Minutes)
 
-Le composant est accessible depuis l'écran des **Paramètres** (`SettingsScreen`) :
+To avoid draining smartphone battery if the user walks away or turns off the shoe:
 
-- **Intitulé :** _"Mode Surveillance Active"_
-- **Sous-titre :** _"Maintient la connexion active écran éteint pour l'enregistrement et la télémétrie"_
-- Lors de la première activation sous Android 13+, l'application sollicite les permissions de notification (`POST_NOTIFICATIONS`) et invite l'utilisateur à autoriser l'exemption d'optimisation de batterie.
+1. As soon as the BLE signal is lost (status `disconnected` or `scanning`), a **5-minute countdown** (`AppConfig.bleDisconnectTimeout`) begins.
+2. If reconnection succeeds before timeout: the timer is immediately cancelled and service remains active.
+3. If the 5-minute timer expires without reconnection:
+   - The Foreground Service stops automatically.
+   - The _Active Surveillance Mode_ toggle switches to `false` in settings.
+   - The MQTT session disconnects gracefully.
+
+---
+
+## 5. User Interface & Activation
+
+The feature is accessible from the **Settings** screen (`SettingsScreen`):
+
+- **Label**: _"Active Surveillance Mode"_
+- **Subtitle**: _"Maintains connection with screen turned off for recording and telemetry"_
+- Upon first activation on Android 13+, the app requests notification permissions (`POST_NOTIFICATIONS`) and guides the user to grant battery optimization exemption.
