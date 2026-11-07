@@ -966,10 +966,11 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     core1_all_items = [
         "Bus I2C pour capteurs inertiels",
-        "Inférence TinyML C pur",
-        "Task Watchdog (TWDT 5s)",
         "Pilote Haptique PWM",
-        "Buffer Circulaire HITL"
+        "Buffer Circulaire HITL",
+        "Inférence TinyML",
+        "Task Watchdog (5s)",
+
     ]
     cur_cy = y_core1 + h_core1 - 42
     for t_it in core1_all_items:
@@ -1027,7 +1028,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     mob_sec_items = [
         "Hardware Keystore",
         "Tokens OAuth2 PKCE",
-        "Courtier AWS STS"
+        "Courtier STS"
     ]
     cur_my = y_sec + h_sec - 40
     for t_it in mob_sec_items:
@@ -1201,7 +1202,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     draw_icon_bullet(c, x_cloud + 158, y_row1_db + h_sub_db - 36, ACCENT_AMBER)
     c.setFont("Helvetica-Bold", 8.0)
     c.setFillColor(TEXT_DARK)
-    c.drawString(x_cloud + 170, y_row1_db + h_sub_db - 36, "Séries NoSQL")
+    c.drawString(x_cloud + 170, y_row1_db + h_sub_db - 36, "Séries NoSQL + Rate limiting")
 
     # Amazon S3 (Stockage Firmware OTA - half width w_sub matching other sub-cards)
     y_row2_db = y_db + 6
@@ -1294,7 +1295,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     model_points = [
         "Sélection parmi les modèles m2cgen",
-        "Random Forest (80 arbres) : Modèle retenu"
+        "Random Forest (80 arbres)",
         "vs Deep Learning"
     ]
 

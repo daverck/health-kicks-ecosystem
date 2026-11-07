@@ -219,8 +219,8 @@ Format textuel ASCII encodé en UTF-8 :
 8. **Configuration du Cooldown de Détection de Chute** :
 
    `	ext
-   SET_FALL_COOLDOWN <cooldown_ms:500..60000>
-   `
+SET_FALL_COOLDOWN <cooldown_ms:500..60000>
+`
    - _Paramètre_ : Délai d'anti-rebond minimal en millisecondes (uint32) entre deux alertes de chute consécutives (_fallCooldownMs).
    - _Plage valide_ : 500 (0.5 s) à 60000 (60 s).
    - _Valeur par défaut_ : 3000 (3 s).
@@ -256,10 +256,10 @@ Format textuel ASCII encodé en UTF-8 :
 | `HITL_ERROR <reason>`                                 | Commande `SET_HITL`                  | Rejet de la commande (ex: argument invalide)                               |
 | `FALL_CONFIDENCE_OK <valeur>`                         | Commande `SET_FALL_CONFIDENCE`       | Seuil de confiance de chute mis à jour avec succès                         |
 | `FALL_CONFIDENCE_ERROR <raison>`                      | Commande `SET_FALL_CONFIDENCE`       | Rejet de la commande (ex: `out_of_range`, `invalid_params`)                |
-| FALL_COOLDOWN_OK <cooldown_ms>                      | Commande SET_FALL_COOLDOWN         | Cooldown de détection de chute mis à jour avec succès (en ms)              |
-| FALL_COOLDOWN_ERROR <raison>                        | Commande SET_FALL_COOLDOWN         | Rejet de la commande (ex: out_of_range, invalid_params)                |
+| FALL_COOLDOWN_OK <cooldown_ms>                        | Commande SET_FALL_COOLDOWN           | Cooldown de détection de chute mis à jour avec succès (en ms)              |
+| FALL_COOLDOWN_ERROR <raison>                          | Commande SET_FALL_COOLDOWN           | Rejet de la commande (ex: out_of_range, invalid_params)                    |
 | `TIME_SYNC_OK <boot_count> <uptime_sec>`              | Commande `SYNC_TIME`                 | Horloge calibrée, renvoie cycle de boot matériel et uptime courant         |
-| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>`  | Post `SYNC_TIME` (si pas hors-ligne) | Restitution d'une tranche horaire de pas enregistrée hors-ligne             |
+| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>`  | Post `SYNC_TIME` (si pas hors-ligne) | Restitution d'une tranche horaire de pas enregistrée hors-ligne            |
 | `CANCELLED`                                           | Commande reçue                       | Session interrompue                                                        |
 | `ERROR <reason>`                                      | Anomalie matérielle/RAM ou refus     | Erreur (ex: `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
