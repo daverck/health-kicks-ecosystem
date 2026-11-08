@@ -59,13 +59,13 @@ The **Root Orchestrator** supervises the ecosystem globally. Its mandate is to:
 * **Strict prohibition** against editing source code of neighboring subprojects or root files without explicit delegation from the orchestrator.
 * Access to `contracts/` and `docs/` is permitted in **read-only** mode for specialized subagents (contract changes are steered or arbitrated by the orchestrator).
 
-### Golden Rule 3: Systematic Local Test Validation Before Any Commit
-* No subagent may declare a task complete or commit changes unless all unit and integration test suites within its scope are 100% green:
+### Golden Rule 3: Systematic Local Test & Lint Validation Before Any Commit
+* No subagent may declare a task complete or commit changes unless all linters, compilation/build checks, and test suites within its scope are 100% green with zero errors:
   * `health-kicks-esp32-s3`: `uv tool run --from platformio pio run`
   * `health-kicks-mobile`: `flutter analyze && flutter test`
-  * `health-kicks`: `uv run pytest` (or `python -m pytest`)
-  * `health-kicks-frontend`: `pnpm test` (or `pnpm test:ci` / `ng test --watch=false`)
-* Any test failure blocks the workflow immediately and requires priority remediation.
+  * `health-kicks`: `uv run ruff check . && uv run pytest` (or `python -m pytest`)
+  * `health-kicks-frontend`: `pnpm lint && pnpm exec ng build --configuration production && pnpm test`
+* Any lint, build, or test failure blocks the workflow immediately and requires priority remediation.
 
 ### Golden Rule 4: Granular Atomic Commits at Every Significant Milestone
 * As soon as a subtask, refactoring, or feature is validated and associated tests are 100% green, the agent **must create an atomic Git commit** with an accurate Conventional message (`feat(...)`, `refactor(...)`, `fix(...)`, `test(...)`, `chore(...)`).
@@ -86,8 +86,8 @@ Custom subagents are declared under `.agents/agents/<name>.md` following standar
 | :--- | :--- | :--- | :--- | :--- |
 | **`firmware-dev`** | Firmware Developer | `health-kicks-esp32-s3/` | `uv tool run --from platformio pio run` | `.agents/agents/firmware-dev.md` |
 | **`mobile-dev`** | Mobile Developer | `health-kicks-mobile/` | `flutter analyze && flutter test` | `.agents/agents/mobile-dev.md` |
-| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run pytest` | `.agents/agents/backend-dev.md` |
-| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm test` | `.agents/agents/frontend-dev.md` |
+| **`backend-dev`** | Backend Developer | `health-kicks/` | `uv run ruff check . && uv run pytest` | `.agents/agents/backend-dev.md` |
+| **`frontend-dev`** | Frontend Developer | `health-kicks-frontend/` | `pnpm lint && pnpm exec ng build --configuration production && pnpm test` | `.agents/agents/frontend-dev.md` |
 
 ---
 

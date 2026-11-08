@@ -49,9 +49,10 @@ mainAgent: false
 Before declaring any task or commit complete, the agent must execute and achieve 100% pass:
 
 ```powershell
+uv run ruff check .
 uv run pytest
 ```
-Any failure blocks delivery.
+Any lint or test failure blocks delivery.
 
 ## 5. Granular Commit Rule
 As soon as a significant step (router/service modularization, new feature, bug fix) is validated with green tests, the agent **must commit immediately** with an accurate Conventional message (e.g. `refactor(backend): ...`, `fix(api): ...`). Never wait until the end of the conversation to make a single monolithic commit.
