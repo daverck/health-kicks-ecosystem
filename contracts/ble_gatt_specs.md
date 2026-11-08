@@ -51,20 +51,20 @@ sequenceDiagram
 
 The service uses 128-bit UUIDs derived from the HealthKicks base `7a5a0000-c529-4d64-8848-18e5904de22a`:
 
-| Element | 128-bit UUID | Properties | Description |
-| :--- | :--- | :--- | :--- |
-| **HealthKicks Service** | `7a5a0001-c529-4d64-8848-18e5904de22a` | Primary Service | Primary connected shoe service |
-| **Activity Detection** | `7a5a0002-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Activity events and fall alerts |
-| **Haptic Command** | `7a5a0003-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | Vibrotactile feedback command |
-| **Device & Studio Control** | `7a5a0004-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | State control, attitude calibration, settings, and Studio protocol |
-| **Studio Data Burst** | `7a5a0005-c529-4d64-8848-18e5904de22a` | `NOTIFY` | High-speed binary offloading of raw IMU frames |
-| **Step Counter** | `7a5a0006-c529-4d64-8848-18e5904de22a` | `READ`, `NOTIFY` | Deterministic step counter, activity breakdown, and cadence |
-| **OTA Update Service** | `7a5a0010-c529-4d64-8848-18e5904de22a` | Secondary Service | Dedicated Over-The-Air firmware update service |
-| **OTA Control** | `7a5a0011-c529-4d64-8848-18e5904de22a` | `WRITE`, `NOTIFY` | OTA flashing lifecycle control (start, end, abort, status) |
-| **OTA Data** | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE`, `WRITE WITHOUT RESPONSE` | High-speed chunk transfer of the firmware binary (.bin) |
-| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service | Standard Bluetooth SIG hardware identification service |
-| **Firmware Revision String** | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ` | Semantic version string of installed firmware (e.g. `v1.2.1-esp32s3`) |
-| **Software Revision String** | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ` | Compilation date/time or build release date of embedded binary |
+| Element                        | 128-bit UUID                                      | Properties                        | Description                                                           |
+| :----------------------------- | :------------------------------------------------ | :-------------------------------- | :-------------------------------------------------------------------- |
+| **HealthKicks Service**        | `7a5a0001-c529-4d64-8848-18e5904de22a`            | Primary Service                   | Primary connected shoe service                                        |
+| **Activity Detection**         | `7a5a0002-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Activity events and fall alerts                                       |
+| **Haptic Command**             | `7a5a0003-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | Vibrotactile feedback command                                         |
+| **Device & Studio Control**    | `7a5a0004-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | State control, attitude calibration, settings, and Studio protocol    |
+| **Studio Data Burst**          | `7a5a0005-c529-4d64-8848-18e5904de22a`            | `NOTIFY`                          | High-speed binary offloading of raw IMU frames                        |
+| **Step Counter**               | `7a5a0006-c529-4d64-8848-18e5904de22a`            | `READ`, `NOTIFY`                  | Deterministic step counter, activity breakdown, and cadence           |
+| **OTA Update Service**         | `7a5a0010-c529-4d64-8848-18e5904de22a`            | Secondary Service                 | Dedicated Over-The-Air firmware update service                        |
+| **OTA Control**                | `7a5a0011-c529-4d64-8848-18e5904de22a`            | `WRITE`, `NOTIFY`                 | OTA flashing lifecycle control (start, end, abort, status)            |
+| **OTA Data**                   | `7a5a0012-c529-4d64-8848-18e5904de22a`            | `WRITE`, `WRITE WITHOUT RESPONSE` | High-speed chunk transfer of the firmware binary (.bin)               |
+| **Device Information Service** | `0000180a-0000-1000-8000-00805f9b34fb` (`0x180A`) | Standard Service                  | Standard Bluetooth SIG hardware identification service                |
+| **Firmware Revision String**   | `00002a26-0000-1000-8000-00805f9b34fb` (`0x2A26`) | `READ`                            | Semantic version string of installed firmware (e.g. `v1.2.1-esp32s3`) |
+| **Software Revision String**   | `00002a28-0000-1000-8000-00805f9b34fb` (`0x2A28`) | `READ`                            | Compilation date/time or build release date of embedded binary        |
 
 ---
 
@@ -80,12 +80,12 @@ The service uses 128-bit UUIDs derived from the HealthKicks base `7a5a0000-c529-
 
 Endianness: **Big-Endian** (standard network byte order).
 
-| Offset | Field | Type | Range / Values | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| 0 | `state_code` | uint8 | Table below | Code of detected state or event |
-| 1 | `confidence` | uint8 | `0` – `100` | Model confidence level in % |
-| 2..5 | `timestamp` | uint32 | Unix Epoch (sec) | UTC timestamp of detection |
-| 6 | `flags` | uint8 | Bitfield | Bit 0: Critical detection (fall)<br>Bit 1: Autonomous local haptic trigger executed<br>Bit 2: Deferred / stored offline alert (NVS) |
+| Offset | Field        | Type   | Range / Values   | Description                                                                                                                         |
+| :----- | :----------- | :----- | :--------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | `state_code` | uint8  | Table below      | Code of detected state or event                                                                                                     |
+| 1      | `confidence` | uint8  | `0` – `100`      | Model confidence level in %                                                                                                         |
+| 2..5   | `timestamp`  | uint32 | Unix Epoch (sec) | UTC timestamp of detection                                                                                                          |
+| 6      | `flags`      | uint8  | Bitfield         | Bit 0: Critical detection (fall)<br>Bit 1: Autonomous local haptic trigger executed<br>Bit 2: Deferred / stored offline alert (NVS) |
 
 #### `state_code` Table:
 
@@ -127,11 +127,11 @@ Endianness: **Big-Endian** (standard network byte order).
 
 Endianness: **Big-Endian**.
 
-| Offset | Field | Type | Range / Values | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| 0 | `pattern_id` | uint8 | `0` = continuous pulse<br>`1` = double pulse<br>`2` = alert pulse<br>`0x05` = trigger IMU attitude calibration | Vibration profile or control command |
-| 1 | `intensity` | uint8 | `0` – `255` | PWM power (`0` = stop, `255` = max power) |
-| 2..3 | `duration_ms` | uint16 | `50` – `10000` | Total duration of stimulation in milliseconds |
+| Offset | Field         | Type   | Range / Values                                                                                                 | Description                                   |
+| :----- | :------------ | :----- | :------------------------------------------------------------------------------------------------------------- | :-------------------------------------------- |
+| 0      | `pattern_id`  | uint8  | `0` = continuous pulse<br>`1` = double pulse<br>`2` = alert pulse<br>`0x05` = trigger IMU attitude calibration | Vibration profile or control command          |
+| 1      | `intensity`   | uint8  | `0` – `255`                                                                                                    | PWM power (`0` = stop, `255` = max power)     |
+| 2..3   | `duration_ms` | uint16 | `50` – `10000`                                                                                                 | Total duration of stimulation in milliseconds |
 
 _Example_: `[0x00, 0xC8, 0x01, 0xF4]` $\rightarrow$ Continuous pulse, intensity 200/255, duration 500 ms.
 _Calibration Example_: `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Immediate trigger of IMU attitude calibration (4s stillness).
@@ -140,12 +140,12 @@ _Calibration Example_: `[0x05, 0x00, 0x00, 0x00]` $\rightarrow$ Immediate trigge
 
 Endianness: **Big-Endian**.
 
-| Offset | Field | Type | Range / Values | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| 0 | `opcode` | uint8 | `0x06` | Inactivity reminder configuration opcode |
-| 1 | `is_enabled` | uint8 | `0` = disabled, `1` = enabled | Enable / disable monitoring |
-| 2..3 | `inactivity_threshold_sec` | uint16 | `600` – `7200` (10 to 120 min, def: `3000` / 50 min) | Continuous duration without steps before alert |
-| 4..5 | `cooldown_duration_sec` | uint16 | `300` – `1800` (5 to 30 min, def: `600` / 10 min) | Repetition delay / cooldown after alert |
+| Offset | Field                      | Type   | Range / Values                                       | Description                                    |
+| :----- | :------------------------- | :----- | :--------------------------------------------------- | :--------------------------------------------- |
+| 0      | `opcode`                   | uint8  | `0x06`                                               | Inactivity reminder configuration opcode       |
+| 1      | `is_enabled`               | uint8  | `0` = disabled, `1` = enabled                        | Enable / disable monitoring                    |
+| 2..3   | `inactivity_threshold_sec` | uint16 | `600` – `7200` (10 to 120 min, def: `3000` / 50 min) | Continuous duration without steps before alert |
+| 4..5   | `cooldown_duration_sec`    | uint16 | `300` – `1800` (5 to 30 min, def: `600` / 10 min)    | Repetition delay / cooldown after alert        |
 
 ---
 
@@ -159,6 +159,7 @@ Endianness: **Big-Endian**.
 ASCII UTF-8 format:
 
 1. **Start Recording**:
+
    ```text
    START <label> <duration_sec> <session_id>
    ```
@@ -166,28 +167,33 @@ ASCII UTF-8 format:
    - Constraints: `duration_sec` between `2.0` and `30.0` seconds.
 
 2. **Cancel**:
+
    ```text
    CANCEL
    ```
 
 3. **Early Finish of Recording**:
+
    ```text
    FINISH
    ```
    - Valid only after at least 2.0 seconds of sampling; shoe emits `FINISHED` and transmits the burst.
 
 4. **Trigger IMU Attitude Calibration**:
+
    ```text
    CALIBRATE
    ```
 
 5. **Configure Inactivity Reminder**:
+
    ```text
    SET_INACTIVITY <enabled:0|1> <threshold_sec> <cooldown_sec>
    ```
    - _Example_: `SET_INACTIVITY 1 3000 600`
 
 6. **Enable / Disable Human-in-the-Loop (HITL) Mode**:
+
    ```text
    SET_HITL <enabled:0|1>
    ```
@@ -200,6 +206,7 @@ ASCII UTF-8 format:
      - At $T + 1.5\,\text{s}$, the shoe notifies `FINISHED 76 hitl-<timestamp> 4.0` on `0004` and transmits the 76 IMU frames (~2.5s pre-event and ~1.5s post-event) over Studio Data Burst `0005`.
 
 7. **Configure Fall Confidence Threshold**:
+
    ```text
    SET_FALL_CONFIDENCE <threshold:0.30..0.90>
    ```
@@ -210,6 +217,7 @@ ASCII UTF-8 format:
    - _Return Notification_: `FALL_CONFIDENCE_OK <value>` or `FALL_CONFIDENCE_ERROR <reason>`.
 
 8. **Configure Fall Detection Cooldown**:
+
    ```text
    SET_FALL_COOLDOWN <cooldown_ms:500..60000>
    ```
@@ -235,24 +243,24 @@ ASCII UTF-8 format:
 
 ASCII UTF-8 format:
 
-| Notification | Trigger | Description |
-| :--- | :--- | :--- |
-| `COUNTDOWN <pulse>/<total>` | Session start | Sensory preparatory haptic pulse (e.g. `COUNTDOWN 1/3`) |
-| `RECORDING <duration_sec>` | Countdown completion | Capture starts in RAM at 50 Hz |
-| `FINISHED <sample_count> <session_id> <duration_sec>` | Window expired or `FINISH` command | Capture complete, ready for burst offload; actual duration transmitted |
-| `CALIBRATING <duration_sec>` | `CALIBRATE` command or `0x05` | Beginning of stillness sampling to realign attitude |
-| `CALIBRATION_OK` | 4.0s stillness achieved | Calibration successful, rotation matrix persisted in NVS |
-| `CALIBRATION_ERROR <reason>` | Movement / instability detected | Calibration failed (e.g. `CALIBRATION_ERROR motion_detected`) |
-| `HITL_OK <0\|1>` | `SET_HITL` command | HITL mode enabled (1) or disabled (0) successfully |
-| `HITL_ERROR <reason>` | `SET_HITL` command | Command rejected (e.g. invalid arguments) |
-| `FALL_CONFIDENCE_OK <value>` | `SET_FALL_CONFIDENCE` command | Fall confidence threshold updated successfully |
-| `FALL_CONFIDENCE_ERROR <reason>` | `SET_FALL_CONFIDENCE` command | Command rejected (e.g. `out_of_range`, `invalid_params`) |
-| `FALL_COOLDOWN_OK <cooldown_ms>` | `SET_FALL_COOLDOWN` command | Fall detection cooldown updated successfully (in ms) |
-| `FALL_COOLDOWN_ERROR <reason>` | `SET_FALL_COOLDOWN` command | Command rejected (e.g. `out_of_range`, `invalid_params`) |
-| `TIME_SYNC_OK <boot_count> <uptime_sec>` | `SYNC_TIME` command | Clock calibrated, returns hardware boot count and current uptime |
-| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>` | Post `SYNC_TIME` (if offline steps) | Transmission of offline recorded step bucket |
-| `CANCELLED` | Command received | Session aborted |
-| `ERROR <reason>` | Hardware/RAM fault or rejection | Error (e.g. `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
+| Notification                                          | Trigger                             | Description                                                                |
+| :---------------------------------------------------- | :---------------------------------- | :------------------------------------------------------------------------- |
+| `COUNTDOWN <pulse>/<total>`                           | Session start                       | Sensory preparatory haptic pulse (e.g. `COUNTDOWN 1/3`)                    |
+| `RECORDING <duration_sec>`                            | Countdown completion                | Capture starts in RAM at 50 Hz                                             |
+| `FINISHED <sample_count> <session_id> <duration_sec>` | Window expired or `FINISH` command  | Capture complete, ready for burst offload; actual duration transmitted     |
+| `CALIBRATING <duration_sec>`                          | `CALIBRATE` command or `0x05`       | Beginning of stillness sampling to realign attitude                        |
+| `CALIBRATION_OK`                                      | 4.0s stillness achieved             | Calibration successful, rotation matrix persisted in NVS                   |
+| `CALIBRATION_ERROR <reason>`                          | Movement / instability detected     | Calibration failed (e.g. `CALIBRATION_ERROR motion_detected`)              |
+| `HITL_OK <0\|1>`                                      | `SET_HITL` command                  | HITL mode enabled (1) or disabled (0) successfully                         |
+| `HITL_ERROR <reason>`                                 | `SET_HITL` command                  | Command rejected (e.g. invalid arguments)                                  |
+| `FALL_CONFIDENCE_OK <value>`                          | `SET_FALL_CONFIDENCE` command       | Fall confidence threshold updated successfully                             |
+| `FALL_CONFIDENCE_ERROR <reason>`                      | `SET_FALL_CONFIDENCE` command       | Command rejected (e.g. `out_of_range`, `invalid_params`)                   |
+| `FALL_COOLDOWN_OK <cooldown_ms>`                      | `SET_FALL_COOLDOWN` command         | Fall detection cooldown updated successfully (in ms)                       |
+| `FALL_COOLDOWN_ERROR <reason>`                        | `SET_FALL_COOLDOWN` command         | Command rejected (e.g. `out_of_range`, `invalid_params`)                   |
+| `TIME_SYNC_OK <boot_count> <uptime_sec>`              | `SYNC_TIME` command                 | Clock calibrated, returns hardware boot count and current uptime           |
+| `STEP_HIST <boot_count> <epoch_sec> <w> <r> <s> <u>`  | Post `SYNC_TIME` (if offline steps) | Transmission of offline recorded step bucket                               |
+| `CANCELLED`                                           | Command received                    | Session aborted                                                            |
+| `ERROR <reason>`                                      | Hardware/RAM fault or rejection     | Error (e.g. `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
 ---
 
@@ -267,11 +275,11 @@ As soon as `FINISHED` is notified on Studio Control, the GATT server begins stre
 
 #### Packet Header Structure (4 Bytes)
 
-| Offset | Field | Type | Description |
-| :--- | :--- | :--- | :--- |
-| 0 | `packet_type` | uint8 | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Lossless Delta Compression)<br>`0x05` = RLE_CHUNK (Lossless Static Run-Length Encoding) |
-| 1..2 | `seq_num` | uint16 | Sequential packet number (0, 1, 2...) |
-| 3 | `payload_len` | uint8 | Byte count of payload contained in this packet |
+| Offset | Field         | Type   | Description                                                                                                                                                                              |
+| :----- | :------------ | :----- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | `packet_type` | uint8  | `0x01` = START_OF_BURST<br>`0x02` = DATA_CHUNK<br>`0x03` = END_OF_BURST<br>`0x04` = DELTA_CHUNK (Lossless Delta Compression)<br>`0x05` = RLE_CHUNK (Lossless Static Run-Length Encoding) |
+| 1..2   | `seq_num`     | uint16 | Sequential packet number (0, 1, 2...)                                                                                                                                                    |
+| 3      | `payload_len` | uint8  | Byte count of payload contained in this packet                                                                                                                                           |
 
 #### `DELTA_CHUNK` Packet Structure (`packet_type = 0x04`)
 
@@ -305,15 +313,15 @@ with identical physical values $(a_x, a_y, a_z, g_x, g_y, g_z)$.
 
 Each 50 Hz sensor sample is encoded as 14 signed integer bytes for maximum compactness:
 
-| Relative Offset | Variable | Type | Scale Factor | Physical Unit | ISB Standard (Wu & Cavanagh, 1995) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 0..1 | `delta_ms` | uint16 | 1 | Elapsed ms since session start | Relative time |
-| 2..3 | $a_x$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Antero-posterior** (Forward / Propulsion) |
-| 4..5 | $a_y$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Medio-lateral** (Lateral / Stride support) |
-| 6..7 | $a_z$ | int16 | $\times 1000$ | milli-$g$ ($1 g = 1000$) | **Longitudinal / Vertical** (Upward / $+1.0\,g$ at rest) |
-| 8..9 | $g_x$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Roll** (Inversion / Eversion) |
-| 10..11 | $g_y$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Pitch** (Dorsiflexion / Plantarflexion) |
-| 12..13 | $g_z$ | int16 | $\times 10$ | tenths of deg/s ($1^\circ/s = 10$) | **Yaw** (Internal / External rotation) |
+| Relative Offset | Variable   | Type   | Scale Factor  | Physical Unit                      | ISB Standard (Wu & Cavanagh, 1995)                       |
+| :-------------- | :--------- | :----- | :------------ | :--------------------------------- | :------------------------------------------------------- |
+| 0..1            | `delta_ms` | uint16 | 1             | Elapsed ms since session start     | Relative time                                            |
+| 2..3            | $a_x$      | int16  | $\times 1000$ | milli-$g$ ($1 g = 1000$)           | **Antero-posterior** (Forward / Propulsion)              |
+| 4..5            | $a_y$      | int16  | $\times 1000$ | milli-$g$ ($1 g = 1000$)           | **Medio-lateral** (Lateral / Stride support)             |
+| 6..7            | $a_z$      | int16  | $\times 1000$ | milli-$g$ ($1 g = 1000$)           | **Longitudinal / Vertical** (Upward / $+1.0\,g$ at rest) |
+| 8..9            | $g_x$      | int16  | $\times 10$   | tenths of deg/s ($1^\circ/s = 10$) | **Roll** (Inversion / Eversion)                          |
+| 10..11          | $g_y$      | int16  | $\times 10$   | tenths of deg/s ($1^\circ/s = 10$) | **Pitch** (Dorsiflexion / Plantarflexion)                |
+| 12..13          | $g_z$      | int16  | $\times 10$   | tenths of deg/s ($1^\circ/s = 10$) | **Yaw** (Internal / External rotation)                   |
 
 #### Special Packet `END_OF_BURST` (`packet_type = 0x03`)
 
@@ -342,17 +350,17 @@ Fixed size: 12 bytes:
 
 Endianness: **Big-Endian** (standard network byte order).
 
-| Offset | Field | Type | Range / Values | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `0..3` | `total_steps` | uint32 | `0` – `4 294 967 295` | Total valid steps accumulated since boot or last reset |
-| `4..5` | `walk_steps` | uint16 | `0` – `65 535` | Steps validated under Walking activity (`0x01`) |
-| `6..7` | `run_steps` | uint16 | `0` – `65 535` | Steps validated under Running activity (`0x02`) |
-| `8..9` | `stairs_steps` | uint16 | `0` – `65 535` | Steps validated under Stairs activity (`0x03`) |
-| `10..11` | `unclassified_steps` | uint16 | `0` – `65 535` | Steps validated under other unclassified activities |
-| `12` | `cadence_spm` | uint8 | `0` – `255` | Instantaneous cadence in steps/minute (computed over 5s sliding window) |
-| `13..14` | `current_gct_ms` | uint16 | `0` – `65 535` | Recent average ground contact time (GCT) in ms (smoothed EMA over 5 steps) |
-| `15..16` | `boot_count` | uint16 | `0` – `65 535` | Hardware boot cycle count (NVS persistence) |
-| `17..20` | `uptime_sec` | uint32 | `0` – `4 294 967 295` | Elapsed seconds since hardware boot (cumulative uptime) |
+| Offset   | Field                | Type   | Range / Values        | Description                                                                |
+| :------- | :------------------- | :----- | :-------------------- | :------------------------------------------------------------------------- |
+| `0..3`   | `total_steps`        | uint32 | `0` – `4 294 967 295` | Total valid steps accumulated since boot or last reset                     |
+| `4..5`   | `walk_steps`         | uint16 | `0` – `65 535`        | Steps validated under Walking activity (`0x01`)                            |
+| `6..7`   | `run_steps`          | uint16 | `0` – `65 535`        | Steps validated under Running activity (`0x02`)                            |
+| `8..9`   | `stairs_steps`       | uint16 | `0` – `65 535`        | Steps validated under Stairs activity (`0x03`)                             |
+| `10..11` | `unclassified_steps` | uint16 | `0` – `65 535`        | Steps validated under other unclassified activities                        |
+| `12`     | `cadence_spm`        | uint8  | `0` – `255`           | Instantaneous cadence in steps/minute (computed over 5s sliding window)    |
+| `13..14` | `current_gct_ms`     | uint16 | `0` – `65 535`        | Recent average ground contact time (GCT) in ms (smoothed EMA over 5 steps) |
+| `15..16` | `boot_count`         | uint16 | `0` – `65 535`        | Hardware boot cycle count (NVS persistence)                                |
+| `17..20` | `uptime_sec`         | uint32 | `0` – `4 294 967 295` | Elapsed seconds since hardware boot (cumulative uptime)                    |
 
 #### Notification Rules
 

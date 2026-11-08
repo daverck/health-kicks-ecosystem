@@ -230,12 +230,12 @@ _color: #0f172a
 
 ### Key Runtime Metrics & Live Studio Tracking
 
-| Key Metric | Measured Value | System Implication |
-| :--- | :--- | :--- |
-| **C Inference Time** | **~12 µs** | 0.02% of ESP32-S3 CPU |
-| **ML Precision (Macro F1)** | **91.3%** | Reliable multi-activity detection |
-| **Overall Accuracy** | **92.2%** | Robustness across all gaits |
-| **Fall Recall** | **95.5%** | 95.8% F1 on backward falls |
+| Key Metric                  | Measured Value | System Implication                |
+| :-------------------------- | :------------- | :-------------------------------- |
+| **C Inference Time**        | **~12 µs**     | 0.02% of ESP32-S3 CPU             |
+| **ML Precision (Macro F1)** | **91.3%**      | Reliable multi-activity detection |
+| **Overall Accuracy**        | **92.2%**      | Robustness across all gaits       |
+| **Fall Recall**             | **95.5%**      | 95.8% F1 on backward falls        |
 
 - **Live Benchmark & Validation**: Detailed confusion matrix and class metrics available live on [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
 

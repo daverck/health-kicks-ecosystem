@@ -95,10 +95,10 @@ flowchart TD
 
 ## 3. Summary Matrix of States & Protections
 
-| Event | Active Protection | System Behavior |
-| :--- | :--- | :--- |
-| Corrupted or non-ESP32 binary sent | Tier 1 (Magic Byte) | Rejected at byte 0, flash left intact. |
-| BLE interruption or packet corruption | Tier 2 (SHA-256) | Rejected at end of transfer, partition invalidated. |
-| Unstable firmware / IMU boot panic | Tier 3 (15s Probation) | Automatic rollback to previous operational slot. |
-| Unpaired smartphone / Stale bond | Tiers 4 & 5 (GPIO 14 Button) | 60s window on button press to renew bonding keys. |
-| Intrusion attempt without physical access | Tier 5 (Physical Button) | Connection rejected if unbonded and window closed. |
+| Event                                     | Active Protection            | System Behavior                                     |
+| :---------------------------------------- | :--------------------------- | :-------------------------------------------------- |
+| Corrupted or non-ESP32 binary sent        | Tier 1 (Magic Byte)          | Rejected at byte 0, flash left intact.              |
+| BLE interruption or packet corruption     | Tier 2 (SHA-256)             | Rejected at end of transfer, partition invalidated. |
+| Unstable firmware / IMU boot panic        | Tier 3 (15s Probation)       | Automatic rollback to previous operational slot.    |
+| Unpaired smartphone / Stale bond          | Tiers 4 & 5 (GPIO 14 Button) | 60s window on button press to renew bonding keys.   |
+| Intrusion attempt without physical access | Tier 5 (Physical Button)     | Connection rejected if unbonded and window closed.  |

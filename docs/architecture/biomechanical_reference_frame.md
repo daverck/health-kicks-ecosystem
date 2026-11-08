@@ -11,7 +11,7 @@ To eliminate axis ambiguity across embedded inertial sensors (MPU-6050 / IMUs), 
 > **Wu, G., & Cavanagh, P. R. (1995).**
 > _ISB recommendations for standardization in the reporting of kinematic data._
 > **Journal of Biomechanics**, 28(10), 1257–1261.
-> DOI: [10.1016/0021-9290(95)00017-C](https://doi.org/10.1016/0021-9290(95)00017-C)
+> DOI: [10.1016/0021-9290(95)00017-C](<https://doi.org/10.1016/0021-9290(95)00017-C>)
 
 ---
 
@@ -56,12 +56,12 @@ flowchart TD
 
 ### A. Linear Acceleration ($a_x, a_y, a_z$) in Units of $g$ ($1\,g \approx 9.81\,\text{m/s}^2$)
 
-| Axis | ISB Name | Physical Orientation | Associated Biomechanical Movements | Static Rest Value |
-| :--- | :--- | :--- | :--- | :--- |
-| **AX ($a_x$)** | **Antero-posterior** | Pointing **Forward** (direction of travel) | Propulsion (+) / Braking (-) during stride | $\approx 0.0\,g$ |
-| **AY ($a_y$)** | **Medio-lateral** | Pointing to the **Left** (medial for right foot) | Lateral shifts, weight transfers, stance stabilization | $\approx 0.0\,g$ |
-| **AZ ($a_z$)** | **Longitudinal / Vertical** | Pointing **Upward** (cranial / proximal) | Ground impacts (+) / Flight phase or suspension (-) | **$+1.0\,g$** (Earth's gravity) |
-| **Mag ($\|a\|$)** | **Magnitude / Norm** | $\|a\| = \sqrt{a_x^2 + a_y^2 + a_z^2}$ | Rotationally invariant scalar norm (impacts/falls) | $\approx 1.0\,g$ |
+| Axis              | ISB Name                    | Physical Orientation                             | Associated Biomechanical Movements                     | Static Rest Value               |
+| :---------------- | :-------------------------- | :----------------------------------------------- | :----------------------------------------------------- | :------------------------------ |
+| **AX ($a_x$)**    | **Antero-posterior**        | Pointing **Forward** (direction of travel)       | Propulsion (+) / Braking (-) during stride             | $\approx 0.0\,g$                |
+| **AY ($a_y$)**    | **Medio-lateral**           | Pointing to the **Left** (medial for right foot) | Lateral shifts, weight transfers, stance stabilization | $\approx 0.0\,g$                |
+| **AZ ($a_z$)**    | **Longitudinal / Vertical** | Pointing **Upward** (cranial / proximal)         | Ground impacts (+) / Flight phase or suspension (-)    | **$+1.0\,g$** (Earth's gravity) |
+| **Mag ($\|a\|$)** | **Magnitude / Norm**        | $\|a\| = \sqrt{a_x^2 + a_y^2 + a_z^2}$           | Rotationally invariant scalar norm (impacts/falls)     | $\approx 1.0\,g$                |
 
 > [!IMPORTANT]
 > **Static Rest Signature**: When the shoe rests flat on the ground at standstill, the accelerometer measures the reaction of the floor countering gravity: **$+1.0\,g$ on the $Z$ axis** and **$0.0\,g$ on the $X$ and $Y$ axes**.
@@ -72,11 +72,11 @@ flowchart TD
 
 Rotation velocities follow the **right-hand rule** around the ISB cardinal axes:
 
-| Axis | Designation | ISB Rotation Axis | Physiological Foot Movements |
-| :--- | :--- | :--- | :--- |
-| **GX ($g_x$)** | **Roll** | Rotation around $X$ axis (Antero-posterior) | **Inversion** (+) / **Eversion** (-) (Pronation / Supination) |
-| **GY ($g_y$)** | **Pitch** | Rotation around $Y$ axis (Medio-lateral) | **Dorsiflexion** (+) / **Plantarflexion** (-) |
-| **GZ ($g_z$)** | **Yaw** | Rotation around $Z$ axis (Vertical) | **Internal rotation / Adduction** (+) / **External rotation / Abduction** (-) |
+| Axis           | Designation | ISB Rotation Axis                           | Physiological Foot Movements                                                  |
+| :------------- | :---------- | :------------------------------------------ | :---------------------------------------------------------------------------- |
+| **GX ($g_x$)** | **Roll**    | Rotation around $X$ axis (Antero-posterior) | **Inversion** (+) / **Eversion** (-) (Pronation / Supination)                 |
+| **GY ($g_y$)** | **Pitch**   | Rotation around $Y$ axis (Medio-lateral)    | **Dorsiflexion** (+) / **Plantarflexion** (-)                                 |
+| **GZ ($g_z$)** | **Yaw**     | Rotation around $Z$ axis (Vertical)         | **Internal rotation / Adduction** (+) / **External rotation / Abduction** (-) |
 
 ---
 

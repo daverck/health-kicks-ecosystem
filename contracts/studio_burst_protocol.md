@@ -62,20 +62,20 @@ The control channel manages session state machine transitions. Messages are form
 
 ### A. Master $\to$ Slave Commands (Mobile $\to$ Shoe)
 
-| Command | Syntax | Description |
-| :--- | :--- | :--- |
-| **`START`** | `START <label> <duration_sec> <session_id>` | Initiates a session with label, duration (2.0 to 30.0s), and session UUID. |
-| **`CANCEL`** | `CANCEL` | Immediately aborts recording or offloading and resets state machine to `IDLE`. |
-| **`FINISH`** | `FINISH` | Ends recording after at least 2.0s and transmits collected samples. |
+| Command      | Syntax                                      | Description                                                                    |
+| :----------- | :------------------------------------------ | :----------------------------------------------------------------------------- |
+| **`START`**  | `START <label> <duration_sec> <session_id>` | Initiates a session with label, duration (2.0 to 30.0s), and session UUID.     |
+| **`CANCEL`** | `CANCEL`                                    | Immediately aborts recording or offloading and resets state machine to `IDLE`. |
+| **`FINISH`** | `FINISH`                                    | Ends recording after at least 2.0s and transmits collected samples.            |
 
 ### B. Slave $\to$ Master Notifications (Shoe $\to$ Mobile)
 
-| Notification | Format | Meaning |
-| :--- | :--- | :--- |
-| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>` | Preparatory haptic countdown ($3$, $2$, $1$). |
-| **`RECORDING`** | `RECORDING <session_id>` | Effective start of inertial data acquisition. |
-| **`FINISHED`** | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Capture complete; declares total frame count and actual duration to receive. |
-| **`ERROR`** | `ERROR <message>` | Hardware fault (IMU disconnected, RAM buffer overflow, etc.). |
+| Notification    | Format                                                        | Meaning                                                                      |
+| :-------------- | :------------------------------------------------------------ | :--------------------------------------------------------------------------- |
+| **`COUNTDOWN`** | `COUNTDOWN <seconds_remaining>`                               | Preparatory haptic countdown ($3$, $2$, $1$).                                |
+| **`RECORDING`** | `RECORDING <session_id>`                                      | Effective start of inertial data acquisition.                                |
+| **`FINISHED`**  | `FINISHED <total_samples> <session_id> <actual_duration_sec>` | Capture complete; declares total frame count and actual duration to receive. |
+| **`ERROR`**     | `ERROR <message>`                                             | Hardware fault (IMU disconnected, RAM buffer overflow, etc.).                |
 
 ---
 
@@ -111,15 +111,15 @@ Each binary packet begins with a 4-byte synchronization header:
 
 Each raw inertial measurement is encoded as 1 `uint16_t` timestamp offset and 6 `int16_t` sensor values in _Big-Endian_ order (`htons`):
 
-| Offset | Field | Type | Scale & Unit | Conversion Formula |
-| :----: | :--- | :---: | :---: | :---: |
-| `+0` | `delta_ms` | `uint16_t` | $1\,\text{LSB} = 1\,\text{ms}$ | Milliseconds since start |
-| `+2` | `ax` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_x = \text{value} / 1000.0$ |
-| `+4` | `ay` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_y = \text{value} / 1000.0$ |
-| `+6` | `az` | `int16_t` | $1\,\text{LSB} = 0.001\,g$ ($1\,mg$) | $a_z = \text{value} / 1000.0$ |
-| `+8` | `gx` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_x = \text{value} / 10.0$ |
-| `+10` | `gy` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_y = \text{value} / 10.0$ |
-| `+12` | `gz` | `int16_t` | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ | $g_z = \text{value} / 10.0$ |
+| Offset | Field      |    Type    |               Scale & Unit               |      Conversion Formula       |
+| :----: | :--------- | :--------: | :--------------------------------------: | :---------------------------: |
+|  `+0`  | `delta_ms` | `uint16_t` |      $1\,\text{LSB} = 1\,\text{ms}$      |   Milliseconds since start    |
+|  `+2`  | `ax`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_x = \text{value} / 1000.0$ |
+|  `+4`  | `ay`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_y = \text{value} / 1000.0$ |
+|  `+6`  | `az`       | `int16_t`  |   $1\,\text{LSB} = 0.001\,g$ ($1\,mg$)   | $a_z = \text{value} / 1000.0$ |
+|  `+8`  | `gx`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_x = \text{value} / 10.0$  |
+| `+10`  | `gy`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_y = \text{value} / 10.0$  |
+| `+12`  | `gz`       | `int16_t`  | $1\,\text{LSB} = 0.1\,^{\circ}/\text{s}$ |  $g_z = \text{value} / 10.0$  |
 
 _Total raw frame size_: $2 + (6 \times 2) = 14\,\text{bytes}$.
 
@@ -158,12 +158,12 @@ The protocol dynamically calculates packet density based on the negotiated BLE M
 
 $$\text{Usable Payload Size} = \text{MTU} - 3\,(\text{ATT Header}) - 4\,(\text{Burst Header})$$
 
-| Transfer Mode | Negotiated MTU | ATT + Burst Header | Usable Payload | Frames / Packet | Payload Bytes |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Raw (`0x02`)** | **185** (iOS) | 7 bytes | 178 bytes | **12 frames** | 168 bytes |
-| **Raw (`0x02`)** | **256** (HealthKicks) | 7 bytes | 249 bytes | **17 frames** | 238 bytes |
-| **Delta (`0x04`)** | **185** (iOS) | 7 bytes | 178 bytes | **24 frames** (1 Key + 23 Delta) | 176 bytes |
-| **Delta (`0x04`)** | **256** (HealthKicks) | 7 bytes | 249 bytes | **33 frames** (1 Key + 32 Delta) | 239 bytes |
+| Transfer Mode      |    Negotiated MTU     | ATT + Burst Header | Usable Payload |         Frames / Packet          | Payload Bytes |
+| :----------------- | :-------------------: | :----------------: | :------------: | :------------------------------: | :-----------: |
+| **Raw (`0x02`)**   |     **185** (iOS)     |      7 bytes       |   178 bytes    |          **12 frames**           |   168 bytes   |
+| **Raw (`0x02`)**   | **256** (HealthKicks) |      7 bytes       |   249 bytes    |          **17 frames**           |   238 bytes   |
+| **Delta (`0x04`)** |     **185** (iOS)     |      7 bytes       |   178 bytes    | **24 frames** (1 Key + 23 Delta) |   176 bytes   |
+| **Delta (`0x04`)** | **256** (HealthKicks) |      7 bytes       |   249 bytes    | **33 frames** (1 Key + 32 Delta) |   239 bytes   |
 
 ### Flow Control & Anti-Saturation
 

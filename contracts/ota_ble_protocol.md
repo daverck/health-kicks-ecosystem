@@ -18,11 +18,11 @@ Firmware updates for the ESP32-S3 occur exclusively via Bluetooth Low Energy (BL
 
 ## 2. GATT Services & Characteristics
 
-| Service / Characteristic | UUID | Properties | Role |
-| :--- | :--- | :--- | :--- |
-| **OTA Service** | `7a5a0010-c529-4d64-8848-18e5904de22a` | Primary Service | Container for OTA flashing operations |
+| Service / Characteristic        | UUID                                   | Properties                     | Role                                                                  |
+| :------------------------------ | :------------------------------------- | :----------------------------- | :-------------------------------------------------------------------- |
+| **OTA Service**                 | `7a5a0010-c529-4d64-8848-18e5904de22a` | Primary Service                | Container for OTA flashing operations                                 |
 | **OTA Control (`OTA_CONTROL`)** | `7a5a0011-c529-4d64-8848-18e5904de22a` | `WRITE`, `INDICATE` / `NOTIFY` | Command dispatch (`START`, `END`, `ABORT`) and status acknowledgments |
-| **OTA Data (`OTA_DATA`)** | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE_NO_RESP` | Sequential binary stream of the firmware image |
+| **OTA Data (`OTA_DATA`)**       | `7a5a0012-c529-4d64-8848-18e5904de22a` | `WRITE_NO_RESP`                | Sequential binary stream of the firmware image                        |
 
 ---
 

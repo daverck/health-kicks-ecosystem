@@ -92,14 +92,14 @@ flowchart TD
 
 ## 3. Security Matrix & Protocols
 
-| Layer | Protocol | Encryption / Integrity | Protection Mechanism |
-| :--- | :--- | :--- | :--- |
-| **Footwear BLE** | BLE 5.0 GATT | LESC (_Just Works_ + Bonding) | 60s physical pairing window (`GPIO 14`) + unencrypted write rejection |
-| **Firmware OTA** | BLE OTA Service | SHA-256 + Magic Header `0xE9` | Validation of magic byte at offset 0, mandatory SHA-256 check, automatic rollback on IMU failure |
-| **Mobile $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3) | JWT Bearer (HS256 $\ge 256$ bits) | OAuth2 PKCE S256 + Ephemeral ticket (no tokens in GET URLs) |
-| **Mobile $\rightarrow$ AWS IoT** | MQTT over WebSockets | AWS SigV4 (HMAC-SHA256) | Temporary AWS STS (15 min), Client ID strictly scoped per user |
-| **Web $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3) | JWT Bearer + Strict-Transport-Security | CSP, HSTS, X-Frame-Options DENY, Rate Limiting per IP/Token |
-| **Sensitive Data** | PostgreSQL & DynamoDB | Encryption at rest (AES-256 KMS) | Deterministic pseudonymization via HMAC-SHA256 (`HEALTHKICKS_PSEUDONYMIZATION_PEPPER`) |
+| Layer                               | Protocol              | Encryption / Integrity                 | Protection Mechanism                                                                             |
+| :---------------------------------- | :-------------------- | :------------------------------------- | :----------------------------------------------------------------------------------------------- |
+| **Footwear BLE**                    | BLE 5.0 GATT          | LESC (_Just Works_ + Bonding)          | 60s physical pairing window (`GPIO 14`) + unencrypted write rejection                            |
+| **Firmware OTA**                    | BLE OTA Service       | SHA-256 + Magic Header `0xE9`          | Validation of magic byte at offset 0, mandatory SHA-256 check, automatic rollback on IMU failure |
+| **Mobile $\rightarrow$ Cloud REST** | HTTPS (TLS 1.3)       | JWT Bearer (HS256 $\ge 256$ bits)      | OAuth2 PKCE S256 + Ephemeral ticket (no tokens in GET URLs)                                      |
+| **Mobile $\rightarrow$ AWS IoT**    | MQTT over WebSockets  | AWS SigV4 (HMAC-SHA256)                | Temporary AWS STS (15 min), Client ID strictly scoped per user                                   |
+| **Web $\rightarrow$ Cloud REST**    | HTTPS (TLS 1.3)       | JWT Bearer + Strict-Transport-Security | CSP, HSTS, X-Frame-Options DENY, Rate Limiting per IP/Token                                      |
+| **Sensitive Data**                  | PostgreSQL & DynamoDB | Encryption at rest (AES-256 KMS)       | Deterministic pseudonymization via HMAC-SHA256 (`HEALTHKICKS_PSEUDONYMIZATION_PEPPER`)           |
 
 ---
 

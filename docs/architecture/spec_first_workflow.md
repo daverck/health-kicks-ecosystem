@@ -115,10 +115,10 @@ flowchart TD
 
 ## 5. Developer Command Reference
 
-| Action | Command | Scope |
-| :--- | :--- | :--- |
-| **Verify BLE contracts** | `python scripts/verify_ble_contracts.py` | Monorepo |
-| **Verify OpenAPI & Type drift** | `python scripts/verify_openapi_drift.py` | Monorepo |
-| **Export refreshed OpenAPI spec** | `python scripts/verify_openapi_drift.py --write` | Backend |
-| **Regenerate TypeScript types** | `pnpm --dir health-kicks-frontend run generate:api` | Frontend |
-| **Run all Pre-commit checks** | `uv tool run pre-commit run --all-files` | Monorepo |
+| Action                            | Command                                             | Scope    |
+| :-------------------------------- | :-------------------------------------------------- | :------- |
+| **Verify BLE contracts**          | `python scripts/verify_ble_contracts.py`            | Monorepo |
+| **Verify OpenAPI & Type drift**   | `python scripts/verify_openapi_drift.py`            | Monorepo |
+| **Export refreshed OpenAPI spec** | `python scripts/verify_openapi_drift.py --write`    | Backend  |
+| **Regenerate TypeScript types**   | `pnpm --dir health-kicks-frontend run generate:api` | Frontend |
+| **Run all Pre-commit checks**     | `uv tool run pre-commit run --all-files`            | Monorepo |
