@@ -26,7 +26,7 @@ CARD_DARK = HexColor("#131d38")
 BORDER_LIGHT = HexColor("#e2e8f0")
 
 # Vibrant Accent Tones
-PRIMARY_BLUE = HexColor("#2563eb")   # Electric HealthKicks Blue
+PRIMARY_BLUE = HexColor("#1d5cf5")   # Brand Primary Blue
 PRIMARY_TEAL = HexColor("#0d9488")   # High-Tech Emerald / Teal 600
 TEXT_TEAL = HexColor("#14b8a6")      # Bright Mint
 ACCENT_AMBER = HexColor("#d97706")   # Energetic Warm Amber
@@ -595,7 +595,13 @@ def draw_svg_paths(canv, svg_path, x_offset, y_offset, target_width):
     try:
         tree = parse(svg_path)
         root = tree.getroot()
-        orig_w, orig_h = 660.0, 440.0
+        orig_w, orig_h = 700.0, 700.0
+        viewbox = root.attrib.get("viewBox", "")
+        if viewbox:
+            vb_parts = [float(v) for v in viewbox.split()]
+            if len(vb_parts) == 4:
+                orig_w, orig_h = vb_parts[2], vb_parts[3]
+
         scale = target_width / orig_w
         target_height = orig_h * scale
 
@@ -604,6 +610,8 @@ def draw_svg_paths(canv, svg_path, x_offset, y_offset, target_width):
         canv.scale(scale, -scale)
 
         for elem in root:
+            if not elem.tag.endswith("path"):
+                continue
             d = elem.attrib.get("d", "")
             fill = elem.attrib.get("fill", "#0EA871")
             canv.setFillColor(HexColor(fill))
@@ -772,11 +780,10 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
     # ==========================================
     draw_slide_background(c, dark=True)
 
-    logo_svg_path = "health-kicks-frontend/public/images/logos/concept_a_vector.svg"
-    logo_w = 380
-    logo_h = 440.0 * (logo_w / 660.0)  # ~253.3 pt
+    logo_svg_path = "health-kicks-frontend/public/favicon.svg"
+    logo_w = 400
     logo_x = (PAGE_WIDTH - logo_w) / 2
-    logo_y = 205
+    logo_y = 155
     draw_svg_paths(c, logo_svg_path, logo_x, logo_y, logo_w)
 
     title_font_size = 56
