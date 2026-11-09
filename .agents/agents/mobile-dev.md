@@ -61,3 +61,8 @@ As soon as a significant step (component split, new feature, bug fix) is validat
 
 ## 6. Code Comments Language Rule
 * **Code comments exclusively in English**: All code comments, docstrings, annotations, and TODOs must be written in English without exception.
+
+## 7. Clean Code Directives
+* **Intention-Revealing Names**: Use clear, descriptive names for widgets, controllers, coordinators, streams, and state variables (e.g. `FallSensitivitySlider`, `isBleReady`, `reconnectWithBackoff`).
+* **Small Widgets & Focused Functions**: Avoid monolithic widget build trees (>100 lines) and giant controllers. Decompose complex cards and screens into focused sub-widgets and dedicated coordinators. Keep methods under 25-30 lines.
+* **DRY Principle**: Never duplicate dialog presentations, debounce timers, formatting logic, or SQLite schema DDL; centralize domain models, schema definitions, and formatters in dedicated modules.

@@ -60,3 +60,8 @@ As soon as a significant step (BLE optimization, new service, bug fix) is valida
 
 ## 6. Code Comments Language Rule
 * **Code comments exclusively in English**: All code comments, docstrings, annotations, and TODOs must be written in English without exception.
+
+## 7. Clean Code Directives
+* **Intention-Revealing Names**: Use self-explanatory function and variable names with clear physical or biological units (e.g. `computeCrc32`, `calculateCadenceSpm`, `cooldownMs`, `thresholdDps`).
+* **Small Functions & Single Responsibility**: Keep embedded functions concise and predictable (avoid multi-hundred line state machine loops). Decompose packet encoding, ASCII command parsing, calibration math, and sensor filters into dedicated single-purpose classes/functions.
+* **DRY Principle**: Never duplicate buffer serialization, CRC calculation, endianness byte-swapping, or timeout checks. Consolidate protocol structures and math routines into reusable headers and modules.

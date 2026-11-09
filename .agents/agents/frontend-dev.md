@@ -61,3 +61,8 @@ As soon as a significant step (component split, new service, bug fix) is validat
 
 ## 6. Code Comments Language Rule
 * **Code comments exclusively in English**: All code comments, docstrings, annotations, and TODOs must be written in English without exception.
+
+## 7. Clean Code Directives
+* **Intention-Revealing Names**: Name components, signals, computed values, and methods to reveal their intent (e.g. `isCalibrationPending`, `filteredSessionsByDate`, `formatFallTypeLabel`).
+* **Small & Single-Purpose Components & Functions**: Keep Angular component classes focused on UI interactions and lifecycle; delegate state to Stores and visual math to factories. Keep methods under 25-30 lines.
+* **DRY Principle**: Extract repeated badge class mappings, date range formatting, chart configs, or Three.js helpers into shared utilities and factory services instead of inlining them across templates and components.

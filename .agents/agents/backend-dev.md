@@ -59,3 +59,8 @@ As soon as a significant step (router/service modularization, new feature, bug f
 
 ## 6. Code Comments Language Rule
 * **Code comments exclusively in English**: All code comments, docstrings, annotations, and TODOs must be written in English without exception.
+
+## 7. Clean Code Directives
+* **Intention-Revealing Names**: Name endpoints, services, methods, and variables with clear domain semantics (e.g. `query_device_telemetry`, `resolve_target_device_ids`).
+* **Small & Single-Purpose Functions**: Keep route handlers thin (delegating to domain services); maintain service functions under 30 lines where practical, extracting query filters or data conversions into private helpers.
+* **DRY Principle**: Never duplicate database query filters, permission verifications, cursor decoders, or timezone conversions across route modules; encapsulate them in reusable services or utilities.

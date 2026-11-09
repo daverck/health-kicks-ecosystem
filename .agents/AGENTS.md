@@ -44,7 +44,7 @@ The **Root Orchestrator** supervises the ecosystem globally. Its mandate is to:
 
 ---
 
-## 2. The Five Golden Rules (Non-Negotiable)
+## 2. The Six Golden Rules (Non-Negotiable)
 
 ### Golden Rule 1: Contract-Driven & Spec-First Approach
 * Any change affecting communication between two subprojects (BLE GATT, REST API, MQTT payload, ML model file format, shared types) **must begin by updating and validating the contract in `contracts/`**.
@@ -75,6 +75,11 @@ The **Root Orchestrator** supervises the ecosystem globally. Its mandate is to:
 ### Golden Rule 5: Systematic Code Comments in English
 * **All code comments, docstrings, technical annotations, and TODOs** across all codebases (`health-kicks`, `health-kicks-frontend`, `health-kicks-mobile`, `health-kicks-esp32-s3`, `contracts`) **must be written in English exclusively**.
 * Chat communication with the user follows the user's preferred language (French or English), but source code and integrated technical documentation remain strictly in English for global maintainability.
+
+### Golden Rule 6: Clean Code Standards (Small Functions, Intention-Revealing Names, DRY)
+* **Intention-Revealing & Pronounceable Names**: Functions, methods, variables, and parameters must clearly express *what* they do and their business domain meaning. Avoid vague, overloaded verbs or meaningless abbreviations (e.g. prefer `calculateCadenceSpm()` over `process()`, `resolveTargetDeviceIds()` over `handleData()`).
+* **Small Functions & Single Responsibility Principle**: Functions must do one thing and do it completely. Keep functions concise (aiming for 10–30 lines where practical). Extract nested workflows, deep conditionals, coordinate math, or payload conversions into focused private helpers or specialized domain services.
+* **DRY Principle (Don't Repeat Yourself)**: Every piece of knowledge or logic must have a single, unambiguous representation within the system. Never duplicate validation algorithms, date/time normalization, data transforms, or formatting logic across multiple controllers, routes, or widgets; centralize them in shared utilities, models, or service layers.
 
 ---
 
