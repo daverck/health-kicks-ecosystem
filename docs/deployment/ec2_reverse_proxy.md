@@ -32,13 +32,24 @@ This document specifies the official Nginx reverse-proxy configuration and Let's
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-- **Backend API**: Accessible at `https://api.healthkicks.eu` (proxied to container port 8000).
+- **Backend API**: Accessible at `https://api.healthkicks.eu` (proxied to `http://healthkicks_backend`, dynamically alternating between container ports `8000` (`healthkicks-blue`) and `8001` (`healthkicks-green`) for zero-downtime deployment).
 - **Frontend App**: Accessible at `https://app.healthkicks.eu` (proxied to container port 8080).
-- **Legacy DuckDNS**: Accessible at `https://healthkicks.duckdns.org` (redirects 301 to `https://app.healthkicks.eu`).
+- **Apex / WWW / Legacy DuckDNS**: `https://healthkicks.eu`, `https://www.healthkicks.eu`, and `https://healthkicks.duckdns.org` redirect 301 to `https://app.healthkicks.eu`.
 
 ---
 
-## 2. Nginx Configuration (`/etc/nginx/sites-available/healthkicks`)
+## 2. Dynamic Blue/Green Upstream (`/etc/nginx/conf.d/healthkicks-upstream.conf`)
+
+Managed automatically by the CI/CD deployment pipeline (`health-kicks/.github/workflows/deploy.yml`):
+
+```nginx
+upstream healthkicks_backend {
+    server 127.0.0.1:8000; # Alternates between 8000 (blue) and 8001 (green)
+    keepalive 16;
+}
+```
+
+## 3. Nginx Configuration (`/etc/nginx/sites-available/healthkicks`)
 
 ```nginx
 # ==============================================================================
@@ -47,7 +58,7 @@ This document specifies the official Nginx reverse-proxy configuration and Let's
 server {
     listen 80;
     listen [::]:80;
-    server_name api.healthkicks.eu app.healthkicks.eu healthkicks.duckdns.org;
+    server_name api.healthkicks.eu app.healthkicks.eu healthkicks.eu www.healthkicks.eu healthkicks.duckdns.org;
 
     # Allow Let's Encrypt automated challenge validation without stopping Nginx
     location /.well-known/acme-challenge/ {
@@ -84,7 +95,7 @@ server {
     client_max_body_size 50M;
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://healthkicks_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -92,8 +103,11 @@ server {
         proxy_set_header X-Forwarded-Port 443;
 
         # Mitigate internal container port leaking on 30x redirects
+        proxy_redirect http://healthkicks_backend/ /;
         proxy_redirect http://127.0.0.1:8000/ /;
+        proxy_redirect http://127.0.0.1:8001/ /;
         proxy_redirect http://$host:8000/ https://$host/;
+        proxy_redirect http://$host:8001/ https://$host/;
 
         # WebSocket & streaming support for real-time telemetry and studio feeds
         proxy_http_version 1.1;
@@ -134,7 +148,24 @@ server {
 }
 
 # ==============================================================================
-# 4. Legacy DuckDNS HTTPS Redirection (healthkicks.duckdns.org -> app.healthkicks.eu)
+# 4. Apex & WWW HTTPS Redirection (healthkicks.eu, www.healthkicks.eu -> app.healthkicks.eu)
+# ==============================================================================
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name healthkicks.eu www.healthkicks.eu;
+
+    ssl_certificate /etc/letsencrypt/live/api.healthkicks.eu/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.healthkicks.eu/privkey.pem;
+
+    location / {
+        return 301 https://app.healthkicks.eu$request_uri;
+    }
+}
+
+# ==============================================================================
+# 5. Legacy DuckDNS HTTPS Redirection (healthkicks.duckdns.org -> app.healthkicks.eu)
 # ==============================================================================
 server {
     listen 443 ssl;
@@ -177,6 +208,8 @@ The multi-domain certificate covers:
 
 - `api.healthkicks.eu`
 - `app.healthkicks.eu`
+- `healthkicks.eu`
+- `www.healthkicks.eu`
 - `healthkicks.duckdns.org`
 
 ### Renewal via Webroot (Zero Downtime)
