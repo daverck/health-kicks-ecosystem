@@ -228,3 +228,16 @@ systemctl reload nginx
 ```
 
 chmod +x on this script ensures seamless automated renewals.
+
+---
+
+## 5. Synthetic Monitoring & Public Status Page
+
+External continuous availability monitoring and public telemetry status are provided via UptimeRobot:
+
+- **Public Status Page**: [https://stats.uptimerobot.com/c5m9EOGfwq](https://stats.uptimerobot.com/c5m9EOGfwq)
+- **Monitored Services**:
+  - `HealthKicks API`: `https://api.healthkicks.eu/health` (5-minute HTTP 200 health check)
+  - `HealthKicks Web App`: `https://app.healthkicks.eu` (5-minute HTTP 200 health check)
+- **Incident Escalation**: Real-time outage and recovery notifications are delivered via native Discord Webhooks directly to the engineering team (`#alerts`).
+- **Custom Domain (Optional)**: Add a CNAME DNS record in OVH (`status.healthkicks.eu` -> `stats.uptimerobot.com`) to brand the status page.
