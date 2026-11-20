@@ -75,7 +75,7 @@ flowchart TD
 - **Technologies**: Python 3.11, FastAPI, SQLAlchemy 2.0, PostgreSQL 16 (Aurora), DynamoDB, AWS IoT Core, Alembic, Docker.
 - **Responsibilities**:
   - **Identity Management & SSO**: Google and Azure Entra ID OAuth2 authentication with strict support for **RFC 7636 PKCE (S256)** and one-time ephemeral ticket token exchange (`POST /api/v1/auth/token/exchange`).
-  - **Access Control & RBAC**: Roles `user`, `clinician`, `admin`. Device ownership verification (`verify_device_ownership`).
+  - **Access Control & RBAC**: Roles `user`, `trainer`, `admin`. Device ownership verification (`verify_device_ownership`).
   - **AWS IoT STS Broker**: Generates session policies strictly restricted to authenticated user client IDs (`client/healthkicks-mobile-{userId}-*`).
   - **Observability & Health**: Endpoints `/health` (with SQL latency and connection pool diagnostics), `/health/liveness`, `/health/readiness`, and `/metrics`.
   - **ML Pipeline & Transpilation**: Scripts `train_detector.py` and `update_edge_model.py` for retraining activity models and generating C++ headers for ESP32.

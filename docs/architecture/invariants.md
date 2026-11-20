@@ -42,7 +42,7 @@ stateDiagram-v2
     Captured --> Unvalidated: Saved in DB (is_validated = False)
     Unvalidated --> Inspected: Dashboard waveform inspection (Chart.js)
     Inspected --> Reclassified: Optional label correction (PATCH /studio/sessions/:id)
-    Reclassified --> Validated: Validation by Clinician (is_validated = True)
+    Reclassified --> Validated: Validation by Trainer or Admin (is_validated = True)
     Inspected --> Validated: Direct validation
     Validated --> MLTraining: Eligible for scripts/train_detector.py
     Unvalidated --> Rejected: Rejection or deletion (DELETE /studio/sessions/:id)
@@ -62,9 +62,9 @@ stateDiagram-v2
 
 Confidentiality of biomechanical and clinical data is enforced at the API layer:
 
-### A. Clinician / Practitioner Role (`UserRole.USER`)
+### A. Trainer / Practitioner Role (`UserRole.TRAINER` / `UserRole.USER`)
 
-- **Session Isolation**: A clinician can list, inspect, modify, or delete **only their own sessions** (`StudioSession.user_id == user.id`).
+- **Session Isolation**: A trainer can list, inspect, modify, or delete **only their own sessions** (`StudioSession.user_id == user.id`).
 - Unauthorized access to a third-party session immediately raises `HTTP 403 Forbidden`:
   ```python
   if not _is_admin(user) and sess.user_id != user.id:
