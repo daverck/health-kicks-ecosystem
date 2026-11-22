@@ -91,10 +91,17 @@ echo "==> 6. Configuring Nginx Reverse Proxy & Rate Limiting..."
 mkdir -p /var/www/letsencrypt
 chown -R www-data:www-data /var/www/letsencrypt
 
-# Rate limiting definitions in /etc/nginx/conf.d/ratelimit.conf
-cat <<'EOF' > /etc/nginx/conf.d/ratelimit.conf
+# Rate limiting definitions in /etc/nginx/conf.d/rate-limit.conf
+cat <<'EOF' > /etc/nginx/conf.d/rate-limit.conf
+# Rate limiting zones (10MB memory zone holds ~160,000 IP addresses)
+# 1. Strict limit for sensitive authentication and login endpoints
 limit_req_zone $binary_remote_addr zone=api_auth:10m rate=5r/s;
+
+# 2. General public API limit
 limit_req_zone $binary_remote_addr zone=api_general:10m rate=30r/s;
+
+# Return HTTP 429 Too Many Requests instead of default 503
+limit_req_status 429;
 EOF
 
 # Upstream definition for in-host Blue/Green slot switching
