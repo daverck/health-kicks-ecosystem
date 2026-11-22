@@ -39,6 +39,14 @@ try {
         # IAM & Security
         @{ Address = "module.iam.aws_iam_role.ec2_role"; Id = "EC2ToAuroraBDDAuthRole" },
         @{ Address = "module.iam.aws_iam_instance_profile.ec2_profile"; Id = "EC2ToAuroraInstanceProfile" },
+        @{ Address = "module.iam.aws_iam_policy.aurora_connect"; Id = "arn:aws:iam::693906847467:policy/AuroraConnectPolicy" },
+        @{ Address = "module.iam.aws_iam_role.mobile_iot_role"; Id = "HealthKicksMobileIoTRole" },
+        @{ Address = "module.iam.aws_iam_role_policy.mobile_iot_policy"; Id = "HealthKicksMobileIoTRole:HealthKicksMobileIoTPolicy" },
+        @{ Address = "module.iam.aws_iam_role_policy.ec2_dynamodb"; Id = "EC2ToAuroraBDDAuthRole:HealthKicks-EC2-DynamoDBPolicy" },
+        @{ Address = "module.iam.aws_iam_role_policy.ec2_assume_mobile_iot"; Id = "EC2ToAuroraBDDAuthRole:AllowAssumeHealthKicksMobileIoTRole" },
+        @{ Address = "module.iam.aws_iam_role_policy.ec2_iot_publish"; Id = "EC2ToAuroraBDDAuthRole:HealthKicks-EC2-IoTPublishPolicy" },
+        @{ Address = "module.iam.aws_iam_role_policy_attachment.ec2_aurora_connect"; Id = "EC2ToAuroraBDDAuthRole/arn:aws:iam::693906847467:policy/AuroraConnectPolicy" },
+        @{ Address = "module.iam.aws_iam_role_policy_attachment.ec2_ecr_read"; Id = "EC2ToAuroraBDDAuthRole/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly" },
         @{ Address = "module.security.aws_security_group.web_sg"; Id = "sg-00db1eb2eb63723d9" },
 
         # Compute (EC2 Instance)
