@@ -1,0 +1,7 @@
+aws_region        = "eu-north-1"
+environment       = "production"
+instance_type     = "t3.micro"
+vpc_id            = "vpc-0c7bae52bbf409873"
+subnet_id         = "subnet-017411c8be32a97d6"
+key_name          = "healthkicks-key"
+github_repository = "serckx/healthkicks-ecosystem"

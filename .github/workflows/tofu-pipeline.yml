@@ -1,0 +1,73 @@
+name: OpenTofu - Infrastructure as Code CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/tofu/**"
+      - ".github/workflows/tofu-pipeline.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/tofu/**"
+      - ".github/workflows/tofu-pipeline.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  tofu-check:
+    name: OpenTofu Format & Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.8.8"
+
+      - name: Check OpenTofu Formatting
+        run: tofu fmt -check -recursive infra/tofu
+
+  tofu-plan:
+    name: OpenTofu Plan (eu-north-1)
+    needs: tofu-check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/tofu/environments/production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.8.8"
+
+      - name: Configure AWS Credentials (OIDC or Secret fallback)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-north-1
+          # If OIDC role is configured, assume it; otherwise fallback to secrets
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN || '' }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: OpenTofu Init
+        run: tofu init
+
+      - name: OpenTofu Validate
+        run: tofu validate
+
+      - name: OpenTofu Plan (Dry-run)
+        id: plan
+        run: |
+          tofu plan -no-color -out=tfplan
