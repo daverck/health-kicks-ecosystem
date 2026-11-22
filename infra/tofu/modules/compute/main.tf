@@ -67,6 +67,10 @@ resource "aws_instance" "backend_server" {
   iam_instance_profile   = var.iam_instance_profile_name
   vpc_security_group_ids = [var.security_group_id]
 
+  user_data = templatefile("${path.module}/templates/user_data.sh.tpl", {
+    nginx_site_conf = file("${path.module}/templates/nginx_healthkicks.conf.tpl")
+  })
+
   root_block_device {
     volume_size           = var.root_volume_size_gb
     volume_type           = "gp3"
@@ -88,7 +92,8 @@ resource "aws_instance" "backend_server" {
 
   lifecycle {
     ignore_changes = [
-      ami, # Prevent involuntary replacement when canonical publishes new AMI updates
+      ami,       # Prevent involuntary replacement when canonical publishes new AMI updates
+      user_data, # Prevent recreation of the live imported EC2 instance
     ]
   }
 }
