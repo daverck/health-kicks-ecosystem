@@ -20,19 +20,19 @@ variable "environment" {
 variable "github_repository" {
   type        = string
   description = "GitHub repository (owner/repo) authorized to assume the deployment role via OIDC"
-  default     = "serckx/healthkicks-ecosystem"
+  default     = "daverck/health-kicks-ecosystem"
 }
 
 variable "backend_repository" {
   type        = string
   description = "Submodule repository for the backend"
-  default     = "serckx/health-kicks"
+  default     = "daverck/health-kicks"
 }
 
 variable "frontend_repository" {
   type        = string
   description = "Submodule repository for the frontend"
-  default     = "serckx/health-kicks-frontend"
+  default     = "daverck/health-kicks-frontend"
 }
 
 # ------------------------------------------------------------------------------

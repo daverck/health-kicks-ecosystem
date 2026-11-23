@@ -37,5 +37,5 @@ variable "key_name" {
 variable "github_repository" {
   type        = string
   description = "GitHub monorepo (owner/repo) for OIDC federation"
-  default     = "serckx/healthkicks-ecosystem"
+  default     = "daverck/health-kicks-ecosystem"
 }
