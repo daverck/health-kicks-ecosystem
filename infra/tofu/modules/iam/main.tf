@@ -228,8 +228,11 @@ data "tls_certificate" "github" {
 }
 
 resource "aws_iam_openid_connect_provider" "github" {
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
+  url = "https://token.actions.githubusercontent.com"
+  client_id_list = [
+    "sts.amazonaws.com",
+    "https://github.com/daverck"
+  ]
   thumbprint_list = [
     "6938fd4d98bab03faadb97b34396831e3780aea1",
     "1c5824a682c4c424e45d6542a26d73fe0a4b397b",
@@ -259,13 +262,22 @@ data "aws_iam_policy_document" "github_actions_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
+      values = [
+        "sts.amazonaws.com",
+        "https://github.com/daverck"
+      ]
     }
 
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
+        "repo:daverck*:*",
+        "repo:daverck/*:*",
+        "repo:daverck@7854728/*",
+        "repo:daverck@7854728/*:*",
+        "repo:daverck/health-kicks-ecosystem:*",
+        "repo:daverck@7854728/health-kicks-ecosystem@1424849196:*",
         "repo:${var.github_repository}:*",
         "repo:${var.backend_repository}:*",
         "repo:${var.frontend_repository}:*"
