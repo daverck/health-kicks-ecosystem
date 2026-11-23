@@ -35,9 +35,18 @@ jobs:
       - name: Check OpenTofu Formatting
         run: tofu fmt -check -recursive infra/tofu
 
+      - name: OpenTofu Init (Offline Validation Mode)
+        working-directory: infra/tofu/environments/production
+        run: tofu init -backend=false
+
+      - name: OpenTofu Validate Configuration
+        working-directory: infra/tofu/environments/production
+        run: tofu validate
+
   tofu-plan:
-    name: OpenTofu Plan (eu-north-1)
+    name: OpenTofu Plan (Requires AWS Remote State)
     needs: tofu-check
+    if: ${{ secrets.AWS_OIDC_ROLE_ARN != '' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,20 +61,14 @@ jobs:
         with:
           tofu_version: "1.8.8"
 
-      - name: Configure AWS Credentials (OIDC or Secret fallback)
+      - name: Configure AWS Credentials via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: eu-north-1
-          # If OIDC role is configured, assume it; otherwise fallback to secrets
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN || '' }}
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
 
       - name: OpenTofu Init
         run: tofu init
-
-      - name: OpenTofu Validate
-        run: tofu validate
 
       - name: OpenTofu Plan (Dry-run)
         id: plan
