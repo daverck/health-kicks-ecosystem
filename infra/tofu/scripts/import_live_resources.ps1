@@ -47,6 +47,7 @@ try {
         @{ Address = "module.iam.aws_iam_role_policy.ec2_iot_publish"; Id = "EC2ToAuroraBDDAuthRole:HealthKicks-EC2-IoTPublishPolicy" },
         @{ Address = "module.iam.aws_iam_role_policy_attachment.ec2_aurora_connect"; Id = "EC2ToAuroraBDDAuthRole/arn:aws:iam::693906847467:policy/AuroraConnectPolicy" },
         @{ Address = "module.iam.aws_iam_role_policy_attachment.ec2_ecr_read"; Id = "EC2ToAuroraBDDAuthRole/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly" },
+        @{ Address = "module.iam.aws_iam_openid_connect_provider.github"; Id = "arn:aws:iam::693906847467:oidc-provider/token.actions.githubusercontent.com" },
         @{ Address = "module.security.aws_security_group.web_sg"; Id = "sg-00db1eb2eb63723d9" },
 
         # Compute (EC2 Instance)

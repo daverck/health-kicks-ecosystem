@@ -34,6 +34,7 @@ tofu import module.iam.aws_iam_role_policy.ec2_assume_mobile_iot EC2ToAuroraBDDA
 tofu import module.iam.aws_iam_role_policy.ec2_iot_publish EC2ToAuroraBDDAuthRole:HealthKicks-EC2-IoTPublishPolicy || true
 tofu import module.iam.aws_iam_role_policy_attachment.ec2_aurora_connect EC2ToAuroraBDDAuthRole/arn:aws:iam::693906847467:policy/AuroraConnectPolicy || true
 tofu import module.iam.aws_iam_role_policy_attachment.ec2_ecr_read EC2ToAuroraBDDAuthRole/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly || true
+tofu import module.iam.aws_iam_openid_connect_provider.github arn:aws:iam::693906847467:oidc-provider/token.actions.githubusercontent.com || true
 tofu import module.security.aws_security_group.web_sg sg-00db1eb2eb63723d9 || true
 
 tofu import module.compute.aws_instance.backend_server i-0fa331c11cd475278 || true
