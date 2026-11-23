@@ -370,7 +370,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "s3:Get*",
       "s3:List*",
       "ecr:Describe*",
-      "ecr:ListTagsForResource",
+      "ecr:Get*",
+      "ecr:List*",
       "iam:Get*",
       "iam:List*"
     ]
