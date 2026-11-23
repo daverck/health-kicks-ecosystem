@@ -359,6 +359,31 @@ data "aws_iam_policy_document" "github_actions_permissions" {
   }
 
   statement {
+    sid    = "FrontendS3Deploy"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+      "s3:ListBucket",
+      "s3:DeleteObject"
+    ]
+    resources = [
+      "arn:aws:s3:::healthkicks-frontend-app-*",
+      "arn:aws:s3:::healthkicks-frontend-app-*/*"
+    ]
+  }
+
+  statement {
+    sid    = "FrontendCloudFrontInvalidation"
+    effect = "Allow"
+    actions = [
+      "cloudfront:CreateInvalidation",
+      "cloudfront:GetInvalidation"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid    = "OpenTofuPlanReadAccess"
     effect = "Allow"
     actions = [
@@ -373,7 +398,12 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:Get*",
       "ecr:List*",
       "iam:Get*",
-      "iam:List*"
+      "iam:List*",
+      "cloudfront:Get*",
+      "cloudfront:List*",
+      "acm:Describe*",
+      "acm:List*",
+      "acm:Get*"
     ]
     resources = ["*"]
   }

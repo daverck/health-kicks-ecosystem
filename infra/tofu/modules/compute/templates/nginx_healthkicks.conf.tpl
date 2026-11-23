@@ -82,6 +82,8 @@ server {
 
 # ==============================================================================
 # 3. Angular Frontend Web App (app.healthkicks.eu)
+# Decoupled to CloudFront CDN + S3.
+# Redirects any direct EC2 traffic to the CloudFront distribution.
 # ==============================================================================
 server {
     listen 443 ssl;
@@ -97,16 +99,7 @@ server {
     ssl_prefer_server_ciphers on;
 
     location / {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-Port 443;
-
-        # Prevent the internal container port 8080 from leaking into redirects
-        proxy_redirect http://127.0.0.1:8080/ /;
-        proxy_redirect http://$host:8080/ https://$host/;
+        return 301 https://d2lgy8w6c46dty.cloudfront.net$request_uri;
     }
 }
 

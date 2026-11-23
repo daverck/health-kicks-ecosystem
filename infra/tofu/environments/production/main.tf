@@ -41,3 +41,16 @@ module "database" {
   min_capacity = 0.5
   max_capacity = 1.0
 }
+
+# 6. Frontend CDN: S3 Bucket, CloudFront Distribution, OAC, and ACM
+module "frontend_cdn" {
+  source = "../../modules/frontend_cdn"
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  environment          = var.environment
+  domain_name          = "app.healthkicks.eu"
+  enable_custom_domain = false
+}
