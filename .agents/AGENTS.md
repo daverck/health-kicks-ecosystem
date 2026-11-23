@@ -65,6 +65,7 @@ The **Root Orchestrator** supervises the ecosystem globally. Its mandate is to:
   * `health-kicks-mobile`: `flutter analyze && flutter test`
   * `health-kicks`: `uv run ruff check . && uv run pytest` (or `python -m pytest`)
   * `health-kicks-frontend`: `pnpm lint && pnpm exec ng build --configuration production && pnpm test`
+  * `infra/tofu`: `tofu fmt -check -recursive infra/tofu`
 * Any lint, build, or test failure blocks the workflow immediately and requires priority remediation.
 
 ### Golden Rule 4: Granular Atomic Commits at Every Significant Milestone
