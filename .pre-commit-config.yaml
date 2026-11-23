@@ -57,7 +57,7 @@ repos:
         files: ^(health-kicks/(app/|openapi\.json)|health-kicks-frontend/src/app/models/generated-api\.types\.ts|scripts/verify_openapi_drift\.py)
       - id: tofu-fmt
         name: tofu-fmt (OpenTofu formatting check)
-        entry: tofu fmt -check -recursive infra/tofu
+        entry: python scripts/verify_tofu_fmt.py
         language: system
         pass_filenames: false
         files: ^infra/tofu/.*\.tf$

@@ -43,6 +43,10 @@ backups/
 **/.terraform/
 *.tfstate
 *.tfstate.*
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
 crash.log
 crash.*.log
 override.tf
@@ -51,3 +55,8 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Environment & Secret files
+.env
+.env.*
+!.env.example
