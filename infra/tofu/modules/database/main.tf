@@ -59,6 +59,7 @@ resource "aws_rds_cluster" "aurora_cluster" {
   preferred_backup_window             = "00:21-00:51"
   preferred_maintenance_window        = "tue:23:37-wed:00:07"
   skip_final_snapshot                 = true
+  enabled_cloudwatch_logs_exports     = ["postgresql"]
 
   serverlessv2_scaling_configuration {
     min_capacity = var.min_capacity
