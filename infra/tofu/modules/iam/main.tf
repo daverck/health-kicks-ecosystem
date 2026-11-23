@@ -35,6 +35,18 @@ variable "frontend_repository" {
   default     = "daverck/health-kicks-frontend"
 }
 
+variable "mobile_repository" {
+  type        = string
+  description = "Submodule repository for the mobile app"
+  default     = "daverck/health-kicks-mobile"
+}
+
+variable "firmware_repository" {
+  type        = string
+  description = "Submodule repository for the firmware"
+  default     = "daverck/health-kicks-esp32-s3"
+}
+
 # ------------------------------------------------------------------------------
 # 1. EC2 Instance IAM Role (Matches live EC2ToAuroraBDDAuthRole)
 # ------------------------------------------------------------------------------
@@ -230,8 +242,7 @@ data "tls_certificate" "github" {
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
   client_id_list = [
-    "sts.amazonaws.com",
-    "https://github.com/daverck"
+    "sts.amazonaws.com"
   ]
   thumbprint_list = [
     "6938fd4d98bab03faadb97b34396831e3780aea1",
@@ -263,8 +274,7 @@ data "aws_iam_policy_document" "github_actions_trust" {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:aud"
       values = [
-        "sts.amazonaws.com",
-        "https://github.com/daverck"
+        "sts.amazonaws.com"
       ]
     }
 
@@ -272,15 +282,21 @@ data "aws_iam_policy_document" "github_actions_trust" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:daverck*:*",
-        "repo:daverck/*:*",
-        "repo:daverck@7854728/*",
-        "repo:daverck@7854728/*:*",
-        "repo:daverck/health-kicks-ecosystem:*",
-        "repo:daverck@7854728/health-kicks-ecosystem@1424849196:*",
+        # health-kicks-ecosystem (root)
         "repo:${var.github_repository}:*",
+        "repo:daverck@7854728/health-kicks-ecosystem@*:*",
+        # health-kicks (backend)
         "repo:${var.backend_repository}:*",
-        "repo:${var.frontend_repository}:*"
+        "repo:daverck@7854728/health-kicks@*:*",
+        # health-kicks-frontend (frontend)
+        "repo:${var.frontend_repository}:*",
+        "repo:daverck@7854728/health-kicks-frontend@*:*",
+        # health-kicks-mobile (mobile)
+        "repo:${var.mobile_repository}:*",
+        "repo:daverck@7854728/health-kicks-mobile@*:*",
+        # health-kicks-esp32-s3 (firmware)
+        "repo:${var.firmware_repository}:*",
+        "repo:daverck@7854728/health-kicks-esp32-s3@*:*"
       ]
     }
   }
