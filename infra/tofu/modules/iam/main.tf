@@ -364,20 +364,15 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     actions = [
       "ec2:Describe*",
       "rds:Describe*",
-      "dynamodb:DescribeTable",
-      "dynamodb:DescribeContinuousBackups",
-      "dynamodb:DescribeTimeToLive",
-      "s3:GetBucket*",
-      "s3:GetEncryptionConfiguration",
-      "s3:GetLifecycleConfiguration",
-      "iam:GetRole",
-      "iam:GetRolePolicy",
-      "iam:ListRolePolicies",
-      "iam:ListAttachedRolePolicies",
-      "iam:GetInstanceProfile",
-      "iam:GetPolicy",
-      "iam:GetPolicyVersion",
-      "iam:GetOpenIDConnectProvider"
+      "rds:ListTagsForResource",
+      "dynamodb:Describe*",
+      "dynamodb:ListTagsOfResource",
+      "s3:Get*",
+      "s3:List*",
+      "ecr:Describe*",
+      "ecr:ListTagsForResource",
+      "iam:Get*",
+      "iam:List*"
     ]
     resources = ["*"]
   }
