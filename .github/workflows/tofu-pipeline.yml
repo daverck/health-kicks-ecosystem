@@ -1,4 +1,4 @@
-name: OpenTofu - Infrastructure as Code CI
+name: OpenTofu - Infrastructure as Code CI/CD
 
 on:
   push:
@@ -14,6 +14,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  id-token: write # Required for AWS IAM OIDC authentication
   contents: read
 
 jobs:
@@ -33,10 +34,36 @@ jobs:
       - name: Check OpenTofu Formatting
         run: tofu fmt -check -recursive infra/tofu
 
-      - name: OpenTofu Init (Offline Validation Mode)
+  tofu-plan:
+    name: OpenTofu Plan (eu-north-1)
+    needs: tofu-check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
         working-directory: infra/tofu/environments/production
-        run: tofu init -backend=false
 
-      - name: OpenTofu Validate Configuration
-        working-directory: infra/tofu/environments/production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.8.8"
+
+      - name: Configure AWS Credentials with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: eu-north-1
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+
+      - name: OpenTofu Init (S3 Remote Backend)
+        run: tofu init
+
+      - name: OpenTofu Validate
         run: tofu validate
+
+      - name: OpenTofu Plan (Dry-run)
+        id: plan
+        run: |
+          tofu plan -no-color

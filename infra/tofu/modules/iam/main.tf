@@ -325,6 +325,30 @@ data "aws_iam_policy_document" "github_actions_permissions" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "OpenTofuPlanReadAccess"
+    effect = "Allow"
+    actions = [
+      "ec2:Describe*",
+      "rds:Describe*",
+      "dynamodb:DescribeTable",
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:DescribeTimeToLive",
+      "s3:GetBucket*",
+      "s3:GetEncryptionConfiguration",
+      "s3:GetLifecycleConfiguration",
+      "iam:GetRole",
+      "iam:GetRolePolicy",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:GetInstanceProfile",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:GetOpenIDConnectProvider"
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "github_actions_deploy_policy" {
