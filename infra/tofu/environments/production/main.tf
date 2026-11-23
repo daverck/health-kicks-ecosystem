@@ -52,5 +52,5 @@ module "frontend_cdn" {
 
   environment          = var.environment
   domain_name          = "app.healthkicks.eu"
-  enable_custom_domain = false
+  enable_custom_domain = true
 }
