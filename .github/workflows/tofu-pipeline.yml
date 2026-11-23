@@ -38,6 +38,9 @@ jobs:
     name: OpenTofu Plan (eu-north-1)
     needs: tofu-check
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: infra/tofu/environments/production
@@ -50,6 +53,32 @@ jobs:
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.8.8"
+
+      - name: Verify GitHub OIDC Token & Role ARN Format (Safe Diagnostics)
+        env:
+          ROLE_ARN: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+        run: |
+          echo "=== OIDC Diagnostics ==="
+          if [ -z "$ROLE_ARN" ]; then
+            echo "ERROR: secret AWS_OIDC_ROLE_ARN is empty or unset!"
+            exit 1
+          fi
+          # Check prefix without exposing full sensitive ARN
+          PREFIX=$(echo "$ROLE_ARN" | cut -c 1-13)
+          echo "Role ARN prefix check: $PREFIX (Expected 'arn:aws:iam:')"
+          echo "Role ARN length: ${#ROLE_ARN} characters"
+          if [ "$PREFIX" != "arn:aws:iam:" ]; then
+            echo "WARNING: AWS_OIDC_ROLE_ARN appears malformed (starts with '$PREFIX' instead of 'arn:aws:iam:')."
+            echo "Make sure there are no quotes or 'AWS_OIDC_ROLE_ARN=' prefix in GitHub Secrets."
+          fi
+
+          # Inspect GitHub Actions OIDC Token payload claims (sub, aud, iss, repo)
+          echo "--- GitHub Actions OIDC Token Claims ---"
+          if [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+            RAW_TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r '.value')
+            echo "$RAW_TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null | jq '{iss, aud, sub, repository, repository_owner, ref}' || true
+          fi
+          echo "========================"
 
       - name: Configure AWS Credentials with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
