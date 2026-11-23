@@ -71,6 +71,12 @@ resource "aws_instance" "backend_server" {
     nginx_site_conf = file("${path.module}/templates/nginx_healthkicks.conf.tpl")
   })
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
   root_block_device {
     volume_size           = var.root_volume_size_gb
     volume_type           = "gp3"
