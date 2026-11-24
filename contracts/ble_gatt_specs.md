@@ -262,6 +262,38 @@ ASCII UTF-8 format:
 | `CANCELLED`                                           | Command received                    | Session aborted                                                            |
 | `ERROR <reason>`                                      | Hardware/RAM fault or rejection     | Error (e.g. `ERROR buffer_overflow`, `ERROR busy`, `ERROR not_calibrated`) |
 
+#### 3. Activity Bout Synchronization Protocol (Binary Opcodes 0x30, 0x31, 0x32)
+
+Enables zero-loss, offline step ventilation when the shoe is worn disconnected from the smartphone. Instead of arbitrary time grids or lossy hourly summaries, the shoe records active movement bouts with micro-step precision ($\sum \text{Bout Steps} \equiv \text{Odometer Steps}$).
+
+##### A. Client Request: `REQ_ACTIVITY_BOUTS` (`0x30`)
+
+- **Direction**: Mobile -> Shoe (`WRITE`)
+- **Payload**: `[0x30]` (1 byte)
+
+##### B. Shoe Response: `RESP_ACTIVITY_BOUTS` (`0x31`)
+
+- **Direction**: Shoe -> Mobile (`NOTIFY`)
+- **Header (6 bytes)**:
+  - `Offset 0`: Opcode `0x31` (uint8)
+  - `Offset 1`: `bout_count` (uint8, $0 \le N \le 128$)
+  - `Offset 2..5`: `session_uptime_sec` (uint32 big-endian, current hardware uptime in seconds)
+- **Bout Entries ($N \times 8$ bytes)**:
+  For each bout $i \in [0, N-1]$:
+  - `Offset 0..1`: `start_uptime_sec` (uint16 big-endian, uptime seconds when bout started)
+  - `Offset 2..3`: `duration_sec` (uint16 big-endian, total duration of active locomotion in seconds)
+  - `Offset 4..5`: `step_count` (uint16 big-endian, steps validated during this bout)
+  - `Offset 6`: `activity_type` (uint8, `0x01`=walk, `0x02`=run, `0x03`=stairs, `0x04`=unclassified)
+  - `Offset 7`: `avg_cadence` (uint8, average cadence in steps/minute)
+
+> Note: If $N > 25$ bouts, responses are packetized across consecutive notifications conforming to the negotiated ATT MTU size.
+
+##### C. Client Acknowledge: `ACK_ACTIVITY_BOUTS` (`0x32`)
+
+- **Direction**: Mobile -> Shoe (`WRITE`)
+- **Payload**: `[0x32, acknowledged_count]` (2 bytes)
+- **Shoe Action**: Advances read pointer and frees acknowledged bouts from the RAM ring buffer.
+
 ---
 
 ### D. Characteristic 4: Studio Data Burst (`7a5a0005-...`)
