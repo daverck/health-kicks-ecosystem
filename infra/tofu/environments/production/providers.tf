@@ -44,3 +44,16 @@ provider "aws" {
     }
   }
 }
+
+provider "aws" {
+  alias  = "eu_north_1"
+  region = "eu-north-1"
+
+  default_tags {
+    tags = {
+      Project     = "HealthKicks"
+      Environment = var.environment
+      ManagedBy   = "OpenTofu"
+    }
+  }
+}

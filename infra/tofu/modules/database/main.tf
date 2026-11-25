@@ -44,6 +44,18 @@ variable "max_capacity" {
   default     = 1.0
 }
 
+variable "snapshot_identifier" {
+  type        = string
+  description = "Optional DB cluster snapshot identifier to restore from"
+  default     = null
+}
+
+variable "vpc_security_group_ids" {
+  type        = list(string)
+  description = "Optional list of VPC security group IDs for the Aurora cluster"
+  default     = null
+}
+
 # ------------------------------------------------------------------------------
 # 1. Aurora Serverless v2 Cluster (PostgreSQL 17)
 # ------------------------------------------------------------------------------
@@ -53,7 +65,9 @@ resource "aws_rds_cluster" "aurora_cluster" {
   engine                              = "aurora-postgresql"
   engine_version                      = "17.9"
   engine_mode                         = "provisioned" # Required for Serverless v2
-  master_username                     = var.master_username
+  master_username                     = var.snapshot_identifier == null ? var.master_username : null
+  snapshot_identifier                 = var.snapshot_identifier
+  vpc_security_group_ids              = var.vpc_security_group_ids
   iam_database_authentication_enabled = true
   backup_retention_period             = 1
   preferred_backup_window             = "00:21-00:51"
@@ -75,6 +89,8 @@ resource "aws_rds_cluster" "aurora_cluster" {
   lifecycle {
     ignore_changes = [
       master_password, # Preserves pre-existing live master password without drift
+      master_username,
+      snapshot_identifier,
       availability_zones,
     ]
   }

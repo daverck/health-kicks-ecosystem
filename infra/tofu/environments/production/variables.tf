@@ -1,7 +1,7 @@
 variable "aws_region" {
   type        = string
   description = "AWS deployment region"
-  default     = "eu-north-1"
+  default     = "eu-west-1"
 }
 
 variable "environment" {
@@ -13,13 +13,23 @@ variable "environment" {
 variable "vpc_id" {
   type        = string
   description = "Target AWS VPC ID"
-  default     = "vpc-0c7bae52bbf409873"
+  default     = "vpc-0e6a06761f32abf4e"
 }
 
 variable "database_subnet_ids" {
   type        = list(string)
-  description = "Subnet IDs for VPC Connector (database subnets)"
-  default     = ["subnet-017411c8be32a97d6"]
+  description = "Subnet IDs for ECS Fargate tasks and Aurora"
+  default = [
+    "subnet-0c495b2ec4a2ef87b",
+    "subnet-077739a80a78095ed",
+    "subnet-057349c3160b79da1",
+  ]
+}
+
+variable "aurora_snapshot_identifier" {
+  type        = string
+  description = "Aurora DB cluster snapshot identifier to restore from in eu-west-1"
+  default     = "healthkicks-db-snapshot-eu-west-1"
 }
 
 variable "github_repository" {
@@ -29,47 +39,41 @@ variable "github_repository" {
 }
 
 # ------------------------------------------------------------------------------
-# App Runner Compute Configuration
+# ECS Fargate Spot Compute Configuration
 # ------------------------------------------------------------------------------
 
-variable "app_runner_image_tag" {
+variable "backend_image_tag" {
   type        = string
-  description = "Docker image tag for App Runner backend"
+  description = "Docker image tag for ECS Fargate backend"
   default     = "latest"
 }
 
-variable "app_runner_cpu" {
+variable "fargate_cpu" {
   type        = string
-  description = "CPU allocated to App Runner (256, 512, 1024, 2048)"
+  description = "CPU allocated to Fargate task (256, 512, 1024)"
   default     = "512"
 }
 
-variable "app_runner_memory" {
+variable "fargate_memory" {
   type        = string
-  description = "Memory allocated to App Runner (1024, 2048, 4096)"
+  description = "Memory allocated to Fargate task in MiB (512, 1024, 2048)"
   default     = "1024"
 }
 
-variable "app_runner_max_concurrency" {
+variable "fargate_desired_count" {
   type        = number
-  description = "Max concurrent requests per instance"
-  default     = 100
-}
-
-variable "app_runner_min_size" {
-  type        = number
-  description = "Minimum warm instances for App Runner"
+  description = "Desired number of Fargate tasks (set to 0 to pause and stop compute billing)"
   default     = 1
 }
 
-variable "app_runner_max_size" {
-  type        = number
-  description = "Maximum instances for App Runner during peaks"
-  default     = 5
+variable "fargate_use_spot" {
+  type        = bool
+  description = "Use Fargate Spot (~70% discount) instead of Fargate On-Demand"
+  default     = true
 }
 
-variable "app_runner_enable_custom_domain" {
+variable "enable_cloudflare_tunnel" {
   type        = bool
-  description = "Whether to configure custom domain association for App Runner"
+  description = "Enable cloudflared sidecar container (requires /healthkicks/<env>/CLOUDFLARE_TUNNEL_TOKEN in SSM)"
   default     = false
 }

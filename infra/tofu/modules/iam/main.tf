@@ -197,7 +197,7 @@ resource "aws_iam_role" "mobile_iot_role" {
           AWS = [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
             aws_iam_role.ec2_role.arn,
-            aws_iam_role.apprunner_instance_role.arn
+            aws_iam_role.ecs_task_role.arn
           ]
         }
         Action = "sts:AssumeRole"
@@ -405,7 +405,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "acm:Describe*",
       "acm:List*",
       "acm:Get*",
-      "apprunner:*"
+      "ecs:*",
+      "logs:*"
     ]
     resources = ["*"]
   }
@@ -423,23 +424,23 @@ resource "aws_iam_role_policy_attachment" "github_actions_deploy_attach" {
 }
 
 # ------------------------------------------------------------------------------
-# 6. AWS App Runner Roles (Access Role & Instance Role)
+# 6. AWS ECS Fargate Roles (Task Execution Role & Task Runtime Role)
 # ------------------------------------------------------------------------------
 
-data "aws_iam_policy_document" "apprunner_access_trust" {
+data "aws_iam_policy_document" "ecs_tasks_trust" {
   statement {
     actions = ["sts:AssumeRole"]
     effect  = "Allow"
     principals {
       type        = "Service"
-      identifiers = ["build.apprunner.amazonaws.com"]
+      identifiers = ["ecs-tasks.amazonaws.com"]
     }
   }
 }
 
-resource "aws_iam_role" "apprunner_access_role" {
-  name               = "HealthKicksAppRunnerAccessRole"
-  assume_role_policy = data.aws_iam_policy_document.apprunner_access_trust.json
+resource "aws_iam_role" "ecs_execution_role" {
+  name               = "HealthKicksEcsExecutionRole"
+  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_trust.json
 
   tags = {
     Project   = "HealthKicks"
@@ -447,25 +448,35 @@ resource "aws_iam_role" "apprunner_access_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_ecr_access" {
-  role       = aws_iam_role.apprunner_access_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+resource "aws_iam_role_policy_attachment" "ecs_execution_managed" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-data "aws_iam_policy_document" "apprunner_instance_trust" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["tasks.apprunner.amazonaws.com"]
-    }
-  }
+resource "aws_iam_role_policy" "ecs_execution_ssm_secrets" {
+  name = "HealthKicks-ECS-Execution-SSMSecretsPolicy"
+  role = aws_iam_role.ecs_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowReadHealthKicksSSMParameters"
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameters",
+          "ssm:GetParameter",
+          "kms:Decrypt"
+        ]
+        Resource = "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/healthkicks/${var.environment}/*"
+      }
+    ]
+  })
 }
 
-resource "aws_iam_role" "apprunner_instance_role" {
-  name               = "HealthKicksAppRunnerInstanceRole"
-  assume_role_policy = data.aws_iam_policy_document.apprunner_instance_trust.json
+resource "aws_iam_role" "ecs_task_role" {
+  name               = "HealthKicksEcsTaskRole"
+  assume_role_policy = data.aws_iam_policy_document.ecs_tasks_trust.json
 
   tags = {
     Project   = "HealthKicks"
@@ -473,14 +484,14 @@ resource "aws_iam_role" "apprunner_instance_role" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "apprunner_aurora_connect" {
-  role       = aws_iam_role.apprunner_instance_role.name
+resource "aws_iam_role_policy_attachment" "ecs_task_aurora_connect" {
+  role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.aurora_connect.arn
 }
 
-resource "aws_iam_role_policy" "apprunner_dynamodb" {
-  name = "HealthKicks-AppRunner-DynamoDBPolicy"
-  role = aws_iam_role.apprunner_instance_role.id
+resource "aws_iam_role_policy" "ecs_task_dynamodb" {
+  name = "HealthKicks-ECS-DynamoDBPolicy"
+  role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -501,9 +512,9 @@ resource "aws_iam_role_policy" "apprunner_dynamodb" {
   })
 }
 
-resource "aws_iam_role_policy" "apprunner_assume_mobile_iot" {
+resource "aws_iam_role_policy" "ecs_task_assume_mobile_iot" {
   name = "AllowAssumeHealthKicksMobileIoTRole"
-  role = aws_iam_role.apprunner_instance_role.id
+  role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -517,9 +528,9 @@ resource "aws_iam_role_policy" "apprunner_assume_mobile_iot" {
   })
 }
 
-resource "aws_iam_role_policy" "apprunner_iot_publish" {
-  name = "HealthKicks-AppRunner-IoTPublishPolicy"
-  role = aws_iam_role.apprunner_instance_role.id
+resource "aws_iam_role_policy" "ecs_task_iot_publish" {
+  name = "HealthKicks-ECS-IoTPublishPolicy"
+  role = aws_iam_role.ecs_task_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -528,13 +539,58 @@ resource "aws_iam_role_policy" "apprunner_iot_publish" {
         Sid      = "AllowIoTPublishHapticCommands"
         Effect   = "Allow"
         Action   = ["iot:Publish"]
-        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/*/commands/*"
+        Resource = "arn:aws:iot:*:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/*/commands/*"
       },
       {
         Sid      = "AllowIoTPublishFallAlertDownlink"
         Effect   = "Allow"
         Action   = ["iot:Publish"]
-        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/users/*/fall-alert/status"
+        Resource = "arn:aws:iot:*:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/users/*/fall-alert/status"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_s3_firmware" {
+  name = "HealthKicks-ECS-S3FirmwarePolicy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowReadFirmwareReleasesBucket"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::healthkicks-firmware-releases",
+          "arn:aws:s3:::healthkicks-firmware-releases/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_exec" {
+  name = "HealthKicks-ECS-ExecPolicy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowECSExecChannels"
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -559,12 +615,12 @@ output "mobile_iot_role_arn" {
   value       = aws_iam_role.mobile_iot_role.arn
 }
 
-output "apprunner_access_role_arn" {
-  description = "ARN of the App Runner ECR Access Role"
-  value       = aws_iam_role.apprunner_access_role.arn
+output "ecs_execution_role_arn" {
+  description = "ARN of the ECS Task Execution Role"
+  value       = aws_iam_role.ecs_execution_role.arn
 }
 
-output "apprunner_instance_role_arn" {
-  description = "ARN of the App Runner Instance Execution Role"
-  value       = aws_iam_role.apprunner_instance_role.arn
+output "ecs_task_role_arn" {
+  description = "ARN of the ECS Task Runtime Role"
+  value       = aws_iam_role.ecs_task_role.arn
 }

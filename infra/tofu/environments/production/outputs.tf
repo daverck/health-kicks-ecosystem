@@ -38,19 +38,19 @@ output "frontend_cloudfront_domain_name" {
   value       = module.frontend_cdn.cloudfront_domain_name
 }
 
-output "app_runner_service_url" {
-  description = "App Runner default service HTTPS URL"
-  value       = module.app_runner.service_url
+output "ecs_cluster_name" {
+  description = "ECS Cluster name"
+  value       = module.ecs_fargate.cluster_name
 }
 
-output "app_runner_service_arn" {
-  description = "App Runner service ARN"
-  value       = module.app_runner.service_arn
+output "ecs_service_name" {
+  description = "ECS Service name"
+  value       = module.ecs_fargate.service_name
 }
 
-output "app_runner_dns_target" {
-  description = "App Runner DNS target for CNAME in Cloudflare / OVH"
-  value       = module.app_runner.dns_target
+output "ecs_log_group_name" {
+  description = "CloudWatch Log Group for ECS Fargate containers"
+  value       = module.ecs_fargate.log_group_name
 }
 
 output "frontend_acm_dns_validation_records" {
