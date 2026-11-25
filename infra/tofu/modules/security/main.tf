@@ -77,3 +77,33 @@ output "web_security_group_id" {
   description = "Security Group ID for the EC2 Web host"
   value       = aws_security_group.web_sg.id
 }
+
+# ------------------------------------------------------------------------------
+# 2. App Runner Egress Security Group (VPC Connector)
+# ------------------------------------------------------------------------------
+
+resource "aws_security_group" "apprunner_egress_sg" {
+  name        = "healthkicks-apprunner-egress-sg"
+  description = "Security Group for AWS App Runner VPC Connector egress"
+  vpc_id      = var.vpc_id
+
+  egress {
+    description = "Allow all outbound traffic from App Runner through VPC"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "healthkicks-apprunner-egress-sg"
+    Project     = "HealthKicks"
+    Environment = var.environment
+    ManagedBy   = "OpenTofu"
+  }
+}
+
+output "apprunner_security_group_id" {
+  description = "Security Group ID for App Runner VPC Connector"
+  value       = aws_security_group.apprunner_egress_sg.id
+}

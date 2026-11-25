@@ -54,3 +54,35 @@ module "frontend_cdn" {
   domain_name          = "app.healthkicks.eu"
   enable_custom_domain = true
 }
+
+# 7. App Runner: Managed Serverless Container for Backend
+module "app_runner" {
+  count  = var.enable_app_runner ? 1 : 0
+  source = "../../modules/app_runner"
+
+  environment          = var.environment
+  service_name         = "healthkicks-backend"
+  image_repository_url = module.storage.backend_repo_url
+  image_tag            = var.app_runner_image_tag
+  access_role_arn      = module.iam.apprunner_access_role_arn
+  instance_role_arn    = module.iam.apprunner_instance_role_arn
+  subnet_ids           = var.database_subnet_ids
+  security_group_id    = module.security.apprunner_security_group_id
+
+  cpu    = var.app_runner_cpu
+  memory = var.app_runner_memory
+  port   = "8000"
+
+  max_concurrency = var.app_runner_max_concurrency
+  min_size        = var.app_runner_min_size
+  max_size        = var.app_runner_max_size
+
+  custom_domain_name   = "api.healthkicks.eu"
+  enable_custom_domain = var.app_runner_enable_custom_domain
+
+  environment_variables = {
+    ENVIRONMENT  = var.environment
+    DATABASE_URL = "postgresql+asyncpg://postgres@${module.database.cluster_endpoint}:5432/postgres"
+    AWS_REGION   = var.aws_region
+  }
+}

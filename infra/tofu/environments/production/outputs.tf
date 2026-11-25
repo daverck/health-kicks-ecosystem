@@ -48,6 +48,21 @@ output "frontend_cloudfront_domain_name" {
   value       = module.frontend_cdn.cloudfront_domain_name
 }
 
+output "app_runner_service_url" {
+  description = "App Runner default service HTTPS URL"
+  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].service_url : null
+}
+
+output "app_runner_service_arn" {
+  description = "App Runner service ARN"
+  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].service_arn : null
+}
+
+output "app_runner_dns_target" {
+  description = "App Runner DNS target for CNAME in Cloudflare"
+  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].dns_target : null
+}
+
 output "frontend_acm_dns_validation_records" {
   description = "DNS records to create in OVH for ACM certificate validation"
   value       = module.frontend_cdn.acm_dns_validation_records

@@ -196,7 +196,8 @@ resource "aws_iam_role" "mobile_iot_role" {
         Principal = {
           AWS = [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-            aws_iam_role.ec2_role.arn
+            aws_iam_role.ec2_role.arn,
+            aws_iam_role.apprunner_instance_role.arn
           ]
         }
         Action = "sts:AssumeRole"
@@ -403,7 +404,8 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "cloudfront:List*",
       "acm:Describe*",
       "acm:List*",
-      "acm:Get*"
+      "acm:Get*",
+      "apprunner:*"
     ]
     resources = ["*"]
   }
@@ -418,6 +420,124 @@ resource "aws_iam_policy" "github_actions_deploy_policy" {
 resource "aws_iam_role_policy_attachment" "github_actions_deploy_attach" {
   role       = aws_iam_role.github_actions_deploy.name
   policy_arn = aws_iam_policy.github_actions_deploy_policy.arn
+}
+
+# ------------------------------------------------------------------------------
+# 6. AWS App Runner Roles (Access Role & Instance Role)
+# ------------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "apprunner_access_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["build.apprunner.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "apprunner_access_role" {
+  name               = "HealthKicksAppRunnerAccessRole"
+  assume_role_policy = data.aws_iam_policy_document.apprunner_access_trust.json
+
+  tags = {
+    Project   = "HealthKicks"
+    ManagedBy = "OpenTofu"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "apprunner_ecr_access" {
+  role       = aws_iam_role.apprunner_access_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+}
+
+data "aws_iam_policy_document" "apprunner_instance_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["tasks.apprunner.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "apprunner_instance_role" {
+  name               = "HealthKicksAppRunnerInstanceRole"
+  assume_role_policy = data.aws_iam_policy_document.apprunner_instance_trust.json
+
+  tags = {
+    Project   = "HealthKicks"
+    ManagedBy = "OpenTofu"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "apprunner_aurora_connect" {
+  role       = aws_iam_role.apprunner_instance_role.name
+  policy_arn = aws_iam_policy.aurora_connect.arn
+}
+
+resource "aws_iam_role_policy" "apprunner_dynamodb" {
+  name = "HealthKicks-AppRunner-DynamoDBPolicy"
+  role = aws_iam_role.apprunner_instance_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowHealthKicksDynamoDBAccess"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:GetItem",
+          "dynamodb:BatchWriteItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/healthkicks_telemetry"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "apprunner_assume_mobile_iot" {
+  name = "AllowAssumeHealthKicksMobileIoTRole"
+  role = aws_iam_role.apprunner_instance_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.mobile_iot_role.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "apprunner_iot_publish" {
+  name = "HealthKicks-AppRunner-IoTPublishPolicy"
+  role = aws_iam_role.apprunner_instance_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AllowIoTPublishHapticCommands"
+        Effect   = "Allow"
+        Action   = ["iot:Publish"]
+        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/*/commands/*"
+      },
+      {
+        Sid      = "AllowIoTPublishFallAlertDownlink"
+        Effect   = "Allow"
+        Action   = ["iot:Publish"]
+        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/users/*/fall-alert/status"
+      }
+    ]
+  })
 }
 
 # ------------------------------------------------------------------------------
@@ -437,4 +557,14 @@ output "github_actions_role_arn" {
 output "mobile_iot_role_arn" {
   description = "ARN of the IAM role assumed for Mobile IoT Gateway"
   value       = aws_iam_role.mobile_iot_role.arn
+}
+
+output "apprunner_access_role_arn" {
+  description = "ARN of the App Runner ECR Access Role"
+  value       = aws_iam_role.apprunner_access_role.arn
+}
+
+output "apprunner_instance_role_arn" {
+  description = "ARN of the App Runner Instance Execution Role"
+  value       = aws_iam_role.apprunner_instance_role.arn
 }
