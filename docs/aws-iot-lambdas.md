@@ -372,13 +372,13 @@ SELECT * FROM 'healthkicks/v1/+/events/detection'
 
 ### Environment Variables
 
-| Variable     | Required | Default      | Description                                          |
-| :----------- | :------: | :----------- | :--------------------------------------------------- |
-| `DB_HOST`    |   Yes    | —            | Aurora PostgreSQL endpoint hostname.                 |
-| `DB_PORT`    |    No    | `5432`       | Aurora PostgreSQL connection port.                   |
-| `DB_USER`    |   Yes    | `postgres`   | Database username configured for IAM authentication. |
-| `DB_NAME`    |   Yes    | `postgres`   | Target database name.                                |
-| `AWS_REGION` |    No    | `eu-north-1` | AWS Region where the Aurora cluster is located.      |
+| Variable     | Required | Default     | Description                                          |
+| :----------- | :------: | :---------- | :--------------------------------------------------- |
+| `DB_HOST`    |   Yes    | —           | Aurora PostgreSQL endpoint hostname.                 |
+| `DB_PORT`    |    No    | `5432`      | Aurora PostgreSQL connection port.                   |
+| `DB_USER`    |   Yes    | `postgres`  | Database username configured for IAM authentication. |
+| `DB_NAME`    |   Yes    | `postgres`  | Target database name.                                |
+| `AWS_REGION` |    No    | `eu-west-1` | AWS Region where the Aurora cluster is located.      |
 
 ### Source Code (`lambda_function.py`)
 
@@ -394,7 +394,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Initialize RDS boto3 client outside the handler for connection reuse
-rds_client = boto3.client("rds", region_name=os.environ.get("AWS_REGION", "eu-north-1"))
+rds_client = boto3.client("rds", region_name=os.environ.get("AWS_REGION", "eu-west-1"))
 conn = None
 
 
@@ -404,7 +404,7 @@ def get_db_connection():
         host = os.environ["DB_HOST"]
         port = int(os.environ.get("DB_PORT", 5432))
         user = os.environ.get("DB_USER", "postgres")
-        region = os.environ.get("AWS_REGION", "eu-north-1")
+        region = os.environ.get("AWS_REGION", "eu-west-1")
 
         logger.info("Generating RDS IAM auth token for user=%s host=%s", user, host)
 
@@ -592,13 +592,13 @@ In addition to Aurora connection and STS assume-role capabilities, the EC2 role 
       "Sid": "AllowIoTPublishHapticCommands",
       "Effect": "Allow",
       "Action": ["iot:Publish"],
-      "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/*/commands/*"
+      "Resource": "arn:aws:iot:eu-west-1:693906847467:topic/healthkicks/v1/*/commands/*"
     },
     {
       "Sid": "AllowIoTPublishFallAlertDownlink",
       "Effect": "Allow",
       "Action": ["iot:Publish"],
-      "Resource": "arn:aws:iot:eu-north-1:693906847467:topic/healthkicks/v1/users/*/fall-alert/status"
+      "Resource": "arn:aws:iot:eu-west-1:693906847467:topic/healthkicks/v1/users/*/fall-alert/status"
     }
   ]
 }

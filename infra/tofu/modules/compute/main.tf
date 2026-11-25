@@ -22,7 +22,7 @@ variable "instance_type" {
 
 variable "ami_id" {
   type        = string
-  description = "Ubuntu AMI ID in eu-north-1"
+  description = "Ubuntu AMI ID in eu-west-1"
   default     = "ami-0aba19e56f3eaec05" # Ubuntu 24.04 LTS
 }
 

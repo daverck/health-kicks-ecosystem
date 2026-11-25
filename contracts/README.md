@@ -84,7 +84,7 @@ _Example JSON response (`FirmwareLatestResponse`):_
 ```json
 {
   "version": "v1.2.1-esp32s3",
-  "download_url": "https://healthkicks-firmware-releases.s3.eu-north-1.amazonaws.com/firmware/esp32s3/latest/firmware.bin?AWSAccessKeyId=...&Signature=...&Expires=...",
+  "download_url": "https://healthkicks-firmware-releases-eu-west-1.s3.eu-west-1.amazonaws.com/firmware/esp32s3/latest/firmware.bin?AWSAccessKeyId=...&Signature=...&Expires=...",
   "sha256": "8a32f6b3e7d581f148e658091ecb6a93ad5d24d26f047ff690b200b3e55c2aa7",
   "size_bytes": 1048576,
   "expires_in_seconds": 900,

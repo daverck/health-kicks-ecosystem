@@ -25,7 +25,7 @@ services:
       - "4566:4566"
     environment:
       - SERVICES=dynamodb,s3,iot
-      - AWS_DEFAULT_REGION=eu-north-1
+      - AWS_DEFAULT_REGION=eu-west-1
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - localstack_data:/var/lib/localstack
@@ -51,8 +51,8 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgrespassword@postgres:5432/healthkicks
       DATABASE_SSLMODE: disable
       DYNAMODB_ENDPOINT_URL: http://localstack:4566
-      AWS_REGION: eu-north-1
-      AWS_DEFAULT_REGION: eu-north-1
+      AWS_REGION: eu-west-1
+      AWS_DEFAULT_REGION: eu-west-1
       AWS_ACCESS_KEY_ID: mock-access-key
       AWS_SECRET_ACCESS_KEY: mock-secret-key
       HEALTHKICKS_JWT_SECRET: dev-secret-for-docker-compose-minimum-32-chars-long

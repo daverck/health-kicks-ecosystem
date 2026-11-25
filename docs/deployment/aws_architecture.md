@@ -14,7 +14,7 @@ flowchart TD
         Web["Clinician Browser<br/>(Angular 22 SPA)"]
     end
 
-    subgraph AWSCloud["AWS Cloud Infrastructure (Region eu-north-1 / eu-west-3)"]
+    subgraph AWSCloud["AWS Cloud Infrastructure (Region eu-west-1)"]
         subgraph Ingestion["Ingestion & Real-Time Messaging"]
             IoTCore["AWS IoT Core<br/>(MQTT WSS SigV4 - Port 443)"]
             STS["AWS Security Token Service<br/>(Temporary credentials generation)"]
