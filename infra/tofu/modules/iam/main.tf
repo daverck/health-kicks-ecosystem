@@ -48,37 +48,9 @@ variable "firmware_repository" {
 }
 
 # ------------------------------------------------------------------------------
-# 1. EC2 Instance IAM Role (Matches live EC2ToAuroraBDDAuthRole)
+# 1. Aurora PostgreSQL IAM Authentication Policy (AuroraConnectPolicy)
 # ------------------------------------------------------------------------------
 
-data "aws_iam_policy_document" "ec2_trust" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "ec2_role" {
-  name               = "EC2ToAuroraBDDAuthRole"
-  assume_role_policy = data.aws_iam_policy_document.ec2_trust.json
-
-  tags = {
-    Project   = "HealthKicks"
-    ManagedBy = "OpenTofu"
-  }
-}
-
-# A. ECR Pull Permissions (AmazonEC2ContainerRegistryReadOnly)
-resource "aws_iam_role_policy_attachment" "ec2_ecr_read" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
-# B. Aurora PostgreSQL IAM Authentication (AuroraConnectPolicy)
 resource "aws_iam_policy" "aurora_connect" {
   name = "AuroraConnectPolicy"
 
@@ -90,99 +62,16 @@ resource "aws_iam_policy" "aurora_connect" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = "rds-db:connect"
-        Resource = [
-          "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:*/postgres",
-          "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:cluster-DGAWIPS4B6EG4OZY7A3BIBNNA4/postgres",
-          "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:db-267CCZGLWF3DOX5LTBY4KFFURI/postgres"
-        ]
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_aurora_connect" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = aws_iam_policy.aurora_connect.arn
-}
-
-# C. DynamoDB Access for IMU Telemetry (HealthKicks-EC2-DynamoDBPolicy)
-resource "aws_iam_role_policy" "ec2_dynamodb" {
-  name = "HealthKicks-EC2-DynamoDBPolicy"
-  role = aws_iam_role.ec2_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowHealthKicksDynamoDBAccess"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:GetItem",
-          "dynamodb:BatchWriteItem",
-          "dynamodb:DeleteItem"
-        ]
-        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/healthkicks_telemetry"
-      }
-    ]
-  })
-}
-
-# D. STS AssumeRole for Mobile IoT Gateway (AllowAssumeHealthKicksMobileIoTRole)
-resource "aws_iam_role_policy" "ec2_assume_mobile_iot" {
-  name = "AllowAssumeHealthKicksMobileIoTRole"
-  role = aws_iam_role.ec2_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
         Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = aws_iam_role.mobile_iot_role.arn
-      }
-    ]
-  })
-}
-
-# E. IoT Publish Policy for Haptics & Fall Alerts (HealthKicks-EC2-IoTPublishPolicy)
-resource "aws_iam_role_policy" "ec2_iot_publish" {
-  name = "HealthKicks-EC2-IoTPublishPolicy"
-  role = aws_iam_role.ec2_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "AllowIoTPublishHapticCommands"
-        Effect   = "Allow"
-        Action   = ["iot:Publish"]
-        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/*/commands/*"
-      },
-      {
-        Sid      = "AllowIoTPublishFallAlertDownlink"
-        Effect   = "Allow"
-        Action   = ["iot:Publish"]
-        Resource = "arn:aws:iot:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:topic/healthkicks/v1/users/*/fall-alert/status"
+        Action   = "rds-db:connect"
+        Resource = "arn:aws:rds-db:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:dbuser:*/postgres"
       }
     ]
   })
 }
 
 # ------------------------------------------------------------------------------
-# 2. EC2 Instance Profile (Matches live EC2ToAuroraInstanceProfile)
-# ------------------------------------------------------------------------------
-
-resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "EC2ToAuroraInstanceProfile"
-  role = aws_iam_role.ec2_role.name
-}
-
-# ------------------------------------------------------------------------------
-# 3. Mobile IoT Gateway IAM Role (HealthKicksMobileIoTRole)
+# 2. Mobile IoT Gateway IAM Role (HealthKicksMobileIoTRole)
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_role" "mobile_iot_role" {
@@ -196,7 +85,6 @@ resource "aws_iam_role" "mobile_iot_role" {
         Principal = {
           AWS = [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-            aws_iam_role.ec2_role.arn,
             aws_iam_role.ecs_task_role.arn
           ]
         }
@@ -599,11 +487,6 @@ resource "aws_iam_role_policy" "ecs_task_exec" {
 # ------------------------------------------------------------------------------
 # Outputs
 # ------------------------------------------------------------------------------
-
-output "ec2_instance_profile_name" {
-  description = "Name of the EC2 instance profile"
-  value       = aws_iam_instance_profile.ec2_profile.name
-}
 
 output "github_actions_role_arn" {
   description = "ARN of the IAM role for GitHub Actions OIDC deployment"

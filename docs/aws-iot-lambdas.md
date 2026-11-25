@@ -577,12 +577,12 @@ def lambda_handler(event, context):
 
 ---
 
-## 7. EC2 Backend IoT Core Permissions
+## 7. ECS Fargate Backend IoT Core Permissions
 
-The FastAPI backend runs on an EC2 instance associated with IAM Role `EC2ToAuroraBDDAuthRole` (via Instance Profile `EC2ToAuroraInstanceProfile`).
-In addition to Aurora connection and STS assume-role capabilities, the EC2 role requires permission to publish MQTT commands to devices and downlink fall alert status updates to mobile applications via AWS IoT Core (`iot-data:Publish`).
+The FastAPI backend runs on ECS Fargate associated with IAM Role `HealthKicksEcsTaskRole`.
+In addition to Aurora connection, DynamoDB, and STS assume-role capabilities, the task role requires permission to publish MQTT commands to devices and downlink fall alert status updates to mobile applications via AWS IoT Core (`iot-data:Publish`).
 
-### IAM Inline Policy: `HealthKicks-EC2-IoTPublishPolicy`
+### IAM Inline Policy: `HealthKicks-ECS-IoTPublishPolicy`
 
 ```json
 {
