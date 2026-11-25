@@ -741,7 +741,7 @@ def create_presentation():
 
     qual_items = [
         ("Approche Contract-Driven", "Tout échange (BLE, REST, MQTT) est régi par des contrats formels sous contracts/."),
-        ("Benchmark Studio en Ligne", "Matrice de confusion & métriques F1 en direct sur healthkicks.duckdns.org/dashboard/studio/classes."),
+        ("Benchmark Studio en Ligne", "Matrice de confusion & métriques F1 en direct sur app.healthkicks.eu/dashboard/studio/classes."),
         ("324 Tests Backend & 320 Tests Mobile", "Suites complètes pytest et Flutter validant l'odométrie SQLite, l'auth et la synchronisation."),
         ("Validation Mémoire Firmware", "PlatformIO (pio run) valide 100% des limites de Flash et de RAM statique (0 fuite).")
     ]
@@ -944,8 +944,8 @@ def create_presentation():
     p.space_after = Pt(12)
 
     demo_items = [
-        ("Plateforme Web Live", "https://healthkicks.duckdns.org"),
-        ("Studio & Benchmark des Modèles", "https://healthkicks.duckdns.org/dashboard/studio/classes"),
+        ("Plateforme Web Live", "https://app.healthkicks.eu"),
+        ("Studio & Benchmark des Modèles", "https://app.healthkicks.eu/dashboard/studio/classes"),
         ("Documentation & Spécifications", "Architecture, contrats d'interface BLE/MQTT et guides de reproduction."),
         ("Dépôt & Intégration Continue", "Code source versionné, pipelines CI/CD et suites de tests automatisées.")
     ]

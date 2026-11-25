@@ -1338,7 +1338,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
         img_x = 68
         img_y = col_y + 18
         c.drawImage(ml_img_path, 58, col_y + 18, width=444, height=325, preserveAspectRatio=True, anchor='c')
-        studio_url = "https://healthkicks.duckdns.org/dashboard/studio/classes"
+        studio_url = "https://app.healthkicks.eu/dashboard/studio/classes"
         c.linkURL(studio_url, (img_x, img_y, img_x + img_w, img_y + img_h), thickness=0)
 
     # Droite : 2 Grandes Cartes Métriques empilées
@@ -1809,7 +1809,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     demo_links = [
         ("Site Portfolio & CV", "https://daverck.github.io/serck-david-portfolio", "daverck.github.io/serck-david-portfolio", "docs/presentation/globe_lucide.png"),
-        ("Plateforme Web Live", "https://healthkicks.duckdns.org", "healthkicks.duckdns.org", "docs/presentation/globe_lucide.png"),
+        ("Plateforme Web Live", "https://app.healthkicks.eu", "app.healthkicks.eu", "docs/presentation/globe_lucide.png"),
         ("Code Source & Spécifications", "https://github.com/daverck/health-kicks-ecosystem", "github.com/daverck/health-kicks-ecosystem", "docs/presentation/github_official.png")
     ]
 
@@ -1902,7 +1902,7 @@ def build_pdf(filename="docs/presentation/presentation_healthkicks.pdf"):
 
     if os.path.exists(podo_img_path):
         c.drawImage(podo_img_path, 508, 110, width=384, height=230, preserveAspectRatio=True)
-        steps_url = "https://healthkicks.duckdns.org/dashboard/steps"
+        steps_url = "https://app.healthkicks.eu/dashboard/steps"
         c.linkURL(steps_url, (508, 110, 508 + 384, 110 + 230), thickness=0)
 
     c.showPage()

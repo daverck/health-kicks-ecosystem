@@ -237,7 +237,7 @@ _color: #0f172a
 | **Overall Accuracy**        | **92.2%**      | Robustness across all gaits       |
 | **Fall Recall**             | **95.5%**      | 95.8% F1 on backward falls        |
 
-- **Live Benchmark & Validation**: Detailed confusion matrix and class metrics available live on [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes).
+- **Live Benchmark & Validation**: Detailed confusion matrix and class metrics available live on [https://app.healthkicks.eu/dashboard/studio/classes](https://app.healthkicks.eu/dashboard/studio/classes).
 
 - **Configurable Inactivity Reminder**: Threshold adjustable from 10 to 120 min with periodic haptic vibration pulse.
 
@@ -293,9 +293,9 @@ color: #f8fafc
 
 - **Portfolio & Profile**: [https://daverck.github.io/serck-david-portfolio](https://daverck.github.io/serck-david-portfolio)
 
-- **Live Web Demonstrator**: [https://healthkicks.duckdns.org](https://healthkicks.duckdns.org)
+- **Live Web Demonstrator**: [https://app.healthkicks.eu](https://app.healthkicks.eu)
 
-- **Studio & Model Benchmarks**: [https://healthkicks.duckdns.org/dashboard/studio/classes](https://healthkicks.duckdns.org/dashboard/studio/classes)
+- **Studio & Model Benchmarks**: [https://app.healthkicks.eu/dashboard/studio/classes](https://app.healthkicks.eu/dashboard/studio/classes)
 
 - **Key Topics for Discussion**:
 

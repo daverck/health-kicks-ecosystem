@@ -4,7 +4,7 @@
 server {
     listen 80;
     listen [::]:80;
-    server_name healthkicks.eu www.healthkicks.eu api.healthkicks.eu app.healthkicks.eu healthkicks.duckdns.org;
+    server_name healthkicks.eu www.healthkicks.eu api.healthkicks.eu app.healthkicks.eu;
 
     # Allow Let's Encrypt automated challenge validation without stopping Nginx
     location /.well-known/acme-challenge/ {
@@ -104,13 +104,13 @@ server {
 }
 
 # ==============================================================================
-# 4. Apex, WWW & Legacy DuckDNS Redirection (-> app.healthkicks.eu)
+# 4. Apex & WWW Redirection (-> app.healthkicks.eu)
 # ==============================================================================
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
     http2 on;
-    server_name healthkicks.eu www.healthkicks.eu healthkicks.duckdns.org;
+    server_name healthkicks.eu www.healthkicks.eu;
 
     ssl_certificate /etc/letsencrypt/live/api.healthkicks.eu/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.healthkicks.eu/privkey.pem;

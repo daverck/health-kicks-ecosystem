@@ -16,7 +16,7 @@ This document specifies the official Nginx reverse-proxy configuration and Let's
 │                                                                 │
 │   ┌─────────────────────────────────────────────────────────┐   │
 │   │                 Nginx Host Reverse Proxy                │   │
-│   │   - Let's Encrypt TLS (api / app / duckdns)             │   │
+│   │   - Let's Encrypt TLS (api / app)                       │   │
 │   │   - HTTP -> HTTPS 301 Permanent Redirect                │   │
 │   │   - WebSocket Upgrade handling                          │   │
 │   │   - Port leak mitigation (proxy_redirect)               │   │
@@ -34,7 +34,7 @@ This document specifies the official Nginx reverse-proxy configuration and Let's
 
 - **Backend API**: Accessible at `https://api.healthkicks.eu` (proxied to `http://healthkicks_backend`, dynamically alternating between container ports `8000` (`healthkicks-blue`) and `8001` (`healthkicks-green`) for zero-downtime deployment).
 - **Frontend App**: Accessible at `https://app.healthkicks.eu` (proxied to container port 8080).
-- **Apex / WWW / Legacy DuckDNS**: `https://healthkicks.eu`, `https://www.healthkicks.eu`, and `https://healthkicks.duckdns.org` redirect 301 to `https://app.healthkicks.eu`.
+- **Apex / WWW**: `https://healthkicks.eu` and `https://www.healthkicks.eu` redirect 301 to `https://app.healthkicks.eu`.
 
 ---
 
@@ -58,7 +58,7 @@ upstream healthkicks_backend {
 server {
     listen 80;
     listen [::]:80;
-    server_name api.healthkicks.eu app.healthkicks.eu healthkicks.eu www.healthkicks.eu healthkicks.duckdns.org;
+    server_name api.healthkicks.eu app.healthkicks.eu healthkicks.eu www.healthkicks.eu;
 
     # Allow Let's Encrypt automated challenge validation without stopping Nginx
     location /.well-known/acme-challenge/ {
@@ -164,22 +164,6 @@ server {
     }
 }
 
-# ==============================================================================
-# 5. Legacy DuckDNS HTTPS Redirection (healthkicks.duckdns.org -> app.healthkicks.eu)
-# ==============================================================================
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    http2 on;
-    server_name healthkicks.duckdns.org;
-
-    ssl_certificate /etc/letsencrypt/live/api.healthkicks.eu/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.healthkicks.eu/privkey.pem;
-
-    location / {
-        return 301 https://app.healthkicks.eu$request_uri;
-    }
-}
 ```
 
 ---
@@ -210,7 +194,6 @@ The multi-domain certificate covers:
 - `app.healthkicks.eu`
 - `healthkicks.eu`
 - `www.healthkicks.eu`
-- `healthkicks.duckdns.org`
 
 ### Renewal via Webroot (Zero Downtime)
 

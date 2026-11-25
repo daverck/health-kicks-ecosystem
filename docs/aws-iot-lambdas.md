@@ -18,11 +18,11 @@ SELECT *, topic() as topic FROM 'healthkicks/v1/+/status'
 
 ### Environment Variables
 
-| Variable       | Required | Default                                                                | Description                                                               |
-| :------------- | :------: | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for presence ingestion.                                  |
-| `INGEST_TOKEN` |   Yes    | `dev-token`                                                            | Secret API authentication token sent via `X-Ingest-Token`.                |
-| `VERIFY_SSL`   |    No    | `true`                                                                 | Set to `false` only in development if using self-signed TLS certificates. |
+| Variable       | Required | Default                                                      | Description                                                               |
+| :------------- | :------: | :----------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://api.healthkicks.eu/api/v1/internal/device-presence` | FastAPI endpoint for presence ingestion.                                  |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                  | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                       | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
 
@@ -39,7 +39,7 @@ def lambda_handler(event, context):
 
     backend_url = os.environ.get(
         "BACKEND_URL",
-        "https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence"
+        "https://api.healthkicks.eu/api/v1/internal/device-presence"
     )
     ingest_token = os.environ.get("INGEST_TOKEN", "dev-token")
     verify_ssl = os.environ.get("VERIFY_SSL", "true").lower() == "true"
@@ -105,11 +105,11 @@ SELECT *, topic() as topic FROM 'healthkicks/v1/users/+/gateway-status'
 
 ### Environment Variables
 
-| Variable       | Required | Default                                                                | Description                                                               |
-| :------------- | :------: | :--------------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence` | FastAPI endpoint for gateway presence updates.                            |
-| `INGEST_TOKEN` |   Yes    | `dev-token`                                                            | Secret API authentication token sent via `X-Ingest-Token`.                |
-| `VERIFY_SSL`   |    No    | `true`                                                                 | Set to `false` only in development if using self-signed TLS certificates. |
+| Variable       | Required | Default                                                      | Description                                                               |
+| :------------- | :------: | :----------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://api.healthkicks.eu/api/v1/internal/device-presence` | FastAPI endpoint for gateway presence updates.                            |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                                  | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                       | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
 
@@ -126,7 +126,7 @@ def lambda_handler(event, context):
 
     backend_url = os.environ.get(
         "BACKEND_URL",
-        "https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence"
+        "https://api.healthkicks.eu/api/v1/internal/device-presence"
     )
     ingest_token = os.environ.get("INGEST_TOKEN", "dev-token")
     verify_ssl = os.environ.get("VERIFY_SSL", "true").lower() == "true"
@@ -487,11 +487,11 @@ SELECT *, topic(4) as user_id FROM 'healthkicks/v1/users/+/events/fall-alert'
 
 ### Environment Variables
 
-| Variable       | Required | Default                                                            | Description                                                               |
-| :------------- | :------: | :----------------------------------------------------------------- | :------------------------------------------------------------------------ |
-| `BACKEND_URL`  |   Yes    | `https://healthkicks.duckdns.org:8443/api/v1/internal/fall-alerts` | FastAPI internal endpoint for fall alert lifecycle management.            |
-| `INGEST_TOKEN` |   Yes    | `dev-token`                                                        | Secret API authentication token sent via `X-Ingest-Token`.                |
-| `VERIFY_SSL`   |    No    | `true`                                                             | Set to `false` only in development if using self-signed TLS certificates. |
+| Variable       | Required | Default                                                  | Description                                                               |
+| :------------- | :------: | :------------------------------------------------------- | :------------------------------------------------------------------------ |
+| `BACKEND_URL`  |   Yes    | `https://api.healthkicks.eu/api/v1/internal/fall-alerts` | FastAPI internal endpoint for fall alert lifecycle management.            |
+| `INGEST_TOKEN` |   Yes    | `dev-token`                                              | Secret API authentication token sent via `X-Ingest-Token`.                |
+| `VERIFY_SSL`   |    No    | `true`                                                   | Set to `false` only in development if using self-signed TLS certificates. |
 
 ### Source Code (`lambda_function.py`)
 
@@ -507,7 +507,7 @@ def lambda_handler(event, context):
 
     backend_url = os.environ.get(
         "BACKEND_URL",
-        "https://healthkicks.duckdns.org:8443/api/v1/internal/fall-alerts"
+        "https://api.healthkicks.eu/api/v1/internal/fall-alerts"
     )
     ingest_token = os.environ.get("INGEST_TOKEN", "dev-token")
     verify_ssl = os.environ.get("VERIFY_SSL", "true").lower() == "true"

@@ -125,7 +125,7 @@ from datetime import datetime, timezone
 def lambda_handler(event, context):
     api_url = os.environ.get(
         "BACKEND_URL",
-        "https://healthkicks.duckdns.org:8443/api/v1/internal/device-presence"
+        "https://api.healthkicks.eu/api/v1/internal/device-presence"
     )
     ingest_token = os.environ.get("INGEST_TOKEN", "xxxxxxxxx")
 

@@ -164,7 +164,7 @@ Published by backend via `AWSIoTPublishService` (`iot-data:Publish`, **QoS 1**) 
     "contact_id": 7,
     "contact_first_name": "Marie",
     "recipient_phone": "+32470123456",
-    "message": "[HealthKicks EMERGENCY] Fall detected for Jean Martin (10:39). Location: https://maps.google.com/?q=50.8466,4.3528 Confirm handling: https://healthkicks.duckdns.org:8443/api/v1/fall-alerts/ack?token=...",
+    "message": "[HealthKicks EMERGENCY] Fall detected for Jean Martin (10:39). Location: https://maps.google.com/?q=50.8466,4.3528 Confirm handling: https://api.healthkicks.eu/api/v1/fall-alerts/ack?token=...",
     "is_test": false
   }
 }
