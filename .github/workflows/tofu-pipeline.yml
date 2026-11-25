@@ -68,5 +68,7 @@ jobs:
 
       - name: OpenTofu Plan (Dry-run)
         id: plan
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           tofu plan -no-color

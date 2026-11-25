@@ -34,7 +34,7 @@ output "acm_certificate_status" {
 }
 
 output "acm_dns_validation_records" {
-  description = "DNS records to create in OVH for ACM certificate validation"
+  description = "DNS records managed in Cloudflare for ACM certificate validation"
   value = [
     for dvo in aws_acm_certificate.frontend.domain_validation_options : {
       name   = dvo.resource_record_name

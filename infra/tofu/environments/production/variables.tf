@@ -77,3 +77,31 @@ variable "enable_cloudflare_tunnel" {
   description = "Enable cloudflared sidecar container (requires /healthkicks/<env>/CLOUDFLARE_TUNNEL_TOKEN in SSM)"
   default     = false
 }
+
+# ------------------------------------------------------------------------------
+# Cloudflare DNS, SSL & Edge Routing Configuration
+# ------------------------------------------------------------------------------
+
+variable "cloudflare_account_id" {
+  type        = string
+  description = "Cloudflare Account ID"
+  default     = "64757746387fc5fa02a362badccd83c1"
+}
+
+variable "cloudflare_zone_id" {
+  type        = string
+  description = "Cloudflare DNS Zone ID for healthkicks.eu"
+  default     = "5a8edaea56b85f45796ff87919fab51f"
+}
+
+variable "cloudflare_tunnel_id" {
+  type        = string
+  description = "Cloudflare Zero Trust Tunnel ID for the FastAPI backend"
+  default     = "a820102c-31c7-42ed-913c-dab954b993b2"
+}
+
+variable "domain_name" {
+  type        = string
+  description = "Primary apex domain name"
+  default     = "healthkicks.eu"
+}

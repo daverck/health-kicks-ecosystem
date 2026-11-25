@@ -54,6 +54,6 @@ output "ecs_log_group_name" {
 }
 
 output "frontend_acm_dns_validation_records" {
-  description = "DNS records to create in OVH for ACM certificate validation"
+  description = "DNS records managed in Cloudflare for ACM certificate validation"
   value       = module.frontend_cdn.acm_dns_validation_records
 }

@@ -112,6 +112,18 @@ module "frontend_cdn" {
   }
 
   environment          = var.environment
-  domain_name          = "app.healthkicks.eu"
+  domain_name          = "app.${var.domain_name}"
   enable_custom_domain = true
+}
+
+# 7. Edge DNS, SSL/TLS & Redirects: Cloudflare Zone Records (OVH Mail, CloudFront, Tunnel)
+module "cloudflare_dns" {
+  source = "../../modules/cloudflare_dns"
+
+  zone_id                     = var.cloudflare_zone_id
+  domain_name                 = var.domain_name
+  tunnel_id                   = var.cloudflare_tunnel_id
+  cloudfront_domain_name      = module.frontend_cdn.cloudfront_domain_name
+  acm_validation_record_name  = module.frontend_cdn.acm_dns_validation_records[0].name
+  acm_validation_record_value = module.frontend_cdn.acm_dns_validation_records[0].record
 }

@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
 
   backend "s3" {
@@ -44,3 +48,6 @@ provider "aws" {
     }
   }
 }
+
+# Reads CLOUDFLARE_API_TOKEN automatically from the environment
+provider "cloudflare" {}
