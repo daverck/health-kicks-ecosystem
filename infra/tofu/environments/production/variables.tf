@@ -10,28 +10,16 @@ variable "environment" {
   default     = "production"
 }
 
-variable "instance_type" {
-  type        = string
-  description = "EC2 instance type"
-  default     = "t3.micro"
-}
-
 variable "vpc_id" {
   type        = string
   description = "Target AWS VPC ID"
   default     = "vpc-0c7bae52bbf409873"
 }
 
-variable "subnet_id" {
-  type        = string
-  description = "Target public subnet ID for EC2"
-  default     = "subnet-017411c8be32a97d6"
-}
-
-variable "key_name" {
-  type        = string
-  description = "EC2 SSH Key Pair name"
-  default     = "healthkicks-key"
+variable "database_subnet_ids" {
+  type        = list(string)
+  description = "Subnet IDs for VPC Connector (database subnets)"
+  default     = ["subnet-017411c8be32a97d6"]
 }
 
 variable "github_repository" {
@@ -40,11 +28,9 @@ variable "github_repository" {
   default     = "daverck/health-kicks-ecosystem"
 }
 
-variable "enable_app_runner" {
-  type        = bool
-  description = "Enable AWS App Runner backend service"
-  default     = true
-}
+# ------------------------------------------------------------------------------
+# App Runner Compute Configuration
+# ------------------------------------------------------------------------------
 
 variable "app_runner_image_tag" {
   type        = string
@@ -86,10 +72,4 @@ variable "app_runner_enable_custom_domain" {
   type        = bool
   description = "Whether to configure custom domain association for App Runner"
   default     = false
-}
-
-variable "database_subnet_ids" {
-  type        = list(string)
-  description = "Subnet IDs for VPC Connector (database subnets)"
-  default     = ["subnet-017411c8be32a97d6"]
 }

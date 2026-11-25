@@ -1,13 +1,3 @@
-output "elastic_ip" {
-  description = "Permanent Elastic IP for Cloudflare DNS A-record mapping"
-  value       = module.compute.elastic_ip
-}
-
-output "ec2_instance_id" {
-  description = "EC2 Host Instance ID"
-  value       = module.compute.instance_id
-}
-
 output "database_cluster_endpoint" {
   description = "Aurora Serverless v2 PostgreSQL writer endpoint"
   value       = module.database.cluster_endpoint
@@ -50,17 +40,17 @@ output "frontend_cloudfront_domain_name" {
 
 output "app_runner_service_url" {
   description = "App Runner default service HTTPS URL"
-  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].service_url : null
+  value       = module.app_runner.service_url
 }
 
 output "app_runner_service_arn" {
   description = "App Runner service ARN"
-  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].service_arn : null
+  value       = module.app_runner.service_arn
 }
 
 output "app_runner_dns_target" {
-  description = "App Runner DNS target for CNAME in Cloudflare"
-  value       = var.enable_app_runner && length(module.app_runner) > 0 ? module.app_runner[0].dns_target : null
+  description = "App Runner DNS target for CNAME in Cloudflare / OVH"
+  value       = module.app_runner.dns_target
 }
 
 output "frontend_acm_dns_validation_records" {
