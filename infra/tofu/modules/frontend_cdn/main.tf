@@ -17,7 +17,7 @@ terraform {
 data "aws_caller_identity" "current" {}
 
 locals {
-  bucket_name  = "healthkicks-frontend-app-${data.aws_caller_identity.current.account_id}"
+  bucket_name  = "healthkicks-frontend-app-eu-west-1-${data.aws_caller_identity.current.account_id}"
   s3_origin_id = "S3-${local.bucket_name}"
 }
 

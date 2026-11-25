@@ -566,8 +566,8 @@ resource "aws_iam_role_policy" "ecs_task_s3_firmware" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::healthkicks-firmware-releases",
-          "arn:aws:s3:::healthkicks-firmware-releases/*"
+          "arn:aws:s3:::healthkicks-firmware-releases*",
+          "arn:aws:s3:::healthkicks-firmware-releases*/*"
         ]
       }
     ]

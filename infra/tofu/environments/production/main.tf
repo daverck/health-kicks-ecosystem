@@ -33,13 +33,9 @@ locals {
   ]
 }
 
-# 1. Storage: ECR repositories & DynamoDB in eu-west-1, S3 OTA bucket pinned in eu-north-1
+# 1. Storage: ECR repositories, DynamoDB, and S3 OTA bucket in eu-west-1
 module "storage" {
   source = "../../modules/storage"
-  providers = {
-    aws            = aws
-    aws.eu_north_1 = aws.eu_north_1
-  }
 
   environment             = var.environment
   max_ecr_images_retained = 3
@@ -89,6 +85,7 @@ module "ecs_fargate" {
     DATABASE_SSLMODE        = "require"
     AWS_REGION              = var.aws_region
     AWS_DEFAULT_REGION      = var.aws_region
+    S3_FIRMWARE_BUCKET      = module.storage.firmware_bucket_name
   }
 
   environment_secrets = {
@@ -106,11 +103,11 @@ module "database" {
   vpc_security_group_ids = [module.security.aurora_security_group_id]
 }
 
-# 6. Frontend CDN: S3 Bucket (eu-north-1), CloudFront Distribution, OAC, and ACM (us-east-1)
+# 6. Frontend CDN: S3 Bucket (eu-west-1), CloudFront Distribution, OAC, and ACM (us-east-1)
 module "frontend_cdn" {
   source = "../../modules/frontend_cdn"
   providers = {
-    aws           = aws.eu_north_1
+    aws           = aws
     aws.us_east_1 = aws.us_east_1
   }
 

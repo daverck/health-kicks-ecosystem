@@ -2,9 +2,8 @@ terraform {
   required_version = ">= 1.6.0"
   required_providers {
     aws = {
-      source                = "hashicorp/aws"
-      version               = "~> 5.40"
-      configuration_aliases = [aws.eu_north_1]
+      source  = "hashicorp/aws"
+      version = "~> 5.40"
     }
   }
 }
@@ -30,7 +29,7 @@ variable "frontend_repo_name" {
 variable "firmware_bucket_name" {
   type        = string
   description = "S3 bucket for signed OTA firmware binaries"
-  default     = "healthkicks-firmware-releases"
+  default     = "healthkicks-firmware-releases-eu-west-1"
 }
 
 variable "telemetry_table_name" {
@@ -119,8 +118,7 @@ resource "aws_ecr_lifecycle_policy" "frontend_lifecycle" {
 # ------------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "firmware_releases" {
-  provider = aws.eu_north_1
-  bucket   = var.firmware_bucket_name
+  bucket = var.firmware_bucket_name
 
   tags = {
     Project     = "HealthKicks"
@@ -131,8 +129,7 @@ resource "aws_s3_bucket" "firmware_releases" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "firmware_encryption" {
-  provider = aws.eu_north_1
-  bucket   = aws_s3_bucket.firmware_releases.id
+  bucket = aws_s3_bucket.firmware_releases.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -142,8 +139,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "firmware_encrypti
 }
 
 resource "aws_s3_bucket_public_access_block" "firmware_public_block" {
-  provider = aws.eu_north_1
-  bucket   = aws_s3_bucket.firmware_releases.id
+  bucket = aws_s3_bucket.firmware_releases.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -201,6 +197,11 @@ output "backend_repo_url" {
 output "frontend_repo_url" {
   description = "ECR Repository URL for the Frontend"
   value       = aws_ecr_repository.frontend.repository_url
+}
+
+output "firmware_bucket_name" {
+  description = "Name of the firmware releases S3 bucket"
+  value       = aws_s3_bucket.firmware_releases.id
 }
 
 output "firmware_bucket_arn" {

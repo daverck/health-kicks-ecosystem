@@ -13,9 +13,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket  = "healthkicks-tofu-state-693906847467"
+    bucket  = "healthkicks-tofu-state-eu-west-1-693906847467"
     key     = "production/terraform.tfstate"
-    region  = "eu-north-1"
+    region  = "eu-west-1"
     encrypt = true
   }
 }
@@ -35,19 +35,6 @@ provider "aws" {
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
-
-  default_tags {
-    tags = {
-      Project     = "HealthKicks"
-      Environment = var.environment
-      ManagedBy   = "OpenTofu"
-    }
-  }
-}
-
-provider "aws" {
-  alias  = "eu_north_1"
-  region = "eu-north-1"
 
   default_tags {
     tags = {
