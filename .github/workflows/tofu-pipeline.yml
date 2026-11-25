@@ -35,7 +35,7 @@ jobs:
         run: tofu fmt -check -recursive infra/tofu
 
   tofu-plan:
-    name: OpenTofu Plan (eu-north-1)
+    name: OpenTofu Plan (eu-west-1)
     needs: tofu-check
     runs-on: ubuntu-latest
     permissions:
@@ -57,7 +57,7 @@ jobs:
       - name: Configure AWS Credentials with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: eu-north-1
+          aws-region: eu-west-1
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
 
       - name: OpenTofu Init (S3 Remote Backend)
