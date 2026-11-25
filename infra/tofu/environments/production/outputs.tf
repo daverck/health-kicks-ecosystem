@@ -8,11 +8,6 @@ output "backend_ecr_repository_url" {
   value       = module.storage.backend_repo_url
 }
 
-output "frontend_ecr_repository_url" {
-  description = "ECR Repository URL for Frontend Docker images"
-  value       = module.storage.frontend_repo_url
-}
-
 output "dynamodb_telemetry_table" {
   description = "DynamoDB table name for high-throughput IMU telemetry"
   value       = module.storage.telemetry_table_name

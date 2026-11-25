@@ -20,12 +20,6 @@ variable "backend_repo_name" {
   default     = "healthkicks-backend"
 }
 
-variable "frontend_repo_name" {
-  type        = string
-  description = "ECR repository name for the Angular frontend"
-  default     = "healthkicks-frontend"
-}
-
 variable "firmware_bucket_name" {
   type        = string
   description = "S3 bucket for signed OTA firmware binaries"
@@ -45,7 +39,7 @@ variable "max_ecr_images_retained" {
 }
 
 # ------------------------------------------------------------------------------
-# 1. Amazon ECR Repositories (Backend & Frontend)
+# 1. Amazon ECR Repository (Backend)
 # ------------------------------------------------------------------------------
 
 resource "aws_ecr_repository" "backend" {
@@ -64,24 +58,8 @@ resource "aws_ecr_repository" "backend" {
   }
 }
 
-resource "aws_ecr_repository" "frontend" {
-  name                 = var.frontend_repo_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Project     = "HealthKicks"
-    Component   = "Frontend"
-    Environment = var.environment
-    ManagedBy   = "OpenTofu"
-  }
-}
-
 # ------------------------------------------------------------------------------
-# 2. Automated ECR Lifecycle Policies (Keep only last N images)
+# 2. Automated ECR Lifecycle Policy (Keep only last N images)
 # ------------------------------------------------------------------------------
 
 locals {
@@ -105,11 +83,6 @@ locals {
 
 resource "aws_ecr_lifecycle_policy" "backend_lifecycle" {
   repository = aws_ecr_repository.backend.name
-  policy     = local.ecr_lifecycle_policy
-}
-
-resource "aws_ecr_lifecycle_policy" "frontend_lifecycle" {
-  repository = aws_ecr_repository.frontend.name
   policy     = local.ecr_lifecycle_policy
 }
 
@@ -192,11 +165,6 @@ resource "aws_dynamodb_table" "telemetry" {
 output "backend_repo_url" {
   description = "ECR Repository URL for the Backend"
   value       = aws_ecr_repository.backend.repository_url
-}
-
-output "frontend_repo_url" {
-  description = "ECR Repository URL for the Frontend"
-  value       = aws_ecr_repository.frontend.repository_url
 }
 
 output "firmware_bucket_name" {

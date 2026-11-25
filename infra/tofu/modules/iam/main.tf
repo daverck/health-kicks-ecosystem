@@ -228,8 +228,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "ecr:PutImage"
     ]
     resources = [
-      "arn:aws:ecr:*:*:repository/healthkicks-backend",
-      "arn:aws:ecr:*:*:repository/healthkicks-frontend"
+      "arn:aws:ecr:*:*:repository/healthkicks-backend"
     ]
   }
 
