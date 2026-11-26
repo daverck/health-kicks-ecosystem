@@ -1,0 +1,14 @@
+{
+  "name": "healthkicks-ecosystem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace scripts for local development and testing of the HealthKicks ecosystem.",
+  "scripts": {
+    "dev:up": "docker compose up -d --wait",
+    "dev:down": "docker compose down",
+    "dev:seed": "docker compose exec -T backend python -m scripts.seed_dev_data",
+    "dev:full": "docker compose up -d --wait && docker compose exec -T backend python -m scripts.seed_dev_data",
+    "dev:logs": "docker compose logs -f backend",
+    "frontend:mock": "pnpm --dir health-kicks-frontend start:mock"
+  }
+}

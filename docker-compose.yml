@@ -29,6 +29,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - localstack_data:/var/lib/localstack
+      - ./infra/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro
 
   mosquitto:
     image: eclipse-mosquitto:2
