@@ -51,10 +51,11 @@ The ecosystem is structured as a multi-root workspace with independent Git submo
 
 | Directory / Submodule | Domain & Role | Tech Stack | Validation & Tests |
 | :--- | :--- | :--- | :--- |
-| [**`health-kicks-esp32-s3/`**](./health-kicks-esp32-s3/) | **Embedded Firmware**: 19 Hz activity inference, embedded multiclass fall detection, LESC BLE GATT server, PWM haptics, OTA bootloader. | C++20, FreeRTOS, PlatformIO, Arduino-ESP32, NimBLE | `pio run` |
-| [**`health-kicks-mobile/`**](./health-kicks-mobile/) | **Mobile Application**: BLE GATT client, background Active Surveillance, 60s fall alert screen, GPS geolocation, local SMS relay, SigV4 AWS IoT Core. | Flutter 3.38+, Dart 3.10+, flutter_reactive_ble, telephony | `flutter test` |
-| [**`health-kicks/`**](./health-kicks/) | **Analytical Backend & API**: Emergency escalation engine, RBAC & alert contact management, OpenAPI REST API, MLOps pipelines (Random Forest -> C transpilation). | Python 3.12+, FastAPI, SQLAlchemy, Alembic, uv, AWS SDK | `uv run pytest` |
-| [**`health-kicks-frontend/`**](./health-kicks-frontend/) | **Clinical Web Interface**: Real-time kinematic visualization, fall alert tracking, public emergency acknowledgment interface. | Angular 22, TypeScript 5.9, Tailwind CSS v4, Vitest 5 | `pnpm test` |
+| [**`health-kicks-esp32-s3/`**](./health-kicks-esp32-s3/) | **Embedded Firmware**: 19 Hz activity inference, embedded multiclass fall detection, LESC BLE GATT server, PWM haptics, OTA bootloader. | C++20, FreeRTOS, PlatformIO, Arduino-ESP32, NimBLE | `uv tool run --from platformio pio run` |
+| [**`health-kicks-mobile/`**](./health-kicks-mobile/) | **Mobile Application**: BLE GATT client, background Active Surveillance, 60s fall alert screen, GPS geolocation, local SMS relay, Health Connect sync, SigV4 AWS IoT Core. | Flutter 3.47+, Dart 3.13+, `flutter_blue_plus`, `health`, `sentry_flutter`, native Android `MethodChannel` | `flutter analyze && flutter test` |
+| [**`health-kicks/`**](./health-kicks/) | **Analytical Backend & API**: Emergency escalation engine, RBAC & alert contact management, OpenAPI REST API, compliance audit logs, MLOps pipelines (Random Forest -> C transpilation). | Python 3.11–3.12, FastAPI, SQLAlchemy, Alembic, uv, AWS SDK, Sentry | `uv run ruff check . && uv run pytest` |
+| [**`health-kicks-frontend/`**](./health-kicks-frontend/) | **Clinical Web Interface**: Real-time kinematic visualization, fall alert tracking, Studio model registry, GDPR privacy & deletion, public emergency acknowledgment interface. | Angular 22, TypeScript 5.9, Tailwind CSS v4, Vitest 5, `@sentry/angular` | `pnpm lint && pnpm test` |
+| [**`infra/tofu/`**](./infra/tofu/) | **Infrastructure as Code**: AWS `eu-west-1` provisioning (ECS Fargate, Aurora Serverless v2, DynamoDB, S3 + CloudFront SPA, IoT Core, OIDC IAM). | OpenTofu (`>= 1.6`), AWS Provider | `tofu fmt -check -recursive infra/tofu` |
 | [**`contracts/`**](./contracts/) | **Shared Exchange Contracts**: LESC BLE GATT specs, OpenAPI, MQTT channels, event and telemetry schemas. | Markdown, JSON Schema, OpenAPI | Spec-First Review |
 | [**`docs/`**](./docs/) | **System Documentation**: Architectural invariants, overall system design, infrastructure and AWS IoT integration guides. | Markdown, Mermaid | Global Consistency |
 
@@ -122,7 +123,7 @@ cd health-kicks
 uv sync
 uv run alembic upgrade head
 uv run pytest
-uv run uvicorn healthkicks.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 ### Angular 22 Frontend (`health-kicks-frontend/`)
