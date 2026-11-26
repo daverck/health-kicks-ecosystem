@@ -393,7 +393,10 @@ resource "aws_iam_role_policy" "ecs_task_dynamodb" {
           "dynamodb:BatchWriteItem",
           "dynamodb:DeleteItem"
         ]
-        Resource = "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/healthkicks_telemetry"
+        Resource = [
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/healthkicks_telemetry",
+          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/healthkicks_telemetry/index/*",
+        ]
       }
     ]
   })

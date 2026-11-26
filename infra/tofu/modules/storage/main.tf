@@ -32,6 +32,12 @@ variable "telemetry_table_name" {
   default     = "healthkicks_telemetry"
 }
 
+variable "telemetry_session_gsi_name" {
+  type        = string
+  description = "Sparse GSI name for querying Studio sessions by session_id and timestamp"
+  default     = "gsi_session_timestamp"
+}
+
 variable "max_ecr_images_retained" {
   type        = number
   description = "Maximum number of Docker images retained per ECR repository"
@@ -142,6 +148,19 @@ resource "aws_dynamodb_table" "telemetry" {
     type = "N"
   }
 
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name               = var.telemetry_session_gsi_name
+    hash_key           = "session_id"
+    range_key          = "timestamp"
+    projection_type    = "INCLUDE"
+    non_key_attributes = ["ax", "ay", "az", "gx", "gy", "gz", "label"]
+  }
+
   point_in_time_recovery {
     enabled = false
   }
@@ -180,4 +199,9 @@ output "firmware_bucket_arn" {
 output "telemetry_table_name" {
   description = "Name of the DynamoDB telemetry table"
   value       = aws_dynamodb_table.telemetry.name
+}
+
+output "telemetry_session_gsi_name" {
+  description = "Name of the sparse GSI for querying Studio sessions by session_id"
+  value       = var.telemetry_session_gsi_name
 }
