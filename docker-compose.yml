@@ -61,6 +61,9 @@ services:
       HEALTHKICKS_AUTO_CREATE_TABLES: "false"
       MIGRATE_ON_START: "true"
       PORT: 8000
+      HEALTHKICKS_GOOGLE_CLIENT_ID: ${HEALTHKICKS_GOOGLE_CLIENT_ID:-}
+      HEALTHKICKS_GOOGLE_CLIENT_SECRET: ${HEALTHKICKS_GOOGLE_CLIENT_SECRET:-}
+      HEALTHKICKS_GOOGLE_REDIRECT_URI: ${HEALTHKICKS_GOOGLE_REDIRECT_URI:-http://localhost:4200/auth/google/callback}
     depends_on:
       postgres:
         condition: service_healthy
