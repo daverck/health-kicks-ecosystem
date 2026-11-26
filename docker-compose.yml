@@ -24,7 +24,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=dynamodb,s3,iot
+      - SERVICES=dynamodb,s3,iot,sts,iam
       - AWS_DEFAULT_REGION=eu-west-1
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
@@ -40,6 +40,14 @@ services:
       - "9001:9001"
     command: mosquitto -c /mosquitto-no-auth.conf
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: healthkicks-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   backend:
     build:
       context: ./health-kicks
@@ -52,10 +60,17 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgrespassword@postgres:5432/healthkicks
       DATABASE_SSLMODE: disable
       DYNAMODB_ENDPOINT_URL: http://localstack:4566
+      STS_ENDPOINT_URL: http://localstack:4566
       AWS_REGION: eu-west-1
       AWS_DEFAULT_REGION: eu-west-1
       AWS_ACCESS_KEY_ID: mock-access-key
       AWS_SECRET_ACCESS_KEY: mock-secret-key
+      HEALTHKICKS_AWS_IOT_ROLE_ARN: ${HEALTHKICKS_AWS_IOT_ROLE_ARN:-arn:aws:iam::000000000000:role/HealthKicksMobileIoTRole}
+      HEALTHKICKS_AWS_IOT_ENDPOINT: ${HEALTHKICKS_AWS_IOT_ENDPOINT:-localhost:4566}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
       HEALTHKICKS_JWT_SECRET: dev-secret-for-docker-compose-minimum-32-chars-long
       HEALTHKICKS_INGEST_TOKEN: dev-ingest-token-healthkicks-local-12345
       HEALTHKICKS_ENVIRONMENT: development

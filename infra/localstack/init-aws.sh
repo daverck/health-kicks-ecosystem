@@ -68,4 +68,19 @@ if ! awslocal s3api head-bucket --bucket healthkicks-firmware-releases-eu-west-1
   echo "[localstack-init] Created S3 bucket: healthkicks-firmware-releases-eu-west-1"
 fi
 
+# 5. IAM role for STS AssumeRole (IoT WebSocket temporary credentials)
+if ! awslocal iam get-role --role-name HealthKicksMobileIoTRole >/dev/null 2>&1; then
+  awslocal iam create-role \
+    --role-name HealthKicksMobileIoTRole \
+    --assume-role-policy-document '{
+      "Version": "2012-10-17",
+      "Statement": [{
+        "Effect": "Allow",
+        "Principal": {"Service": "iot.amazonaws.com"},
+        "Action": "sts:AssumeRole"
+      }]
+    }' >/dev/null
+  echo "[localstack-init] Created IAM role: HealthKicksMobileIoTRole"
+fi
+
 echo "[localstack-init] AWS local initialization complete."
