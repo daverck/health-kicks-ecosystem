@@ -269,6 +269,10 @@ _Validation constraints_:
 
 #### Endpoint `GET /api/v1/fall-alerts`
 
+- **Keyset Cursor Pagination & Deprecated Offset**:
+  - `cursor`: Optional opaque base64 string (`detected_at_utc|id`) for O(1) keyset pagination.
+  - `page`: Deprecated integer page number (maintained for backward compatibility). When `cursor` is provided, `OFFSET` and `COUNT(*)` are skipped entirely (`total` and `page` return `null` / omitted).
+  - Response header: `X-Next-Cursor` containing the cursor string for the next batch when more records exist.
 - **User Filter `user_id`**: Optional string (`str | None`), reserved for administrators. Accepts:
   - A numeric user ID (e.g. `42` or `"42"`).
   - A full or partial subject pseudonym (e.g. `SUBJ-A8F19C2D` or `A8F19C2D`), case-insensitive.
