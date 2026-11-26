@@ -88,3 +88,15 @@ variable "cloudflare_tunnel_token_ssm_arn" {
   description = "SSM Parameter Store ARN holding CLOUDFLARE_TUNNEL_TOKEN"
   default     = ""
 }
+
+variable "critical_alerts_sns_topic_name" {
+  type        = string
+  description = "Name of the existing SNS topic for critical operational alerts (e.g. Discord webhook bridge)"
+  default     = "healthkicks-critical-alerts"
+}
+
+variable "enable_error_log_alarm" {
+  type        = bool
+  description = "Create a CloudWatch Logs metric filter and alarm on ERROR/CRITICAL backend logs"
+  default     = true
+}

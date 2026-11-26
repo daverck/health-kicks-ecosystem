@@ -109,6 +109,47 @@ resource "aws_cloudwatch_log_group" "backend" {
   }
 }
 
+data "aws_sns_topic" "critical_alerts" {
+  count = var.enable_error_log_alarm ? 1 : 0
+  name  = var.critical_alerts_sns_topic_name
+}
+
+resource "aws_cloudwatch_log_metric_filter" "backend_error_logs" {
+  count          = var.enable_error_log_alarm ? 1 : 0
+  name           = "${var.service_name}-${var.environment}-error-logs"
+  pattern        = "{ $.level = \"ERROR\" || $.level = \"CRITICAL\" }"
+  log_group_name = aws_cloudwatch_log_group.backend.name
+
+  metric_transformation {
+    name          = "BackendErrorLogCount"
+    namespace     = "HealthKicks/${var.environment}"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "backend_error_logs" {
+  count               = var.enable_error_log_alarm ? 1 : 0
+  alarm_name          = "${var.service_name}-${var.environment}-error-logs"
+  alarm_description   = "Triggers when HealthKicks backend emits ERROR or CRITICAL structured logs."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.backend_error_logs[0].metric_transformation[0].name
+  namespace           = aws_cloudwatch_log_metric_filter.backend_error_logs[0].metric_transformation[0].namespace
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [data.aws_sns_topic.critical_alerts[0].arn]
+
+  tags = {
+    Name        = "${var.service_name}-${var.environment}-error-logs"
+    Project     = "HealthKicks"
+    Environment = var.environment
+    ManagedBy   = "OpenTofu"
+  }
+}
+
 # ------------------------------------------------------------------------------
 # 2. ECS Cluster & Fargate Spot Capacity Provider
 # ------------------------------------------------------------------------------
