@@ -8,6 +8,7 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 locals {
@@ -109,11 +110,6 @@ resource "aws_cloudwatch_log_group" "backend" {
   }
 }
 
-data "aws_sns_topic" "critical_alerts" {
-  count = var.enable_error_log_alarm ? 1 : 0
-  name  = var.critical_alerts_sns_topic_name
-}
-
 resource "aws_cloudwatch_log_metric_filter" "backend_error_logs" {
   count          = var.enable_error_log_alarm ? 1 : 0
   name           = "${var.service_name}-${var.environment}-error-logs"
@@ -140,7 +136,7 @@ resource "aws_cloudwatch_metric_alarm" "backend_error_logs" {
   statistic           = "Sum"
   threshold           = 1
   treat_missing_data  = "notBreaching"
-  alarm_actions       = [data.aws_sns_topic.critical_alerts[0].arn]
+  alarm_actions       = ["arn:aws:sns:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:${var.critical_alerts_sns_topic_name}"]
 
   tags = {
     Name        = "${var.service_name}-${var.environment}-error-logs"
